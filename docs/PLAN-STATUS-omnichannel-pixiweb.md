@@ -1,5 +1,7 @@
 # Estado de /plan — Omnichannel Pixiweb
 
+> **Trabajo activo de F1:** continuar en C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, rama codex/omnichannel-f1-base. Su copia de este documento y La Pieza contienen el estado actualizado. Modo Manual confirmado; contratos/preflight preparados, 1.662 unitarias y ocho E2E pasan. F1 aún incompleta: confirmación Lista Roja, copia DB e integración/pruebas externas pendientes. Esta rama conserva la preparación; no comenzar otra F1 aquí.
+
 Actualizado: 2026-10-10. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb.md](../BLUEPRINT-omnichannel-pixiweb.md).
 
 ## Resultado
