@@ -69,3 +69,13 @@ Ya había scaffolding Forge sin seguimiento (.claude, .forge, AGENTS.md, CLAUDE.
 ## Inicio de /build — 2026-10-10
 
 Se leyeron AGENTS.md, el comando build, el template pieza-base y la referencia de Lista Roja. Se creó codex/omnichannel-preparacion desde main (28a1530), conservando los untracked. Se actualizó la aprobación en el blueprint y se generó La Pieza con nueve fases y ramas previstas. Solo cambios documentales: no código, migraciones, pruebas de producto, mensajes ni despliegues. La validación JSON anterior corresponde a la entrega /plan; no acredita implementación ni se reescribe como si lo hiciera.
+
+## F1 en ejecución — Build Manual
+
+Continuar en C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, rama codex/omnichannel-f1-base. Rama de preparación conserva el plan; main no se modificó. AGENTS.md se copió al worktree como instrucción local sin incorporarlo a los commits.
+
+Implementado: contratos Zod de canales/identidades/eventos, normalización WA de compatibilidad con parsers existentes y preflight de backfill sin escrituras. No conectado aún a rutas activas. Fixtures sintéticos, 24 pruebas nuevas y suite Playwright pública inicial.
+
+Verificado: 1.662 unitarias pasan, typecheck/lint pasan, 8 E2E desktop/móvil pasan. Reporte: [F1 baseline](F1-BASELINE-omnichannel.md). Logs/reportes HTML en carpetas ignoradas. No build de producción ni login real; no prueba Cloud.
+
+F1 incompleta: falta confirmar invariantes solicitados por Lista Roja, disponer de copia DB, implementar/ensayar migraciones e integrar teléfono opcional; también probar cuentas Meta/Brevo. No comprar ni habilitar facturación para resolverlo. La pregunta de invariantes sigue pendiente; no repetir aprobación de blueprint ni elección Manual.

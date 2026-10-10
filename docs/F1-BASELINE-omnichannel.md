@@ -46,7 +46,19 @@ node scripts/check-migrations.mjs main
 
 No ejecutar backfill ni db push/reset remoto a partir de este reporte.
 
-## Pendientes externos y límites
+## Verificación del incremento
+
+| Comprobación | Resultado |
+|---|---|
+| Suite unitaria completa final | 1.662 pasan, 0 fallos, 0 omitidas (1.638 heredadas + 24 nuevas) |
+| TypeScript y lint | Exit 0; eslint también sobre config Playwright y tests/e2e |
+| Navegador | npm run test:e2e: 8/8 pasan, escritorio y móvil Chromium |
+| Smoke público | Raíz → login; inbox protegido; /probar conserva destino; recuperación vuelve a login |
+| Proveedores y DB | Sin conexión real; sin migraciones ni envíos |
+
+Para reproducir navegador: npx --no-install playwright install chromium y npm run test:e2e. Playwright inicia y cierra un servidor propio en 127.0.0.1:3100, sin reutilizar procesos existentes; PLAYWRIGHT_PORT permite otro puerto libre excepto 3300/3301. La suite usa valores públicos ficticios, no inicia sesión ni manda formularios. El servidor se cerró al terminar; main sigue en 28a1530.
+
+## Pendientes externos y límites de integración
 
 1. Confirmación de invariantes de Lista Roja solicitada en este chat antes de modificar migraciones/auth/rutas/webhooks.
 2. Entorno Supabase de prueba y copia consistente con backup restaurable. No hay migración SQL creada/aplicada ni prueba DB ejecutada.

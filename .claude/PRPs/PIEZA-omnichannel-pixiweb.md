@@ -5,6 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
+> **Rama activa F1:** codex/omnichannel-f1-base; worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado.
 
 ## Objetivo
 
@@ -75,7 +76,7 @@ Las ramas dependientes parten del resultado validado de la fase anterior; no nec
 Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el contexto y el detalle ejecutable se refinan al entrar a cada una.
 
 ### F1 — Base compatible y contratos comprobables
-**Estado:** PENDIENTE. **Historias:** US-001–003. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO. **Historias:** US-001–003. **Estimación:** 5–8 días-persona.
 **Objetivo:** baseline de la app, identidades sin teléfono, expansión/backfill en copia y matriz de capacidades Meta/Brevo.
 **Validación:** contratos WA, conteos/IDs, dos tenants, rollback y evidencia de pruebas externas; accesos faltantes quedan pendientes.
 
@@ -144,7 +145,19 @@ Confirmar antes de editar auth, middleware, API routes, webhooks, migraciones o 
 
 ## Auto-Blindaje
 
-Sin incidencias de implementación todavía. Registrar aquí errores, corrección y comprobación cuando ocurran; no inventar pruebas superadas.
+Next dev regenera next-env.d.ts apuntando a .next/dev/types/routes.d.ts. Tras el smoke test se restauró únicamente ese cambio generado, sin tocar el trabajo ajeno. No versionar diferencias de entorno como cambios funcionales.
+
+## Avance F1 — 2026-10-10
+
+- F1-T1.1: baseline local completado, 66 migraciones inventariadas, suite inicial 1.638/1.638; [reporte](../../docs/F1-BASELINE-omnichannel.md).
+- F1-T1.2: fixtures sintéticos de ambos proveedores y 24 pruebas de contratos/preflight. Regresión completa final: 1.662/1.662. Capturas de cuenta real todavía pendientes.
+- Harness Playwright: ocho pruebas públicas desktop/móvil pasan; no prueba de login autenticado.
+- Contratos de conexión/evento/identidad y preflight de backfill implementados sin conectarlos a webhooks activos. Teléfono opcional todavía no habilitado en DB/ContactRow.
+- F1-T1.3/T1.4: cuentas y contratos reales Meta/Brevo pendientes.
+- F1-T2.1–T2.4: pendientes de confirmación Lista Roja y entorno de copia; preflight puro preparado, sin migración ni backfill ejecutados.
+- No se habilitaron canales, no se hicieron compras, push/merge ni despliegues.
+
+Próximo paso: resolver la confirmación ya solicitada y preparar un entorno DB aislado antes de crear/aplicar la expansión aditiva. No declarar completa F1 ni comenzar F2 como si estuvieran probados datos y proveedores.
 
 ## Registro de ejecución
 

@@ -305,7 +305,7 @@ Las migraciones requieren copia de prueba, plan de backfill y revisión. No incl
 
 ## FASE 1 — Base compatible y contratos comprobables
 
-**Estado:** PENDIENTE DE /BUILD · **Duración:** 5–8 días-persona · **Depende de:** Ninguna fase nueva; parte del fork existente.
+**Estado:** EN_PROGRESO — BUILD MANUAL · **Duración:** 5–8 días-persona · **Depende de:** Ninguna fase nueva; parte del fork existente.
 
 **Entregable:** App local con login/WA base operables, reporte de migración en copia y matriz de capacidades/pendientes.
 
@@ -345,7 +345,7 @@ Como administradora quiero saber qué capacidades están realmente habilitadas a
 
 ### 1.1 Capturar baseline y contratos
 
-- [ ] **F1-T1.1** Inventariar scripts, migraciones, permisos y estado Git; guardar baseline de tests y rutas existentes sin incluir secretos.
+- [x] **F1-T1.1** Inventariar scripts, migraciones, permisos y estado Git; guardar baseline de tests y rutas existentes sin incluir secretos. Evidencia local: [F1 baseline](docs/F1-BASELINE-omnichannel.md); permisos Cloud todavía no comprobados.
 - [ ] **F1-T1.2** Crear fixtures anonimizados de YCloud/Kapso y escenarios de regresión de templates, ecos, handoff y CRM actual.
 - [ ] **F1-T1.3** Preparar reporte de versión Graph/scopes/cuentas Meta y ensayar DM/comentario con cuentas de prueba autorizadas; documentar accesos faltantes.
 - [ ] **F1-T1.4** Ensayar Brevo ext_id, listas, pipelines/deal y método de webhook Sales; verificar cuotas y recuperación de create ambiguo.
