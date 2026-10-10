@@ -250,6 +250,23 @@ test("a conversation from another workspace is not sent nor persisted", async ()
   assert.equal(msgs().length, 0);
 });
 
+test("a contact without a phone never reaches a WhatsApp provider", async () => {
+  reset();
+  const contact = tables.contacts[0] as Row;
+  const originalPhone = contact.phone;
+  contact.phone = null;
+  try {
+    const text = await dispatchText({ workspaceId: "ws_a", conversationId: "conv_a", body: "hola" });
+    const template = await dispatchTemplate({ workspaceId: "ws_a", conversationId: "conv_a", templateName: "welcome" });
+    assert.equal(text.errorCode, "NOT_FOUND");
+    assert.equal(template.errorCode, "NOT_FOUND");
+    assert.equal(sends.length, 0);
+    assert.equal(msgs().length, 0);
+  } finally {
+    contact.phone = originalPhone;
+  }
+});
+
 test("an opted-out contact still gets replies in the open window, never a template", async () => {
   reset();
   (tables.contacts[0] as Row).opt_in = false;

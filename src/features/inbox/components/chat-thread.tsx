@@ -1,4 +1,5 @@
 "use client";
+import { contactLabel } from "@/features/contacts/lib/contact-display";
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -207,10 +208,10 @@ export function ChatThread({
         >
           <div className="space-y-0.5 min-w-0">
             <h2 className="font-display text-sm font-semibold text-foreground truncate">
-              {conversation.contact.name ?? conversation.contact.phone}
+              {contactLabel(conversation.contact)}
             </h2>
             <p className="font-mono text-[10px] text-muted-foreground">
-              {conversation.contact.phone}
+              {conversation.contact.phone ?? "Sin teléfono"}
             </p>
           </div>
 

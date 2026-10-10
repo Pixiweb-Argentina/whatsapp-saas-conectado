@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ConversationItem } from "./conversation-item";
 import { useRealtimeConversations } from "@/features/inbox/hooks/use-realtime-conversations";
 import { useHandoffAlerts } from "@/features/inbox/hooks/use-handoff-alerts";
+import { contactMatchesSearch } from "@/features/contacts/lib/contact-display";
 import type {
   ConversationWithContact,
   ConversationState,
@@ -51,10 +52,7 @@ export function InboxLayout({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return conversations.filter((c) => {
-      const matchesSearch =
-        q === "" ||
-        (c.contact.name ?? "").toLowerCase().includes(q) ||
-        c.contact.phone.toLowerCase().includes(q);
+      const matchesSearch = contactMatchesSearch(c.contact, q);
 
       const matchesTab =
         activeTab === "all" ||

@@ -152,7 +152,7 @@ function toWhatsAppError(sendErr: unknown): WhatsAppError {
 // ──────────────────────────────────────────────────────────────────────────────
 
 interface ContactPhoneRow {
-  phone: string;
+  phone: string | null;
   opt_in: boolean | null;
 }
 
@@ -218,6 +218,7 @@ async function loadConversationAndPhone(
   if (!contact) return null;
 
   const contactRow = contact as ContactPhoneRow;
+  if (!contactRow.phone?.trim()) return null;
   return {
     window_expires_at: convRow.window_expires_at,
     toPhone: contactRow.phone,

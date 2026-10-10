@@ -190,7 +190,7 @@ export function CrmPanel({
               <Initials name={name || contact.name} />
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] text-muted-foreground font-mono truncate">
-                  {contact.phone}
+                  {contact.phone ?? "Sin teléfono"}
                 </p>
               </div>
             </div>

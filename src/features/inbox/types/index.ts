@@ -24,7 +24,7 @@ export type MessageType =
 export interface ContactRow {
   id: string;
   workspace_id: string;
-  phone: string;
+  phone: string | null;
   name: string | null;
   email: string | null;
   stage: string | null;
