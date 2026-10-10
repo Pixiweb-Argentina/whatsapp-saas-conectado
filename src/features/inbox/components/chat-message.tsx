@@ -10,6 +10,12 @@ interface ChatMessageProps {
 
 /** Author chip for outbound messages: "IA" badge or the operator's name. */
 function OutboundAuthor({ message }: { message: MessageRow }) {
+  if (message.meta?.channel_actor === "automation") {
+    return <span className="text-[10px] text-muted-foreground">Automatización</span>;
+  }
+  if (message.meta?.channel_actor === "human" && !message.sender_user_id) {
+    return <span className="text-[10px] text-muted-foreground">Operador</span>;
+  }
   // AI-generated when there is no human sender.
   if (!message.sender_user_id) {
     return (
@@ -120,6 +126,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <StatusIcon
               status={message.status}
               errorMessage={message.error_message}
+              sendOutcome={message.meta?.send_outcome}
             />
           )}
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
@@ -23,7 +23,6 @@ export function WorkspaceSwitcher({
   workspaces,
   activeId,
 }: WorkspaceSwitcherProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const active = workspaces.find((w) => w.workspace_id === activeId);
@@ -31,8 +30,14 @@ export function WorkspaceSwitcher({
   function handleSelect(workspaceId: string) {
     if (workspaceId === activeId) return;
     startTransition(async () => {
-      await switchWorkspace(workspaceId);
-      router.refresh();
+      const result = await switchWorkspace(workspaceId);
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+      // Discard the previous conversation, account filters and client state.
+      // Refreshing the current detail URL can retain the other workspace's chat.
+      window.location.assign("/inbox");
     });
   }
 

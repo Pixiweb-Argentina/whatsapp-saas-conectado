@@ -127,6 +127,30 @@ El composer real consulta disponibilidad con la sesión y RLS. Una cuenta en pre
 
 Evidencia de este corte: [F3 contexto](evidencias/F3-CONTEXTO-2026-10-10.json).
 
+## Incremento 6: permiso transaccional y mensajes de la cola
+
+El permiso WA de texto revalida en SQL conexión lista/no revocada, integración habilitada y cuenta exacta, identidad verificada, consentimiento/supresión, grant vigente, evento entrante no histórico del destinatario, ventana por fecha de origen y revisión de conversación. La evidencia enviada por el worker debe ser el ID del evento persistido del job y no puede ampliar su vencimiento. Se conserva el orden conversación → job; las filas de contexto usan FOR SHARE NOWAIT. Si hay una modificación concurrente, no se autoriza el POST.
+
+La ausencia de una supresión también debe protegerse: un trigger de contact_opt_outs coordina INSERT/UPDATE/DELETE por workspace y número mediante un advisory lock transaccional. El permiso usa try-lock después de las filas del contexto para evitar esperar por un escritor que ya tiene una fila bloqueada. El límite de la garantía es el commit del permiso: una revocación posterior no puede retractar un POST que ya está en vuelo. No se afirma exactly-once remoto.
+
+Cada permiso inserta un mensaje queued en la misma transacción. Si falla la inserción o la protección heredada de ventana, se revierte el permiso. channel_operation_id vincula el mensaje con el job/outbox y evita filas repetidas; los roles de navegador no pueden fabricar/modificar ese vínculo. accepted conserva wamid separado del ID de YCloud; unknown/rejected son terminales y actualizan el mensaje. La recuperación de una lease de envío vencida deja el mensaje sin confirmar. Se conserva el enum legacy: unknown se representa como failed + meta.send_outcome=unknown, con etiqueta visible «Sin confirmar» y explicación, sin reintento automático. La conciliación de receipts de este pipeline todavía está pendiente.
+
+Los jobs humanos exigen senderUserId de un operador activo del workspace y se vuelve a comprobar su membresía al autorizar. Las automatizaciones llevan una etiqueta propia; borrar un usuario no reclasifica su mensaje como IA. El usuario del parámetro debe proceder de una sesión autenticada cuando se conecte el productor; el servicio interno no autentica peticiones HTTP por sí solo.
+
+Migraciones nuevas aplicadas al proyecto bzanbpyzujlogipxvkfn: `20261010180354_omnichannel_atomic_send_context.sql` y `20261010180525_omnichannel_job_messages.sql`. **74 migraciones** en total; el historial se alineó con las versiones originales. No volver a aplicarlas. La segunda rechaza el upgrade si hubiera jobs sending anteriores sin mensaje: deben conciliarse antes de migrar.
+
+### Evidencia del incremento 6
+
+- **64/64 pruebas DB** locales, incluidas 24 comprobaciones nuevas de contexto, persistencia, atribución, RLS, rollback e incertidumbre. PostgreSQL local simulado por PGlite no reemplaza Cloud.
+- Suite completa existente **1.743/1.743**; después se agregó la prueba de atribución humana y pasó el archivo completo **6/6**. Son **1.744 pruebas unitarias distintas validadas**; no se volvió a correr toda la suite tras agregar esa prueba. Typecheck, lint y build de producción pasan con el código final; build usa claves/URL ficticias.
+- PostgreSQL 17.11 Cloud: cuatro carreras entre procesos distintos (revocación, retiro de grant, identidad y supresión) devolvieron permitted=false en milisegundos mientras otro proceso retenía el cambio. Cron efímeros sin HTTP, autodesprogramados y retirados al terminar.
+- Control Cloud válido: permiso + mensaje persistido + resultado unknown; leído en el inbox real. Otro control con SET ROLE service_role prueba atribución humana, rechazo de evidencia falsa, resultado accepted, separación del ID de YCloud y rechazo de doble finalización, todo dentro de rollback.
+- Navegador autenticado desktop y 390px: autor Automatización, etiqueta Sin confirmar y popover explicativo. Capturas en `test-results/f3-atomic-browser/`. Se encontró que el selector de workspace conservaba el detalle anterior; ahora navega a /inbox con carga completa, elimina filtros anteriores y descarta el chat. Verificado volviendo a Laboratorio F3 · prueba, dos conversaciones y panel sin selección.
+- Se limpiaron exclusivamente los datos temporales de este incremento: queda un workspace, cinco mensajes QA previos, cero outbox y cero cron activos. No hubo llamadas a proveedores, compras, despliegue, push ni merge. main sigue en 28a1530.
+- Asesor de seguridad: cero ERROR, mismos avisos heredados de extensiones/helpers/Auth que el incremento 5. Sin políticas nuevas que abran jobs/outbox al navegador.
+
+Evidencia: [F3 transacción](evidencias/F3-TRANSACCION-2026-10-10.json). Reproducción: `tests/db/message-queue.test.mjs`, `tests/db/cloud-atomic-send.mjs` y `tests/db/cloud-atomic-assertions.sql`. Los probes Cloud exigen el fixture sintético; nunca ejecutar platform-fixture.sql allí. Las 20 E2E públicas/diseño previas se reutilizan, no se repitieron en este incremento.
+
 ## Estado de las tareas
 
 | Tarea | Estado |
@@ -135,14 +159,14 @@ Evidencia de este corte: [F3 contexto](evidencias/F3-CONTEXTO-2026-10-10.json).
 | F3-T1.2 resolución/dispatch | Lector de identidad/capacidades y resolver por conexión preparados; WA compatible permanece; adaptadores Meta/web pendientes |
 | F3-T1.3 buffer/agente independiente de settings WA | Runtime extraído y herramientas limitadas por canal; rutinas de transportes nuevos pendientes de su pipeline durable |
 | F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL, productor interno y worker compuestos; pruebas local/Cloud y concurrencia pasan; conectar escritores/cron, cuotas y backoff pendiente |
-| F3-T2.2 invalidación durable y revalidación inmediata | Contexto fresco de servidor + revisión en permiso; falta revalidar grant/identidad/supresión dentro de la transacción e integrar generación real |
-| F3-T2.3 receipts/unknown/conciliación | Unknown durable sin reenvío probado; consumidores de ecos/receipts y conciliación pendientes |
+| F3-T2.2 invalidación durable y revalidación inmediata | Permiso WA transaccional con grant/identidad/supresión/evento/membresía probado local/Cloud; falta integrar generación real |
+| F3-T2.3 receipts/unknown/conciliación | Job → mensaje visible, resultados y recuperación unknown probados; consumidores de ecos/receipts y conciliación pendientes |
 | F3-T3.1 inbox/composer omnicanal | Lectura/filtros, disponibilidad real y bloqueo servidor de texto/plantillas probados; entrega por pipeline nuevo pendiente |
 | F3-T3.2 pruebas integrales | SQL/GoTrue/RLS/navegador/Realtime/toma humana pasan; cuentas y envíos de proveedores pendientes |
 
 ## Próximo paso y límites
 
-Completar el permiso transaccional con grant/identidad/supresión frescos (cerrar la carrera entre lectura y begin), vincular job/outbox con mensaje visible y estado, y conectar productores autenticados/worker bajo flags. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
+Conectar productores autenticados y worker bajo flags, con verificación real de identidades/grants y evidencia de inbound WA persistida. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
 
 La base Cloud ya está inicializada; la app todavía no está desplegada ni enviando mensajes nuevos. No se usaron bases anteriores. Sin compras, push o merge. F1/F2/F3 continúan sin aceptación integral.
 
@@ -163,3 +187,9 @@ La base Cloud ya está inicializada; la app todavía no está desplegada ni envi
 - Una nota puede quedar guardada aunque la suscripción Realtime se haya interrumpido. Refrescar el hilo al confirmar el guardado; no volver a insertar por no verla ni confundir el fallback con una prueba Realtime.
 - Los grants que carga el servidor deben tener procedencia, scope y vencimiento. Nunca habilitar permisos desde capabilities booleanas ni certificar identidades copiadas por un backfill.
 - La supresión del pipeline nuevo sigue al destinatario de la identidad, incluso si se editó el teléfono del contacto.
+
+- Las comparaciones SQL entre el enum integration_provider y channel_connections.provider (text) deben castear explícitamente a text; cubierto por la prueba del permiso como service_role.
+- No agregar Z a un to_char de now() sin convertir a UTC: el harness local hereda la zona horaria del equipo. Los fixtures usan serialización timestamptz de JSON con offset.
+- Un reset de fixture no puede borrar una supresión todavía no confirmada: esperar el advisory lock antes de DELETE. El intento bloqueado fue correcto; la primera limpieza corrió antes del commit del escritor.
+- Cambiar solo la cookie y ejecutar router.refresh() conserva la URL del chat anterior. El selector de workspace debe descartar ruta/filtros/estado cliente y abrir /inbox del nuevo workspace.
+- En Windows, las ediciones Python de documentación UTF-8 deben indicar encoding="utf-8" al leer y escribir; el locale por defecto produjo mojibake detectado y corregido antes del commit.

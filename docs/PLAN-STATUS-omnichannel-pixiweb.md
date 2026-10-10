@@ -4,7 +4,7 @@ Actualizado: 2026-10-10. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb
 
 ## Resultado
 
-Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F3 en ejecución; Supabase nuevo tiene 72 migraciones. Contexto de envío y composición productor/worker preparados; inbox autenticado con disponibilidad por cuenta y controles servidor de texto/plantillas. Pipeline completo y proveedores pendientes. Fases con aceptación integral: 0/9.
+Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F3 en ejecución; Supabase nuevo tiene 74 migraciones. Permiso WA transaccional y mensajes de jobs implementados; inbox muestra incertidumbre y atribución humana/automatización. Productor/worker internos todavía sin conectar a webhook/buffer/cron. Pipeline completo y proveedores pendientes. Fases con aceptación integral: 0/9.
 
 **Continuar en:** C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, ahora en rama codex/omnichannel-f3-inbox desde 2fea741. Se reutiliza el worktree; su nombre heredado no indica la fase activa.
 
@@ -133,3 +133,12 @@ Contexto de servidor por identidad y cuenta, grants con evidencia/vencimiento, e
 Sin migraciones nuevas: 72 aplicadas. Laboratorio conserva 5 mensajes (3 entradas + 2 notas internas), cero outbox/cron activos. No hay credenciales de proveedores ni envíos reales. Mantener archivos .env/QA y ledger ignorados; no imprimirlos ni regenerar fixtures sin reconciliar.
 
 **Siguiente bloque:** revalidar grant/identidad/supresión en el permiso transaccional; persistir mensaje y resultado del job en el inbox; conectar productores autenticados con flags. Luego reserva por comentario, cuotas/backoff y conciliación. Continúa F3 en su rama; no tocar main ni cambiar de fase todavía. No repetir aprobaciones.
+
+
+## Continuación 2026-10-10 — F3, incremento 6
+
+Permiso WA texto revalida datos vigentes dentro de la transacción; protege también la ausencia de supresión frente a un STOP concurrente. Permiso y mensaje se crean juntos, resultado/recuperación se reflejan en el inbox y unknown queda sin reintento. Atribución humana requiere operador activo. Selector de workspace corregido y probado: descarta chat/filtros anteriores al cambiar.
+
+Dos migraciones aplicadas, total **74**, sin reenviar las anteriores. 64 DB pasan; 1.743 unitarias de suite completa más la nueva atribución (archivo final 6/6); typecheck/lint/build pasan. Cuatro carreras Cloud y controles service_role/rollback, más inbox real desktop/móvil. Evidencia: [F3 transacción](evidencias/F3-TRANSACCION-2026-10-10.json). Fixtures transaccionales y cron temporales retirados; se preservan las cinco entradas QA previas. No hubo envíos, push, merge ni deploy. Cero ERROR del asesor, avisos heredados pendientes de lanzamiento.
+
+**Siguiente bloque vigente:** conectar productores autenticados/worker bajo flags, con identidades/grants/evidencia reales; completar conciliación, reserva por comentario y cuotas/backoff. Permiso inicial solo WA texto; no habilitar Meta/widget/Brevo ni asumir que templates o comentarios ya tienen evidencia transaccional. F3 sigue en codex/omnichannel-f3-inbox; 0/9 fases con aceptación integral. No repetir aprobaciones ni regenerar credenciales/fixtures.

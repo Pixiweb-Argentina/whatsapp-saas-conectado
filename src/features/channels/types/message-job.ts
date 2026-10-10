@@ -5,9 +5,13 @@ export const enqueueJobSchema = z.strictObject({
   workspaceId: z.uuid(), connectionId: z.uuid(), conversationId: z.uuid().nullable(),
   eventId: z.uuid().nullable(), idempotencyKey: sendIdSchema,
   actor: z.enum(["human", "ai", "automation"]),
+  senderUserId: z.uuid().nullable().optional(),
   expectedRevision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).nullable(),
   request: channelSendRequestSchema,
 }).superRefine((job, ctx) => {
+  if ((job.actor === "human") !== Boolean(job.senderUserId)) {
+    ctx.addIssue({ code: "custom", message: "Only human jobs require an authenticated sender" });
+  }
   if (!z.uuid().safeParse(job.request.operationId).success) {
     ctx.addIssue({ code: "custom", message: "Durable operations require UUIDs" });
   }

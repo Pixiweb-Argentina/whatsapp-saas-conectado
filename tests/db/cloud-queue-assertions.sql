@@ -1,3 +1,5 @@
+-- Historical increment-3 probes. After migration 20261010180354, use
+-- cloud-atomic-send.mjs + cloud-atomic-assertions.sql for valid send permits.
 -- Run inside BEGIN/ROLLBACK after omnichannel-fixture.sql and registering the
 -- synthetic connections below. This file never calls a messaging provider.
 INSERT INTO public.channel_connections(id,workspace_id,channel,provider,external_account_id,status,legacy_integration_id)

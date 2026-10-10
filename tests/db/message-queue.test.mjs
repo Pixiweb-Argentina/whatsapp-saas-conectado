@@ -4,9 +4,12 @@ import { test } from "node:test";
 import { createLegacyDatabase, applyOmnichannelMigrations, restoreDatabase } from "./database-harness.mjs";
 
 const id = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const timestamp = new Date(Date.now() - 60000).toISOString();
 const event = (overrides = {}) => ({ schemaVersion: 1, workspaceId: id(1), connectionId: id(51),
   channel: "whatsapp", provider: "ycloud", providerEventId: "event-1", kind: "message",
-  externalActorId: "+15555550101", externalMessageId: "message-1", ...overrides });
+  externalActorId: "+15555550101", externalMessageId: "message-1", occurredAt: timestamp, receivedAt: timestamp,
+  content: { type: "text", text: "fixture", rawType: "text" }, mediaRefs: [],
+  sourceContext: { channel: "whatsapp", sourceType: "direct_message" }, ...overrides });
 const request = (n = 61, overrides = {}) => ({ operationId: id(n), channel: "whatsapp",
   recipient: "+15555550101", action: "text", body: "Synthetic queue fixture", ...overrides });
 async function scalar(db, sql, args = []) { return (await db.query(sql, args)).rows[0]?.result; }
@@ -14,16 +17,16 @@ async function persist(db, value = event(), historical = false) {
   return scalar(db, "select public.persist_channel_event($1,$2) result", [value, historical]);
 }
 async function enqueue(db, overrides = {}) {
-  const job = { workspace: id(1), connection: id(51), conversation: id(31), event: null,
-    key: "job-1", actor: "ai", revision: 0, request: request(), ...overrides };
-  return scalar(db, "select public.enqueue_channel_job($1,$2,$3,$4,$5,$6,$7,$8) result", Object.values(job));
+  const job = { workspace: id(1), connection: id(51), conversation: id(31), event: overrides.event === undefined ? await persist(db) : overrides.event,
+    key: "job-1", actor: "ai", revision: 0, request: request(), sender: null, ...overrides };
+  return scalar(db, "select public.enqueue_channel_job($1,$2,$3,$4,$5,$6,$7,$8,$9) result", Object.values(job));
 }
 async function claim(db, worker = 71, workspace = 1) {
   return (await db.query("select * from public.claim_channel_job($1,$2)", [id(workspace), id(worker)])).rows[0];
 }
 async function begin(db, job, overrides = {}) {
   const args = { workspace: job.workspace_id, operation: job.operation_id, worker: job.lease_owner,
-    fence: job.fence, evidence: "verified-event", until: new Date(Date.now() + 60000).toISOString(), ...overrides };
+    fence: job.fence, evidence: job.event_id, until: new Date(Date.now() + 60000).toISOString(), ...overrides };
   return scalar(db, "select public.begin_channel_send($1,$2,$3,$4,$5,$6) result", Object.values(args));
 }
 async function finish(db, job, result = { status: "accepted", externalId: "provider-1" }) {
@@ -53,6 +56,12 @@ test("F3 durable message queue on PostgreSQL", async (t) => {
     ('${id(52)}','${id(2)}','whatsapp','kapso','fixture-b','ready','${id(12)}');
     select private.backfill_whatsapp_workspace('${id(1)}','${id(51)}',100);
     select private.backfill_whatsapp_workspace('${id(2)}','${id(52)}',100);`);
+  await db.exec(`update public.contact_identities set verified_at=now()-interval '1 minute';
+    update public.integrations set config='{"phone_number":"+15555550100"}' where id='${id(11)}';
+    update public.channel_connections set capabilities=jsonb_build_object('version',1,'grants',jsonb_build_array(
+      jsonb_build_object('workspaceId',workspace_id,'connectionId',id,'capability','text','evidenceRef','fixture-verification',
+        'verifiedAt',now()-interval '1 minute',
+        'validUntil',now()+interval '1 hour')));`);
 
   async function isolated(name, run) {
     await t.test(name, async () => {
@@ -199,6 +208,101 @@ test("F3 durable message queue on PostgreSQL", async (t) => {
     await db.exec(`update public.channel_connections set status='revoked',revoked_at=now() where id='${id(51)}'`);
     assert.equal(await begin(db, job), false);
     assert.equal(await scalar(db, "select count(*)::int result from public.message_outbox"), 0);
+  });
+  const invalidContexts = [
+    ["missing grants", "update public.channel_connections set capabilities='{}'"],
+    ["expired grant", `update public.channel_connections set capabilities=jsonb_set(capabilities,'{grants,0,validUntil}','"2000-01-01T00:00:00Z"')`],
+    ["malformed grant date", `update public.channel_connections set capabilities=jsonb_set(capabilities,'{grants,0,validUntil}','"infinity"')`],
+    ["wrong grant workspace", `update public.channel_connections set capabilities=jsonb_set(capabilities,'{grants,0,workspaceId}','"${id(2)}"')`],
+    ["future verification", "update public.contact_identities set verified_at=now()+interval '1 hour'"],
+    ["unverified identity", "update public.contact_identities set verified_at=null"],
+    ["changed recipient", "update public.contact_identities set external_user_id='another-' || id::text"],
+    ["disabled integration", "update public.integrations set enabled=false"],
+    ["different sender account", "update public.integrations set config='{}'"],
+    ["contact opt-out", "update public.contacts set opt_in=false"],
+    ["recipient suppression", `insert into public.contact_opt_outs(workspace_id,phone_key,opted_out_at,source) values('${id(1)}','15555550101',now(),'keyword')`],
+    ["historical event", "update public.inbound_events set historical=true"],
+    ["event sender mismatch", `update public.inbound_events set envelope=jsonb_set(envelope,'{externalActorId}','"other"')`],
+    ["expired inbound event", `update public.inbound_events set envelope=jsonb_set(envelope,'{occurredAt}','"2000-01-01T00:00:00Z"')`],
+    ["future received event", `update public.inbound_events set envelope=jsonb_set(envelope,'{receivedAt}','"2999-01-01T00:00:00Z"')`],
+    ["invalid event time", `update public.inbound_events set envelope=jsonb_set(envelope,'{occurredAt}','"not-a-date"')`],
+  ];
+  for (const [label, mutation] of invalidContexts) {
+    await isolated(`permit revalidates ${label} after enqueue`, async () => {
+      await enqueue(db); const job = await claim(db);
+      await db.exec(mutation);
+      assert.equal(await begin(db, job), false);
+      assert.equal(await scalar(db, "select count(*)::int result from public.message_outbox"), 0);
+      assert.equal(await scalar(db, "select count(*)::int result from public.messages where channel_operation_id is not null"), 0);
+    });
+  }
+  await isolated("caller cannot substitute evidence or extend its lifetime", async () => {
+    await enqueue(db); const job = await claim(db);
+    assert.equal(await begin(db, job, { evidence: id(999) }), false);
+    assert.equal(await begin(db, job, { until: new Date(Date.now() + 2 * 3600000).toISOString() }), false);
+    assert.equal(await begin(db, job), true);
+  });
+  await isolated("permit inserts one visible message; accepted YCloud ID is not a fabricated wamid", async () => {
+    await enqueue(db); const job = await claim(db);
+    await db.exec("SET ROLE service_role");
+    assert.equal(await begin(db, job), true);
+    assert.equal(await begin(db, job), false);
+    const message = (await db.query("select * from public.messages where channel_operation_id=$1", [id(61)])).rows[0];
+    assert.equal(message.status, "queued"); assert.equal(message.connection_id, id(51));
+    assert.equal(message.body, request().body); assert.equal(message.meta.channel_actor, "ai");
+    assert.equal(await finish(db, job, { status: "accepted", externalId: "ycloud-1", providerMessageId: "ycloud-1" }), true);
+    const sent = (await db.query("select * from public.messages where id=$1", [message.id])).rows[0];
+    assert.equal(sent.status, "sent"); assert.equal(sent.wamid, null); assert.equal(sent.external_message_id, null);
+    assert.equal(sent.meta.ycloud_id, "ycloud-1"); assert.equal(sent.meta.send_outcome, "accepted");
+    assert.equal(await finish(db, job), false);
+  });
+  await isolated("provider rejection and timeout have different visible results", async () => {
+    for (const [index, result] of [{ status: "rejected", errorCode: "synthetic", retryable: false },
+      { status: "unknown", operationId: id(62) }].entries()) {
+      await enqueue(db, { key: "j" + index, request: request(61 + index) });
+      const job = await claim(db); assert.equal(await begin(db, job), true);
+      assert.equal(await finish(db, job, result), true);
+      const message = (await db.query("select * from public.messages where channel_operation_id=$1", [id(61 + index)])).rows[0];
+      assert.equal(message.status, "failed"); assert.equal(message.meta.send_outcome, result.status);
+      assert.match(message.error_message, index === 0 ? /rechazó/ : /No lo reenvíes/);
+    }
+  });
+  await isolated("post-permit recovery marks the visible message unknown without retry", async () => {
+    await enqueue(db); const job = await claim(db);
+    assert.equal(await begin(db, job), true); await expire(db); await recover(db);
+    const message = (await db.query("select * from public.messages where channel_operation_id=$1", [id(61)])).rows[0];
+    assert.equal(message.status, "failed"); assert.equal(message.meta.send_outcome, "unknown");
+    assert.equal(await claim(db), undefined);
+  });
+  await isolated("failed message persistence rolls back the permit before any provider call", async () => {
+    await enqueue(db); const job = await claim(db);
+    await db.exec(`update public.conversations set window_expires_at=now()-interval '1 hour' where id='${id(31)}'`);
+    await reject(db, () => begin(db, job), "P0001");
+    assert.equal((await getJob(db)).state, "leased");
+    assert.equal(await scalar(db, "select count(*)::int result from public.message_outbox"), 0);
+  });
+  await isolated("a browser cannot forge, change or remove a job-backed message", async () => {
+    await enqueue(db); const job = await claim(db); assert.equal(await begin(db, job), true);
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id(101)]);
+    await db.exec("SET ROLE authenticated");
+    assert.equal((await db.query(`update public.messages set status='sent' where channel_operation_id='${id(61)}' returning id`)).rows.length, 0);
+    assert.equal((await db.query(`delete from public.messages where channel_operation_id='${id(61)}' returning id`)).rows.length, 0);
+    await reject(db, () => db.exec(`insert into public.messages(workspace_id,conversation_id,connection_id,channel_operation_id,direction,type,body)
+      values('${id(1)}','${id(31)}','${id(51)}','${id(61)}','out','text','forged')`), "42501");
+  });
+  await isolated("human attribution requires an active workspace operator and survives enqueue dedup", async () => {
+    await reject(db, () => enqueue(db, { actor: "human" }));
+    await reject(db, () => enqueue(db, { actor: "human", sender: id(102) }), "42501");
+    await reject(db, () => enqueue(db, { actor: "human", sender: id(103) }), "42501");
+    await enqueue(db, { actor: "human", sender: id(101) });
+    assert.equal(await enqueue(db, { actor: "human", sender: id(101), request: request(62) }), id(61));
+    const job = await claim(db); assert.equal(await begin(db, job), true);
+    assert.equal(await scalar(db, "select sender_user_id result from public.messages where channel_operation_id=$1", [id(61)]), id(101));
+  });
+  await isolated("operator deactivation after enqueue refuses the human send", async () => {
+    await enqueue(db, { actor: "human", sender: id(101) }); const job = await claim(db);
+    await db.exec(`update public.memberships set is_active=false where user_id='${id(101)}'`);
+    assert.equal(await begin(db, job), false);
   });
   await isolated("attempt and age limits park jobs without provider calls", async () => {
     await enqueue(db);

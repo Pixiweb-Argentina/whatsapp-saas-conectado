@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; 72 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Contexto de identidad/capacidad, productor/worker internos y disponibilidad del composer preparados; falta permiso completo, persistencia de mensajes y conectar escritores/worker. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 74 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto y mensajes de jobs transaccionales; incertidumbre y atribución visibles. Falta conectar escritores/worker bajo flags, otros tipos de evidencia y conciliación. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 

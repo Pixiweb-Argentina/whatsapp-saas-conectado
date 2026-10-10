@@ -1,0 +1,114 @@
+{
+  "date": "2026-10-10",
+  "phase": "F3",
+  "increment": 6,
+  "branch": "codex/omnichannel-f3-inbox",
+  "baseCommit": "e673c4f",
+  "project": "bzanbpyzujlogipxvkfn",
+  "linkName": "Cuenta de saas whatsapp omni",
+  "postgres": "17.11",
+  "migrations": {
+    "total": 74,
+    "new": [
+      "20261010180354_omnichannel_atomic_send_context.sql",
+      "20261010180525_omnichannel_job_messages.sql"
+    ],
+    "historyAligned": true
+  },
+  "verification": {
+    "database": {
+      "passed": 64,
+      "newChecks": 24,
+      "log": "test-results/f3-atomic-db-all.log"
+    },
+    "unit": {
+      "fullSuiteBeforeLastTest": 1743,
+      "finalStoreFile": 6,
+      "newTests": 1,
+      "distinctValidated": 1744,
+      "fullSuiteRepeatedAfterLastTest": false
+    },
+    "typecheck": "passed",
+    "lint": "passed",
+    "productionBuild": "passed with fictitious API configuration",
+    "publicDesignE2E": "Previous 20 passes reused; not rerun",
+    "cloudConcurrency": [
+      {
+        "case": "revoke",
+        "holderPid": 40127,
+        "workerPid": 40129,
+        "observedAt": "2026-10-10 18:12:28.082624+00",
+        "startedAt": "2026-10-10 18:12:29.690168+00",
+        "completedAt": "2026-10-10 18:12:29.696737+00",
+        "permitted": false
+      },
+      {
+        "case": "grant",
+        "holderPid": 40135,
+        "workerPid": 40139,
+        "observedAt": "2026-10-10 18:12:51.212052+00",
+        "startedAt": "2026-10-10 18:12:53.392533+00",
+        "completedAt": "2026-10-10 18:12:53.398812+00",
+        "permitted": false
+      },
+      {
+        "case": "identity",
+        "holderPid": 40143,
+        "workerPid": 40146,
+        "observedAt": "2026-10-10 18:13:05.876088+00",
+        "startedAt": "2026-10-10 18:13:07.371829+00",
+        "completedAt": "2026-10-10 18:13:07.37961+00",
+        "permitted": false
+      },
+      {
+        "case": "suppression",
+        "holderPid": 40163,
+        "workerPid": 40165,
+        "observedAt": "2026-10-10 18:13:21.998249+00",
+        "startedAt": "2026-10-10 18:13:23.778419+00",
+        "completedAt": "2026-10-10 18:13:23.790222+00",
+        "permitted": false
+      }
+    ],
+    "cloudControl": "Valid permit produced one visible message and unknown outcome. Separate service_role transaction verified human attribution, forged-evidence rejection, accepted result, provider ID separation, double-finish denial and no terminal reclaim; rolled back.",
+    "browser": {
+      "realAuth": true,
+      "desktop": true,
+      "mobileWidth": 390,
+      "unknownLabel": true,
+      "automationAuthor": true,
+      "popover": true,
+      "workspaceSwitchClearsChatAndFilters": true,
+      "screenshots": [
+        "test-results/f3-atomic-browser/desktop.png",
+        "test-results/f3-atomic-browser/mobile.png",
+        "test-results/f3-atomic-browser/workspace-switch.png"
+      ]
+    }
+  },
+  "cleanup": {
+    "temporaryWorkspaceRemoved": true,
+    "remainingWorkspaces": 1,
+    "remainingMessages": 5,
+    "outbox": 0,
+    "activeCron": 0,
+    "realProviderCalls": 0
+  },
+  "securityAdvisor": {
+    "errors": 0,
+    "infoFindings": 11,
+    "warningFindings": 10,
+    "newFindings": 0
+  },
+  "limitations": [
+    "Permit covers only WA text with persisted inbound evidence. Other evidence/actions fail closed.",
+    "Atomicity ends at permit commit; no remote exactly-once claim.",
+    "unknown remains legacy failed + send_outcome=unknown; receipt reconciliation still pending.",
+    "Producer and worker remain internal, without webhook/buffer/cron activation.",
+    "No Meta, widget or Brevo transport enabled; 0/9 phases accepted integrally.",
+    "Main unchanged, no purchase, push, merge or app deployment."
+  ],
+  "sources": [
+    "https://www.postgresql.org/docs/17/explicit-locking.html"
+  ]
+}

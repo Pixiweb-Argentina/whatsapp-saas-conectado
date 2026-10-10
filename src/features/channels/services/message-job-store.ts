@@ -35,6 +35,7 @@ async function enqueueJob(rpc: QueueRpc, value: unknown): Promise<string> {
     p_conversation_id: job.conversationId, p_event_id: job.eventId,
     p_idempotency_key: job.idempotencyKey, p_actor: job.actor,
     p_expected_revision: job.expectedRevision, p_request: job.request,
+    p_sender_user_id: job.senderUserId ?? null,
   }));
 }
 

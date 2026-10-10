@@ -1,3 +1,5 @@
+// Historical increment-3 probes. After migration 20261010180354, use
+// cloud-atomic-send.mjs + cloud-atomic-assertions.sql for valid send permits.
 // Controlled probes for the new Supabase project. Run setup once, each holder
 // with its competitor on separate connections, then cleanup. No HTTP sends.
 // MCP serialized simultaneous tool calls. The verified Cloud run used the

@@ -16,9 +16,10 @@ interface StatusIconProps {
    * the server.
    */
   errorMessage?: string | null;
+  sendOutcome?: unknown;
 }
 
-export function StatusIcon({ status, errorMessage }: StatusIconProps) {
+export function StatusIcon({ status, errorMessage, sendOutcome }: StatusIconProps) {
   if (!status) return null;
 
   switch (status) {
@@ -57,13 +58,14 @@ export function StatusIcon({ status, errorMessage }: StatusIconProps) {
       return (
         <Popover>
           <PopoverTrigger
-            className="shrink-0 rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-destructive"
-            aria-label={`Fallido: ${reason}`}
+            className="inline-flex shrink-0 items-center gap-1 rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-destructive"
+            aria-label={`${sendOutcome === "unknown" ? "Envío sin confirmar" : "Fallido"}: ${reason}`}
           >
             <AlertCircle
-              className="h-3 w-3 text-destructive"
+              className={cn("h-3 w-3", sendOutcome === "unknown" ? "text-warning" : "text-destructive")}
               aria-hidden="true"
             />
+            {sendOutcome === "unknown" && <span className="text-[10px] text-warning">Sin confirmar</span>}
           </PopoverTrigger>
           <PopoverContent
             align="end"
