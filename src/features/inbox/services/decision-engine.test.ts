@@ -237,6 +237,13 @@ test("decide scopes its initial read and keyword transition to the workspace", a
   assert.ok(lookups.every((lookup) => lookup.some(([key, value]) => key === "workspace_id" && value === "ws_1")));
   assert.ok(updates[0].eqArgs.some(([key, value]) => key === "workspace_id" && value === "ws_1"));
 });
+test("durable keyword handoff delegates to its server owner without legacy transition/notifier", async () => {
+  reset([{data:{channel:"whatsapp",state:"ai_active"},error:null}]);
+  let handed=false;
+  const result=await decide({...DECIDE,mergedText:"quiero hablar con un humano",onHandoff:async()=>{handed=true;}});
+  assert.equal(handed,true); assert.equal(result.decision,"handoff");
+  assert.equal(updates.length,0); assert.equal(reserveCalls,0);
+});
 
 test("the model sees only tools reviewed for the stored channel and granted capability", async () => {
   reset([{ data: { channel: "instagram", state: "ai_active" }, error: null }]);

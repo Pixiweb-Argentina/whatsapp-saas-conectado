@@ -23,6 +23,8 @@ const IDLE = { suppressReply: false, ownsStage: false };
 export interface JevBatchEffect {
   suppressReply: boolean;
   ownsStage: boolean;
+  /** Persisted before durable side effects, so a crash cannot lose the handoff. */
+  handoffRequested?: boolean;
 }
 
 interface BatchInput {
@@ -33,6 +35,8 @@ interface BatchInput {
 }
 
 export interface JevBatchHooks {
+  /** Durable batch owns the transition without a legacy contact ACK. */
+  onHandoff?: () => Promise<void>;
   /**
    * Called with the verdict BEFORE its side effects (stage, handoff, event),
    * so the caller can persist it: a worker that dies halfway leaves a verdict
@@ -79,9 +83,10 @@ async function judgeBatch(
   try {
     const judged = await callJev(input.mergedText);
     const mapped = applyUses(judged, uses);
-    const effect = jevEffect(mapped, uses);
+    const effect: JevBatchEffect = { ...jevEffect(mapped, uses),
+      ...(hooks.onHandoff ? { handoffRequested: mapped.decision === "handoff" } : {}) };
     await hooks.onVerdict?.(effect);
-    await persistJudgment(supabase, input, judged, mapped, uses);
+    await persistJudgment(supabase, input, judged, mapped, uses, hooks);
     trackJudgment({
       model: judged.model,
       inputTokens: judged.inputTokens,
@@ -114,10 +119,14 @@ async function persistJudgment(
   judged: JevCall,
   mapped: MappedJudgment,
   uses: JevUses,
+  hooks: JevBatchHooks,
 ): Promise<void> {
   try {
     const written = await writeStage(supabase, input.contactId, mapped.stage);
-    if (mapped.decision === "handoff") await moveToHandoff(input.conversationId);
+    if (mapped.decision === "handoff") {
+      if (hooks.onHandoff) await hooks.onHandoff();
+      else await moveToHandoff(input.conversationId);
+    }
     await insertJudgment(
       supabase,
       input,

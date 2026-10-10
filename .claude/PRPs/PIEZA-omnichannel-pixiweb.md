@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; 78 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto, mensajes de jobs y productor humano transaccionales; captura/worker bajo flags apagados. Cola persistente y contrato de preparación/enqueue IA probados. Falta conectar buffer IA/herramientas, otros tipos de evidencia y conciliación. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 79 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto, mensajes de jobs y productor humano transaccionales; captura/worker bajo flags apagados. Cola persistente y productor IA de texto conectado al buffer con checkpoint privado/handoff interno. Faltan herramientas durables, cuentas reales, otros tipos de evidencia y conciliación. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -217,3 +217,9 @@ Décimo incremento: contrato IA privado y transaccional preparado; batch fija mo
 **Próximo paso vigente:** conectar el productor al buffer antes de decide/Jev/modelo; recuperar texto/estado sin regenerar o despachar legacy. Cubrir handoff/ack, herramientas n8n y Setter antes del rollout. La preparación es infraestructura interna, no generación real conectada. Flags apagados, cero outbox/cron; sin compras/envíos/push/merge/deploy. F3 sin aceptación integral.
 
 Auto-Blindaje: los fixtures también cumplen las invariantes del esquema. Revocar una conexión requiere revoked_at; para ensayar ausencia de evidencia en batch quitar batch_id, no cambiar wamid de una identidad ya vinculada (el trigger lo rechaza). El test DB se separó para conservar archivos menores de 500 líneas.
+
+Undécimo incremento: IA de texto conectada al buffer antes de decisiones/modelos, con recuperación de texto/job privado y sin fallback legacy. Handoff interno atómico espera operaciones pendientes; no cancela el mensaje ni manda ACK al contacto. Jev persiste la intención antes de sus efectos. Herramientas externas/n8n, Setter y autoetiquetado deshabilitados en el piloto de cola; legacy sin cambios. 1.814 unitarias, 87 DB, typecheck/lint/build y ocho controles API Next/Supabase pasan. Handoff unknown simulado es idempotente. Migración 79 aplicada, fixture 994 retirado. [Evidencia](../../docs/evidencias/F3-IA-BUFFER-2026-10-10.json).
+
+**Próximo paso vigente:** cuentas/identidades/grants reales; receipts/ecos/conciliación, cuotas/backoff y reserva por comentario. Extender herramientas sólo con contratos durables. La generación nueva usa mocks en pruebas; Cloud probó recuperación, no LLM/entrega real. Flags apagados, cero outbox/cron, sin compras/envíos/push/merge/deploy. F3 sin aceptación integral.
+
+Auto-Blindaje: message_batches.meta es modificable por el cliente y nunca es autoridad para el texto outbound en modo queue. El checkpoint está en private.ai_reply_preparations. Una decisión de handoff debe persistir antes de efectos/etapas; no cerrar el batch si hay una operación pendiente y la transición devuelve settled=false.

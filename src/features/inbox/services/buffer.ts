@@ -41,6 +41,7 @@ import { WHATSAPP_NOT_CONNECTED } from "./whatsapp-provider";
 import { legacyBufferSupports, loadConversationRuntime } from "@/features/channels/services/conversation-runtime";
 import { createHubSpotDeal } from "./hubspot-client";
 import { crmStatus } from "./crm-sync";
+import { prepareAiQueueBatch, queueHandoffCallback, recoverAiQueueFailure, type AiQueueControl } from "./buffer-ai-queue";
 
 /** Motivo para el operador cuando falló la LECTURA del CRM activo: no es "no activo". */
 const CRM_READ_FAILED_REASON = "no se pudo verificar cuál es el CRM activo (falló la lectura de la base)";
@@ -668,6 +669,9 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
     batchId: batch.id,
     error: "handoff failed; re-queued",
   });
+  const queueWaiting = (): ProcessBatchResult => ({
+    processed:false,conversationId:batch.conversation_id,batchId:batch.id,
+  });
   // Write tools this batch ran (any attempt). Recorded before each one runs
   // and updated when it returns — also when the turn fails right after.
   const writeRuns: WriteRun[] = [...writeRunsOf(batch.meta)];
@@ -675,8 +679,13 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
   // Set once this attempt's reply went out (or failed for good): from then
   // on the batch only needs closing, never another reply nor a dead letter.
   const progress = { replySent: false };
+  let aiQueue: AiQueueControl | null = null;
+  let replyModeResolved = false;
 
   try {
+    // Pin mode/context before consolidation, decisions, Jev, tools or model.
+    aiQueue = await prepareAiQueueBatch(supabase,batch);
+    replyModeResolved = true;
     // ── 3. Consolidate messages into one string ──────────────────────────────
     const consolidated = await consolidateBatch(batch, supabase);
     mergedText = consolidated.text;
@@ -699,6 +708,16 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       return done();
     }
 
+    if (aiQueue) {
+      const outcome = await aiQueue.resume();
+      if (outcome === "requeued") return queueWaiting();
+      if (outcome === "close") {
+        progress.replySent = true; // settled producer; does not mean delivery
+        await markBatchProcessed(batch,mergedText,supabase);
+        return done();
+      }
+    }
+
     // ── 5. What an earlier attempt left behind ─────────────────────────────
     const pendingReply =
       typeof batch.meta.pending_reply === "string"
@@ -708,7 +727,7 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
     // (a lost checkpoint included): never send twice.
     const pendingHandoff = pendingHandoffOf(batch.meta);
     const earlierSend =
-      retryCount > 0 || pendingReply ? await settleEarlierSend(supabase, batch) : null;
+      !aiQueue && (retryCount > 0 || pendingReply) ? await settleEarlierSend(supabase, batch) : null;
     if (earlierSend) {
       progress.replySent = true;
       // The worker that sent the reply died before handing off (or the
@@ -811,12 +830,14 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       contactId: conversation.contact_id as string,
       reservationId: priorReservationId,
       channelCapabilities: ["text", "template"],
+      ...(aiQueue ? { onHandoff: queueHandoffCallback(aiQueue,"keyword") } : {}),
     });
 
     const { decision, reason } = decisionResult;
 
     if (decision !== "respond") {
       console.info("[buffer] not responding:", decision, reason);
+      if (aiQueue && await aiQueue.resume() === "requeued") return queueWaiting();
       await markBatchProcessed(batch, mergedText, supabase);
       return done();
     }
@@ -847,13 +868,16 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
             mergedText,
           },
           {
+            ...(aiQueue ? { onHandoff: queueHandoffCallback(aiQueue,"jev") } : {}),
             onVerdict: async (effect) => {
-              batch.meta = { ...batch.meta, jev_verdict: effect };
-              await saveBatchMeta(supabase, batch);
+              batch.meta = { ...batch.meta, jev_verdict: effect,
+                ...(aiQueue && effect.handoffRequested ? { queue_handoff_reason: "jev", isolated: true } : {}) };
+              await saveBatchMeta(supabase, batch, { required: Boolean(aiQueue) });
             },
           },
         );
     if (jev.suppressReply) {
+      if (aiQueue && await aiQueue.resume() === "requeued") return queueWaiting();
       await markBatchProcessed(batch, mergedText, supabase);
       return done();
     }
@@ -884,7 +908,10 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       // without a reply until tomorrow. Off by default — a handoff doesn't
       // come back to the AI by itself when the budget resets.
       if (runtime.costCutHandoff) {
-        await handOff(supabase, batch, "cost_cut");
+        if (aiQueue) {
+          if (await aiQueue.handoff("cost_cut") === "requeued") return queueWaiting();
+        }
+        else await handOff(supabase, batch, "cost_cut");
       }
       await markBatchProcessed(batch, mergedText, supabase);
       return done();
@@ -897,7 +924,7 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       contactId: conversation.contact_id as string,
       batchId: batch.id,
       channel: runtime.channel,
-      channelCapabilities: runtime.implementedSendActions,
+      channelCapabilities: aiQueue ? ["text"] : runtime.implementedSendActions,
     };
 
     // ── 8b. Resolve conversational memory window (WS2: configurable) ─────────
@@ -995,12 +1022,17 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
         "agent_turn",
       ));
 
+    if (aiQueue) {
+      const outcome=await aiQueue.resume();
+      if (outcome === "requeued") return queueWaiting();
+      if (outcome === "close") { await markBatchProcessed(batch,mergedText,supabase); return done(); }
+    }
     const reply = await generateWithTools({
       systemPrompt: finalSystemPrompt,
       model,
       userMessage: mergedText,
       workspaceId: batch.workspace_id,
-      availableTools: decisionResult.availableTools,
+      availableTools: aiQueue ? [] : decisionResult.availableTools,
       toolContext: toolCtx,
       history,
       // A write is on record BEFORE it runs, so neither a failed turn, a
@@ -1008,6 +1040,7 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       // the record can't be saved the tool doesn't run and the turn fails
       // (nothing was written: the retry is safe).
       onToolStart: async (start) => {
+        if (aiQueue) throw new Error("AI_QUEUE_TOOLS_DISABLED");
         if (start.sensitivity !== "write") return;
         const run: WriteRun = { id: start.callId, name: start.name, ok: null };
         const before = batch.meta;
@@ -1107,6 +1140,12 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       // A person was asked for but there's no reply: hand off right away,
       // and the contact gets the generic acknowledgement instead.
       if (handoffReason) {
+        if (aiQueue) {
+          const outcome=await aiQueue.handoff("tool");
+          if (outcome === "requeued") return queueWaiting();
+          await markBatchProcessed(batch,mergedText,supabase);
+          return done();
+        }
         await noteWritesBeforeHandoff(supabase, batch, writeRuns);
         batch.meta = { ...batch.meta, pending_handoff: handoffReason };
         const outcome = await handOffOrRequeue(
@@ -1137,6 +1176,7 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       pending_reply: reply.text,
       ...(handoffReason ? { pending_handoff: handoffReason } : {}),
     };
+    if (aiQueue) await aiQueue.checkpoint(reply.text);
     await saveBatchMeta(supabase, batch, { required: true });
 
     // ── 9. Deliver it and close the batch ───────────────────────────────────
@@ -1148,10 +1188,11 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       isLastAttempt,
       progress,
       handoffReason,
+      aiQueue,
     );
     await noteUnconfirmedWrites(supabase, batch, writeRuns);
-    if (delivered === "requeued") return requeued();
-    if (delivered === "skipped") {
+    if (delivered === "requeued") return aiQueue ? queueWaiting() : requeued();
+    if (delivered === "skipped" || delivered === "queued") {
       return done();
     }
 
@@ -1186,12 +1227,18 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
 
     return done();
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
+    const errorMsg = !replyModeResolved || aiQueue ? "AI_QUEUE_PREPARATION_FAILED"
+      : err instanceof Error ? err.message : String(err);
     console.error("[buffer] processNextBatch error:", {
       batchId: batch.id,
       retryCount,
       error: errorMsg,
     });
+    if (!replyModeResolved || aiQueue) {
+      try { await recoverAiQueueFailure(supabase,batch,aiQueue); }
+      catch { console.error("[buffer] queue recovery checkpoint failed", {batchId:batch.id}); }
+      return {processed:false,conversationId:batch.conversation_id,batchId:batch.id,error:errorMsg};
+    }
 
     // ── 10a. The reply went out; only closing the batch failed ──────────────
     // Not a failed attempt at answering: no dead letter (the contact has the
@@ -1336,7 +1383,15 @@ async function deliverReply(
   isLastAttempt: boolean,
   progress: { replySent: boolean },
   handoffReason: string | null = null,
-): Promise<"sent" | "skipped" | "requeued"> {
+  aiQueue: AiQueueControl | null = null,
+): Promise<"sent" | "skipped" | "requeued" | "queued"> {
+  if (aiQueue) {
+    const outcome=await aiQueue.deliver(text,handoffReason !== null);
+    progress.replySent=true; // producer settled, independently of delivery
+    if (outcome === "requeued") return "requeued";
+    await markBatchProcessed(batch,mergedText,supabase);
+    return "queued";
+  }
   // The turn can take 10-20 s. If a human took the thread meanwhile (the
   // inbox "take", a Business App echo), replying would talk over them.
   // decide() checked before the turn; check again right before the send. A

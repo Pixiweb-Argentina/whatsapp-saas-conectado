@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-10",
+  "phase": "F3",
+  "increment": 11,
+  "branch": "codex/omnichannel-f3-inbox",
+  "scope": "AI text buffer connected to durable queue with private checkpoint and quiet transactional handoff",
+  "unit": {
+    "passed": 1814,
+    "failed": 0
+  },
+  "database_local": {
+    "passed": 87,
+    "failed": 0
+  },
+  "typecheck": "passed",
+  "targeted_lint": "passed",
+  "production_build": "passed with temporary compilation-only placeholders",
+  "browser": "not repeated; no UI changes, prior increment 9 evidence retained",
+  "cloud": {
+    "unauthorizedDenied": true,
+    "actualNextHandler": true,
+    "privateJobRecoveredWithFlagsOff": true,
+    "batchProcessed": true,
+    "onePendingJob": true,
+    "replayDenied": true,
+    "handoffDeferred": true,
+    "noOutbox": true
+  },
+  "cloud_handoff": {
+    "pending_deferred": true,
+    "unknown_simulated_without_transport": true,
+    "first_changed": true,
+    "repeat_changed": false,
+    "audit_count": 1,
+    "internal_note_count": 1
+  },
+  "migration": {
+    "version": "20261010203241",
+    "name": "omnichannel_ai_handoff",
+    "applied_total": 79,
+    "local_history_matches": true
+  },
+  "security_advisor": {
+    "errors": 0,
+    "warnings": 10,
+    "info": 12,
+    "new_findings": 0
+  },
+  "cleanup": {
+    "temporary_fixture_removed": true,
+    "preparations": 0,
+    "retained_workspaces": 1,
+    "retained_messages": 5,
+    "outbox": 0,
+    "active_cron": 0
+  },
+  "rollout": {
+    "ai": "off, max three workspaces",
+    "ingress": "off",
+    "worker": "off",
+    "human": "off",
+    "scheduler_created": false,
+    "legacy_path_preserved": true,
+    "queue_pilot": "text only"
+  },
+  "limits": [
+    "New generation is mocked; actual Next/Cloud test recovers a private job, not a real LLM turn.",
+    "No provider transport was called; SQL unknown is synthetic.",
+    "External tools/n8n, Setter, auto-tagging and post-reply summary do not run in queue pilot; durable contracts pending.",
+    "F3 integral acceptance, real account/grant verification, receipts/reconciliation, quota/backoff/comment reservation, Meta/widget/Brevo remain pending.",
+    "No purchases, push, merge or deploy."
+  ]
+}

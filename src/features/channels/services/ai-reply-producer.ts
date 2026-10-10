@@ -14,12 +14,30 @@ const resultSchema = z.strictObject({ operationId: z.uuid(), queued: z.boolean()
 type Scope = z.infer<typeof scopeSchema>;
 export type AiReplyPreparation = z.infer<typeof preparationSchema> & { enabled: boolean };
 export type AiReplyEnqueueResult = z.infer<typeof resultSchema>;
+export const aiHandoffReasonSchema = z.enum(["keyword", "jev", "cost_cut", "tool", "retry_exhausted", "blocked", "write_unconfirmed"]);
+export type AiHandoffReason = z.infer<typeof aiHandoffReasonSchema>;
+const handoffSchema = z.strictObject({ settled: z.boolean(), changed: z.boolean() })
+  .refine((result) => !result.changed || result.settled);
 
 function queueEnabled(workspaceId: string, env: Readonly<Record<string, string | undefined>>): boolean {
   return (["ai", "ingress", "worker"] as const).every((stage) => channelRolloutWorkspaces(stage, env).includes(workspaceId));
 }
+type QueueRpc = (name: string,args: Record<string,unknown>) => Promise<unknown>;
+async function handoffReply(rpc: QueueRpc, input: Scope, reason: AiHandoffReason): Promise<z.infer<typeof handoffSchema>> {
+  const scope=scopeSchema.parse(input);
+  const raw=await rpc("handoff_ai_channel_reply",{p_workspace_id:scope.workspaceId,
+    p_batch_id:scope.batchId,p_reason:aiHandoffReasonSchema.parse(reason)});
+  const parsed=handoffSchema.safeParse(raw);
+  if (!parsed.success) throw new Error("AI_QUEUE_STORAGE_FAILED");
+  return parsed.data;
+}
+async function checkpointReply(rpc: QueueRpc, input: z.infer<typeof inputSchema>): Promise<void> {
+  const scope=inputSchema.parse(input);
+  const raw=await rpc("checkpoint_ai_channel_reply",{p_workspace_id:scope.workspaceId,p_batch_id:scope.batchId,p_body:scope.body});
+  if (raw !== true) throw new Error("AI_QUEUE_STORAGE_FAILED");
+}
 
-/** Internal service dependency only. Not wired to the legacy buffer yet.
+/** Internal service dependency only.
  * prepare must run before any model, tool or legacy send. A persisted queue
  * choice never authorizes a legacy fallback, even when flags change on retry.
  */
@@ -51,5 +69,7 @@ export function createAiReplyProducer(db: SupabaseClient, env: Readonly<Record<s
       if (!parsed.success || parsed.data.operationId !== scope.batchId) throw new Error("AI_QUEUE_STORAGE_FAILED");
       return parsed.data;
     },
+    handoff: (input: Scope,reason: AiHandoffReason) => handoffReply(rpc,input,reason),
+    checkpoint: (input: z.infer<typeof inputSchema>) => checkpointReply(rpc,input),
   };
 }

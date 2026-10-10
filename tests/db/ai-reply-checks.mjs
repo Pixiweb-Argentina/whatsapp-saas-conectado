@@ -155,5 +155,65 @@ async function checkInput(ctx) {
 
 export async function runAiReplyDatabaseChecks(deps) {
   const ctx=context(deps);
-  for (const run of [checkPinnedContext,checkLegacyMode,checkEvidence,checkHumanResume,checkRevalidation,checkUnknownRecovery,checkServiceScope,checkInput]) await run(ctx);
+  for (const run of [checkPinnedContext,checkLegacyMode,checkEvidence,checkHumanResume,checkRevalidation,checkUnknownRecovery,
+    checkServiceScope,checkInput,checkPrivateCheckpoint,checkQuietHandoff,checkDeferredHandoff,checkHandoffScope]) await run(ctx);
+}
+
+async function checkPrivateCheckpoint(ctx) {
+  const {db,id,scalar,reject,isolated,aiBatch,aiPrepare}=ctx;
+  await isolated("private AI text checkpoint is immutable and independent of mutable batch metadata",async()=>{
+    await aiBatch(); await aiPrepare();
+    const checkpoint=(text)=>scalar(db,"select public.checkpoint_ai_channel_reply($1,$2,$3) result",[id(1),id(991),text]);
+    assert.equal(await checkpoint("private original"),true); assert.equal(await checkpoint("private original"),true);
+    await reject(db,()=>checkpoint("changed"));
+    await db.query("update public.message_batches set meta=$1 where id=$2",[{pending_reply:"injected"},id(991)]);
+    assert.equal((await aiPrepare()).reply,"private original");
+    assert.equal((await db.query("select count(*) n from public.message_jobs")).rows[0].n,0);
+  });
+}
+async function checkQuietHandoff(ctx) {
+  const {db,id,scalar,isolated,aiBatch,aiPrepare,aiEnqueue}=ctx;
+  await isolated("AI handoff updates control/audit/internal note atomically and emits no outbound permit",async()=>{
+    await aiBatch(); await aiPrepare();
+    const handoff=()=>scalar(db,"select public.handoff_ai_channel_reply($1,$2,'keyword') result",[id(1),id(991)]);
+    assert.deepEqual(await handoff(),{settled:true,changed:true});
+    assert.deepEqual(await handoff(),{settled:true,changed:false});
+    assert.equal((await aiEnqueue()).queued,false);
+    assert.equal(await scalar(db,"select state::text result from public.conversations where id=$1",[id(31)]),"handoff_pending");
+    assert.equal(await scalar(db,"select count(*)::int result from public.events where type='state_change'"),1);
+    assert.equal(await scalar(db,"select count(*)::int result from public.messages where meta->>'reason'='ai_queue_handoff'"),1);
+    assert.equal(await scalar(db,"select count(*)::int result from public.message_outbox"),0);
+  });
+}
+async function checkDeferredHandoff(ctx) {
+  const {db,id,scalar,claim,begin,finish,isolated,aiBatch,aiPrepare,aiEnqueue}=ctx;
+  await isolated("handoff defers pending/in-flight AI then settles unknown without an ACK or second job",async()=>{
+    await aiBatch(); await aiPrepare(); await aiEnqueue();
+    const handoff=()=>scalar(db,"select public.handoff_ai_channel_reply($1,$2,'tool') result",[id(1),id(991)]);
+    assert.equal((await handoff()).settled,false);
+    const job=await claim(db); await db.exec("SET ROLE service_role"); assert.equal(await begin(db,job),true);
+    assert.equal((await handoff()).settled,false);
+    assert.equal(await finish(db,job,{status:"unknown",operationId:id(991)}),true);
+    assert.equal((await handoff()).changed,true); await db.exec("RESET ROLE");
+    assert.equal((await aiEnqueue()).state,"unknown");
+    assert.equal(await scalar(db,"select count(*)::int result from public.message_outbox"),1);
+    assert.equal(await scalar(db,"select count(*)::int result from public.message_jobs"),1);
+  });
+}
+async function checkHandoffScope(ctx) {
+  const {db,id,scalar,reject,isolated,aiBatch,aiPrepare}=ctx;
+  await isolated("checkpoint/handoff are service-only and stale revision cannot override human/resume",async()=>{
+    await aiBatch(); await aiPrepare();
+    for (const role of ["anon","authenticated"]) {
+      await db.exec(`SET ROLE ${role}`);
+      await reject(db,()=>db.query("select public.checkpoint_ai_channel_reply($1,$2,'x')",[id(1),id(991)]),"42501");
+      await reject(db,()=>db.query("select public.handoff_ai_channel_reply($1,$2,'keyword')",[id(1),id(991)]),"42501");
+      await db.exec("RESET ROLE");
+    }
+    await reject(db,()=>db.query("select public.handoff_ai_channel_reply($1,$2,'keyword')",[id(2),id(991)]),"42501");
+    await db.query("update public.conversations set state='human_active',ai_enabled=false where id=$1",[id(31)]);
+    await db.query("update public.conversations set state='ai_active',ai_enabled=true where id=$1",[id(31)]);
+    assert.deepEqual(await scalar(db,"select public.handoff_ai_channel_reply($1,$2,'keyword') result",[id(1),id(991)]),{settled:true,changed:false});
+    assert.equal(await scalar(db,"select state::text result from public.conversations where id=$1",[id(31)]),"ai_active");
+  });
 }

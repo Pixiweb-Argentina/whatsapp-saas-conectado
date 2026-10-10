@@ -54,6 +54,8 @@ export async function decide(opts: {
   mergedText: string;
   contactId: string;
   channelCapabilities?: readonly SendAction[];
+  /** Internal durable callers own handoff; never accepted from HTTP input. */
+  onHandoff?: () => Promise<void>;
   /**
    * The turn slot an earlier attempt of the same batch already reserved. A
    * retry reuses it instead of spending a second slot of the hourly limit.
@@ -96,7 +98,8 @@ export async function decide(opts: {
     // is the correct place for this to be handled, not a second bespoke
     // retry here.
     if (canTransition(currentState, "handoff_pending")) {
-      await applyTransition(conversationId, "handoff_pending", {
+      if (opts.onHandoff) await opts.onHandoff();
+      else await applyTransition(conversationId, "handoff_pending", {
         trigger: "keyword",
         workspaceId,
       });

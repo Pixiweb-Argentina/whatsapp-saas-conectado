@@ -1,5 +1,19 @@
 import assert from "node:assert/strict";
 import { test, mock } from "node:test";
+import type { AiQueueControl } from "./buffer-ai-queue";
+let queueControl: AiQueueControl | null = null;
+let prepareQueueError: Error | null = null;
+const queueCalls: string[] = [];
+mock.module("./buffer-ai-queue.ts", { exports: {
+  prepareAiQueueBatch: async () => {
+    if (prepareQueueError) throw prepareQueueError;
+    if (queueControl) queueCalls.push("prepare");
+    return queueControl;
+  },
+  queueHandoffCallback: (control: AiQueueControl,reason: Parameters<AiQueueControl["handoff"]>[0]) =>
+    async () => { await control.handoff(reason); },
+  recoverAiQueueFailure: async () => { queueCalls.push("recover"); },
+} });
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = "https://fake.supabase.co";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "fake-service-key";
@@ -200,7 +214,7 @@ mock.module("./whatsapp-provider.ts", {
   },
 });
 
-let jevVerdict = { suppressReply: false, ownsStage: false };
+let jevVerdict: { suppressReply: boolean; ownsStage: boolean; handoffRequested?: boolean } = { suppressReply: false, ownsStage: false };
 mock.module("@/features/jev-judge/apply.ts", {
   exports: {
     applyJevToBatch: async (
@@ -360,6 +374,7 @@ function notes(): Row[] {
 }
 
 function reset(meta: Row = {}) {
+  queueControl=null; prepareQueueError=null; queueCalls.length=0;
   for (const key of Object.keys(tables)) delete tables[key];
   tables.message_batches = [
     { id: "batch_1", workspace_id: "ws_1", conversation_id: "conv_1", status: "processing", meta },
@@ -1544,4 +1559,80 @@ test("a retry owing a handoff after a write still tells the team to check the wr
   assert.deepEqual(transitions, [{ to: "handoff_pending", trigger: "tool_unsent:agent_stuck" }]);
   const note = notes().find((n) => (n.meta as Row).reason === "write_tool_unfinished");
   assert.match(String(note?.body), /schedule_highlevel/);
+});
+
+
+function enableQueue(resume: "continue" | "close" | "requeued" = "continue") {
+  queueControl={
+    resume:async()=>{queueCalls.push("resume");return resume;},
+    checkpoint:async()=>{queueCalls.push("checkpoint");},
+    deliver:async()=>{queueCalls.push("enqueue");return "close";},
+    handoff:async()=>{queueCalls.push("handoff");return "close";},
+  };
+}
+test("queue pins before generation, checkpoints privately and enqueues without legacy dispatch or tools",async()=>{
+  reset(); enableQueue();
+  const result=await processNextBatch();
+  assert.equal(result.processed,true);
+  assert.deepEqual(queueCalls,["prepare","resume","resume","checkpoint","enqueue"]);
+  assert.equal(dispatchArgs.length,0);
+  assert.deepEqual(generateArgs[0].availableTools,[]);
+  assert.deepEqual((generateArgs[0].toolContext as Row).channelCapabilities,["text"]);
+  assert.equal(typeof decideArgs[0].onHandoff,"function");
+  assert.equal(batchRow().status,"processed");
+});
+test("persisted queue job closes the batch without any model, decision or legacy reconciliation",async()=>{
+  reset({pending_reply:"private checkpoint represented by job",retry_count:1}); enableQueue("close");
+  const result=await processNextBatch();
+  assert.equal(result.processed,true);
+  assert.equal(generateArgs.length,0); assert.equal(decideArgs.length,0); assert.equal(dispatchArgs.length,0);
+  assert.deepEqual(queueCalls,["prepare","resume"]);
+});
+test("queued handoff waiting for a receipt never regenerates or dispatches another reply",async()=>{
+  reset({pending_handoff:"customer_request"}); enableQueue("requeued");
+  const result=await processNextBatch();
+  assert.equal(result.processed,false); assert.equal(generateArgs.length,0); assert.equal(dispatchArgs.length,0);
+});
+test("mode read failures and queue generation failures cannot enter legacy handoff/error dispatch",async()=>{
+  for (const preparing of [true,false]) {
+    reset({retry_count:3});
+    if (preparing) prepareQueueError=new Error("private details");
+    else { enableQueue(); generated.throwAfterTools=new Error("private details"); }
+    const result=await processNextBatch();
+    assert.equal(result.error,"AI_QUEUE_PREPARATION_FAILED");
+    assert.ok(queueCalls.includes("recover"));
+    assert.equal(dispatchArgs.length,0); assert.equal(transitions.length,0);
+  }
+});
+test("an unexpected queue tool is stopped before it runs and before a legacy send",async()=>{
+  reset(); enableQueue();
+  generated.tools=[{name:"n8n_unreviewed",sensitivity:"write",ok:true}];
+  await processNextBatch();
+  assert.deepEqual(toolsRun,[]); assert.equal(dispatchArgs.length,0); assert.ok(queueCalls.includes("recover"));
+});
+
+test("a queued decision that waits for an existing operation must not close the batch",async()=>{
+  reset();enableQueue();let resumes=0;
+  queueControl!.resume=async()=>++resumes === 1 ? "continue" : "requeued";
+  decideResult={decision:"handoff",reason:"keyword",availableTools:[]};
+  const result=await processNextBatch();
+  assert.equal(result.processed,false);assert.equal(batchRow().status,"processing");
+  assert.equal(generateArgs.length,0);assert.equal(dispatchArgs.length,0);
+});
+
+test("queue budget handoff preserves waiting state rather than marking a deferred operation processed",async()=>{
+  reset();enableQueue();queueControl!.handoff=async()=>"requeued";
+  costPolicy={policy:"cut",reason:"daily_hard_limit"};
+  whatsappSettings={provider:"ycloud",config:{cost_cut_handoff:true}};
+  const result=await processNextBatch();
+  assert.equal(result.processed,false);assert.equal(batchRow().status,"processing");
+  assert.equal(generateArgs.length,0);assert.equal(transitions.length,0);
+});
+
+test("queue Jev verdict checkpoints the requested handoff before suppression and closes only after settling",async()=>{
+  reset();enableQueue();jevVerdict={suppressReply:true,ownsStage:false,handoffRequested:true};
+  let resumes=0;queueControl!.resume=async()=>++resumes === 1 ? "continue" : "requeued";
+  const result=await processNextBatch();
+  assert.equal(result.processed,false);assert.equal((batchRow().meta as Row).queue_handoff_reason,"jev");
+  assert.equal(generateArgs.length,0);assert.equal(dispatchArgs.length,0);assert.equal(transitions.length,0);
 });

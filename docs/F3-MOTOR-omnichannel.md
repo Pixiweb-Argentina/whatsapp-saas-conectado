@@ -224,6 +224,26 @@ Enqueue fija el texto y usa batch_id como UUID de operación, con clave ai-batch
 
 El próximo paso conecta prepare antes de decide/Jev/modelo/tools, recupera reply/state y evita fallback. El handoff heredado puede enviar ACK y cancelar un job pendiente; Setter puede despachar templates; herramientas n8n pueden tener efectos externos. Hay que cubrir estos caminos antes de activar la cola IA. El contrato todavía no prueba generación integral ni proveedores reales.
 
+## Incremento 11 — productor IA conectado al buffer
+
+El buffer fija modo/contexto antes de consolidar, decidir, ejecutar Jev o llamar al modelo. Recupera primero un job existente o el texto privado. Queue nunca cae al despacho/error/handoff legacy, incluso si la preparación falla o cambian los flags. Un job pending/unknown recuperado cierra el batch sin regenerar, encolar de nuevo ni confundir el cierre con entrega.
+
+El checkpoint privado guarda el texto generado antes de metadata. Sólo private.ai_reply_preparations.reply se usa para reintentar: pending_reply del batch no es autoridad. Un texto de metadata sin checkpoint, una escritura anterior incierta o una generación agotada derivan a revisión humana interna. RPCs invoker service-only, scope exacto y conflictos de texto rechazados.
+
+Handoff cambia estado + auditoría + nota interna en una transacción y respeta la revisión fijada; una toma humana y posterior resume no se sobrescriben. Un job pending/leased/sending debe resolverse antes del handoff; el batch espera 30 segundos sin cancelarlo ni enviar ACK. Una transición terminal se ejecuta una sola vez. Jev persiste intención antes de etapa/derivación; keyword, presupuesto y suppressReply también respetan el resultado pendiente.
+
+Piloto queue limitado a texto, con herramientas del modelo vacías y guarda previa a cualquier ejecución inesperada. No ejecuta n8n, Setter ni autoetiquetado/resumen posterior, porque esos efectos todavía carecen de contrato durable. El recorrido WA legacy conserva sus herramientas y efectos, cubiertos por regresión. No habilitar flags o transportes por esta integración.
+
+### Verificación del incremento 11
+
+- **1.814 unitarias y 87 DB locales**, typecheck, lint dirigido y build de producción pasan. Generación nueva con modelo simulado; se prueban checkpoint/cola sin dispatch, recuperación, aislamiento de errores, intentos de herramienta y handoff pendiente/Jev tras fallo.
+- API Next real, HMAC y Supabase nuevo: ocho controles pasan. Recupera el job privado con flags apagados, cierra el batch, mantiene un único pendiente y cero outbox; reentrega no reprocesa. Handoff mientras pending devuelve settled=false.
+- SQL Cloud simula permiso/unknown sin transporte, luego handoff: settled=true, changed=true, una auditoría y una nota interna. Repetir devuelve changed=false. No acredita entrega ni proveedor real.
+- Migración 20261010203241_omnichannel_ai_handoff.sql aplicada una vez, total **79**, nombres locales/historial iguales. Asesor: cero ERROR, diez WARN y doce INFO heredados; sin hallazgos nuevos.
+- Fixture 994 retirado con guarda de slug/id; cero preparaciones, un workspace QA y cinco mensajes previos, cero outbox y cero cron activos. Flags apagados. Sin compras/envíos/push/merge/deploy. UI no cambió, navegador previo no se declara repetido.
+
+Reproducción: tests/db/cloud-ai-buffer.mjs contiene setup/settle/cleanup sintéticos; tests/cloud/ai-buffer-smoke.mjs llama al endpoint local con secreto ignorado. Sólo el proyecto nuevo bzanbpyzujlogipxvkfn, reconciliar fixture antes de repetir. [Evidencia](evidencias/F3-IA-BUFFER-2026-10-10.json).
+
 ## Estado de las tareas
 
 | Tarea | Estado |
@@ -231,15 +251,15 @@ El próximo paso conecta prepare antes de decide/Jev/modelo/tools, recupera repl
 | F3-T1.1 contratos/adaptador/política | Base local implementada y probada; validación por cuenta externa pendiente |
 | F3-T1.2 resolución/dispatch | Lector de identidad/capacidades y resolver por conexión preparados; WA compatible permanece; adaptadores Meta/web pendientes |
 | F3-T1.3 buffer/agente independiente de settings WA | Runtime extraído y herramientas limitadas por canal; rutinas de transportes nuevos pendientes de su pipeline durable |
-| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y captura autenticada + worker HTTP bajo flags probados local/Cloud; productor humano conectado bajo flag; contrato IA preparado; conexión al buffer, scheduler, cuotas y backoff pendientes |
-| F3-T2.2 invalidación durable y revalidación inmediata | Permiso WA transaccional con grant/identidad/supresión/evento/membresía probado local/Cloud; falta integrar generación real |
+| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y captura autenticada + worker HTTP bajo flags probados local/Cloud; productor humano conectado bajo flag; productor IA de texto conectado con checkpoint/handoff; herramientas durables, scheduler, cuotas y backoff pendientes |
+| F3-T2.2 invalidación durable y revalidación inmediata | Permiso WA transaccional con grant/identidad/supresión/evento/membresía probado local/Cloud; generación mock probada y recuperación Cloud real; LLM/proveedor real pendiente |
 | F3-T2.3 receipts/unknown/conciliación | Job → mensaje visible, resultados y recuperación unknown probados; consumidores de ecos/receipts y conciliación pendientes |
 | F3-T3.1 inbox/composer omnicanal | Lectura/filtros, disponibilidad y enqueue humano probados en UI/API/Cloud; vista permanente de pendientes probada; consumo/envío externo pendiente |
 | F3-T3.2 pruebas integrales | SQL/GoTrue/RLS/navegador/Realtime/toma humana pasan; cuentas y envíos de proveedores pendientes |
 
 ## Próximo paso y límites
 
-Conectar el contrato IA preparado al buffer antes de sus modelos/herramientas, sin doble productor/envío ni ACK legacy paralelo. El productor humano ya está conectado y probado bajo flag, con toma humana, auditoría e idempotencia transaccionales. La vista persistente de pendientes ya está implementada y probada; no habilita el transporte. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
+Verificar cuentas/identidades/grants reales y completar receipts/ecos/conciliación, cuotas/backoff y reserva por comentario. El productor IA de texto ya está conectado al buffer con checkpoint privado y handoff interno sin ACK legacy; herramientas externas, n8n, Setter y efectos posteriores siguen fuera del piloto queue. El productor humano ya está conectado y probado bajo flag, con toma humana, auditoría e idempotencia transaccionales. La vista persistente de pendientes ya está implementada y probada; no habilita el transporte. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
 
 La base Cloud ya está inicializada; la app todavía no está desplegada ni enviando mensajes nuevos. No se usaron bases anteriores. Sin compras, push o merge. F1/F2/F3 continúan sin aceptación integral.
 
@@ -272,3 +292,6 @@ La base Cloud ya está inicializada; la app todavía no está desplegada ni envi
 - El interruptor de IA conservaba el inicializador de useState tras router.refresh. La key por conversación y ai_enabled lo remonta cuando el servidor cambia el control, sin un efecto que copie props a estado. Verificar siempre el control visible junto con el valor persistido.
 
 - Las fechas de cola usan zona Argentina y hour12=false explícitos: el locale es-AR del runtime podía mostrar las 16 como 04 sin indicar PM. No depender de la zona o ciclo horario de Windows para SSR.
+
+- El texto de metadata del batch es modificable por el cliente: queue sólo usa el checkpoint privado para encolar. Nunca confiar en pending_reply para emitir un mensaje.
+- Persistir intención de handoff antes de los efectos de Jev; una caída entre veredicto y transición no puede perder la derivación. No cerrar un batch mientras el handoff devuelve settled=false.
