@@ -4,7 +4,7 @@ Actualizado: 2026-10-10. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb
 
 ## Resultado
 
-Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F3 en ejecución; Supabase nuevo tiene 74 migraciones. Permiso WA transaccional y mensajes de jobs implementados; inbox muestra incertidumbre y atribución humana/automatización. Captura firmada YCloud/Kapso y worker HTTP conectados bajo flags desactivados; generación IA y composer todavía en circuito heredado. Pipeline completo y proveedores pendientes. Fases con aceptación integral: 0/9.
+Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F3 en ejecución; Supabase nuevo tiene 76 migraciones. Permiso WA transaccional y mensajes de jobs implementados; inbox muestra incertidumbre y atribución humana/automatización. Captura firmada YCloud/Kapso y worker HTTP conectados bajo flags desactivados; productor humano/composer conectado bajo flag; generación IA todavía en circuito heredado. Pipeline completo y proveedores pendientes. Fases con aceptación integral: 0/9.
 
 **Continuar en:** C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, ahora en rama codex/omnichannel-f3-inbox desde 2fea741. Se reutiliza el worktree; su nombre heredado no indica la fase activa.
 
@@ -148,3 +148,11 @@ Dos migraciones aplicadas, total **74**, sin reenviar las anteriores. 64 DB pasa
 Captura durable de webhooks autenticados YCloud/Kapso antes del dedup legacy y worker HTTP con autenticación CRON_SECRET, allowlist de workspaces y ejecución acotada. Ambos flags apagados por defecto; no se creó scheduler ni se cambió la generación IA/envío humano. Firma, cuenta, reentrega y fallo de persistencia probados en handlers. Persistencia/dedup y worker vacío probados contra el Supabase nuevo con service role y fixture retirado. Endpoint Next local devuelve 401 sin secreto y disabled autenticado. Evidencia: [F3 recepción](evidencias/F3-INGRESS-2026-10-10.json).
 
 **Siguiente bloque vigente:** productor humano/composer con idempotencia y toma humana antes de enqueue; después generación IA sin doble envío, verificación de identidades/grants y receipts/conciliación. Reservas por comentario y cuotas/backoff siguen pendientes. No habilitar los flags por asumir que recepción significa permisos de envío. Sin migraciones nuevas (74), sin mensajes reales, scheduler, push, merge ni despliegue. F3 sigue en codex/omnichannel-f3-inbox; main intacta. No repetir aprobaciones.
+
+## Continuación 2026-10-10 — F3, incremento 8
+
+Productor humano del inbox conectado bajo flag desactivado: UUID por intento, sesión/rol servidor, RPC transaccional con toma humana + cancelación de IA pendiente + auditoría + enqueue. Reintentos recuperan el mismo job; cambiar texto con igual ID se rechaza. Modo queue fijado por intento no cae a legacy al cambiar flags. Prueba real en navegador/API/Supabase sin transporte; corregido el interruptor IA que conservaba un estado visual anterior al refresh.
+
+1.782 unitarias, 72 DB, typecheck/lint y evidencia Cloud/UI en [F3 humano](evidencias/F3-HUMANO-2026-10-10.json). Dos migraciones aplicadas; **76** en total, historial/nombres locales alineados. Fixture temporal limpiado; cinco mensajes QA anteriores intactos, sin outbox ni cron activo. El aviso de cola no equivale a entrega; mensaje persistente se crea al permiso, vista permanente de jobs previos pendiente.
+
+**Siguiente bloque vigente:** generación IA a cola sin doble envío, vista de pendientes, verificación de cuentas/identidades/grants, receipts/conciliación, cuotas/backoff y reservas por comentario. No activar flags por suposición ni crear scheduler sin validación de cuenta. F3 continúa; no repetir aprobación del blueprint, modo Manual o Lista Roja. Sin compras, mensajes reales, push, merge ni despliegue.

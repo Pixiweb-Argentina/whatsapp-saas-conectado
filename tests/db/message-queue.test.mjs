@@ -70,6 +70,73 @@ test("F3 durable message queue on PostgreSQL", async (t) => {
     });
   }
 
+  async function human(overrides = {}) {
+    const args = { workspace: id(1), conversation: id(31), sender: id(101), operation: id(91), body: "Respuesta humana", ...overrides };
+    return scalar(db, "select public.enqueue_human_channel_text($1,$2,$3,$4,$5) result", Object.values(args));
+  }
+  await isolated("human takeover and job enqueue are atomic and cancel pending AI", async () => {
+    await enqueue(db);
+    await db.exec("SET ROLE service_role");
+    const result = await human();
+    assert.deepEqual(result, { operationId: id(91), state: "pending", duplicate: false });
+    const conv = (await db.query("select state,ai_enabled,assigned_to,state_revision from public.conversations where id=$1", [id(31)])).rows[0];
+    assert.equal(conv.state, "human_active"); assert.equal(conv.ai_enabled, false); assert.equal(conv.assigned_to, id(101));
+    assert.equal((await getJob(db)).state, "cancelled");
+    assert.equal(await scalar(db,"select count(*)::int result from public.events where type='state_change'"),1);
+    assert.equal((await getJob(db,91)).expected_state_revision, conv.state_revision);
+    assert.equal(await scalar(db,"select count(*)::int result from public.message_outbox"),0);
+  });
+  await isolated("human retry preserves job even after evidence and conversation change", async () => {
+    await persist(db); await human();
+    await db.exec("update public.conversations set state='ai_active',ai_enabled=true where id='"+id(31)+"'");
+    await db.exec("update public.channel_connections set capabilities='{}'");
+    const before = (await db.query("select state_revision from public.conversations where id=$1",[id(31)])).rows[0].state_revision;
+    const retry = await human();
+    assert.equal(retry.duplicate,true); assert.equal(retry.operationId,id(91));
+    assert.equal(await scalar(db,"select count(*)::int result from public.message_jobs"),1);
+    assert.equal((await db.query("select state_revision from public.conversations where id=$1",[id(31)])).rows[0].state_revision,before);
+  });
+  await isolated("human ID cannot be reused for other text, conversation or operator", async () => {
+    await persist(db); await human();
+    await reject(db,()=>human({body:"Different body"}));
+    await reject(db,()=>human({conversation:id(33)}));
+    await db.exec("update public.memberships set role='agent' where user_id='"+id(102)+"'");
+    await reject(db,()=>human({sender:id(102)}));
+  });
+  await isolated("human producer rejects foreign tenant, viewer and inactive membership", async () => {
+    await persist(db);
+    await reject(db,()=>human({sender:id(102)}),"42501");
+    await reject(db,()=>human({workspace:id(2)}),"42501");
+    await reject(db,()=>human({sender:id(103)}),"42501");
+    await db.exec("update public.memberships set is_active=false where user_id='"+id(101)+"'");
+    await reject(db,()=>human(),"42501");
+  });
+  await isolated("failed human context rolls back takeover and all jobs", async () => {
+    await persist(db);
+    await db.exec("update public.channel_connections set capabilities='{}'");
+    await reject(db,()=>human());
+    assert.equal((await db.query("select state from public.conversations where id=$1",[id(31)])).rows[0].state,"ai_active");
+    assert.equal(await scalar(db,"select count(*)::int result from public.message_jobs"),0);
+  });
+  await isolated("human cannot enqueue without an inbound or with unverified identity", async () => {
+    await reject(db,()=>human()); await persist(db);
+    await db.exec("update public.contact_identities set verified_at=null");
+    await reject(db,()=>human());
+  });
+  await isolated("human suppression and expired event fail before takeover", async () => {
+    await persist(db,event({occurredAt:new Date(Date.now()-25*3600000).toISOString()}));
+    await reject(db,()=>human());
+    await db.exec("delete from public.inbound_events"); await persist(db);
+    await db.exec("insert into public.contact_opt_outs(workspace_id,phone_key,opted_out_at,source) values ('"+id(1)+"','15555550101',now(),'keyword')");
+    await reject(db,()=>human());
+  });
+  await isolated("human RPC is denied to browser roles and invalid bodies create no job", async () => {
+    await persist(db);
+    for(const role of ["anon","authenticated"]) {
+      await db.exec("SET ROLE "+role); await reject(db,()=>human(),"42501"); await db.exec("RESET ROLE");
+    }
+    for(const body of [null," ","x".repeat(4097)]) await reject(db,()=>human({body}),"22023");
+  });
   await isolated("duplicate webhooks preserve the first envelope and event ID", async () => {
     const first = await persist(db);
     assert.equal(await persist(db, event({ content: { text: "replacement" } })), first);

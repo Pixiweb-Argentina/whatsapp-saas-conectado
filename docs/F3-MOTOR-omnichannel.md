@@ -173,6 +173,28 @@ Captura en paralelo al flujo heredado: no crea identidades verificadas, grants, 
 
 Smoke HTTP sobre Next local: sin autorización devuelve 401; autorizado devuelve enabled=false y processed=0. No cambia la UI; se reutiliza la revisión visual anterior. Reporte verificable y resultados finales: [F3 recepción](evidencias/F3-INGRESS-2026-10-10.json). Reproducción Cloud: `node --env-file=.env.local --import ./scripts/register-alias-hook.mjs tests/db/cloud-ingress-smoke.mjs`; aborta si el proyecto no es bzanbpyzujlogipxvkfn o el fixture ya existe. Bloquea cualquier acceso de red fuera de ese Supabase y limpia solo su workspace sintético.
 
+## Incremento 8: envío humano del inbox a la cola
+
+El composer crea un UUID por intento y lo conserva cuando no puede confirmar la respuesta HTTP. La API autentica sesión y rol; solo toma workspace/conversación/operador del contexto servidor. La función service-only `enqueue_human_channel_text` vuelve a comprobar membresía activa, resuelve destinatario y evidencia, verifica permisos/ventana/supresión y realiza toma humana + enqueue dentro de una transacción. Si una validación o escritura falla, se revierte todo. Pausa IA, asigna al operador y cancela jobs no humanos pendientes mediante el trigger existente. Un envío ya autorizado/en curso no puede retirarse.
+
+Repetir UUID, texto, conversación y operador devuelve el mismo job y su estado actual, incluso si posteriormente venció la evidencia o se retiró el permiso. No vuelve a tomar la conversación ni a enviar. Cambiar texto/conversación/operador con ese UUID da conflicto. La auditoría state_change se escribe en la misma transacción, una sola vez por transición. El permiso final del worker sigue revalidando contexto y membresía antes del POST.
+
+Flag nuevo: `CHANNEL_HUMAN_WORKSPACES`, independiente y desactivado por defecto. Encolar exige además el workspace en `CHANNEL_WORKER_WORKSPACES`. La prueba encendió ambos solo en el proceso local y exclusivamente para el fixture temporal, sin invocar el worker ni programar cron. El composer recibe su modo del servidor. Un intento fijado a queue no cae a legacy si se apaga el flag; un composer legacy tampoco cambia silenciosamente a queue. Los IDs adicionales enviados por un cliente no eligen tenant, destinatario, actor o evidencia.
+
+En el camino nuevo la intervención humana pausa siempre la IA. La preferencia legacy sleepOnManualMessage sigue aplicándose únicamente al camino anterior. La respuesta 202 confirma cola, no entrega: el composer muestra un aviso explícito y refresca el hilo. El mensaje persistente aparece al obtener permiso de envío (incremento 6); una vista permanente de jobs todavía pendientes/cancelados antes del permiso sigue pendiente. El UUID del composer dura mientras está montado; no se promete recuperación de borrador después de recargar la página.
+
+Migraciones aplicadas: `20261010185104_omnichannel_human_enqueue.sql` y `20261010185348_omnichannel_human_enqueue_audit.sql`; total **76**. Los archivos locales toman la versión devuelta por el historial remoto, sin reescribir migraciones ya aplicadas ni ejecutar las anteriores de nuevo.
+
+### Verificación del incremento 8
+
+- **1.782 unitarias** y **72 DB locales** pasan, con diez y ocho comprobaciones nuevas respectivamente. Typecheck y lint dirigido pasan. Build y evidencia final en [F3 humano](evidencias/F3-HUMANO-2026-10-10.json).
+- Cloud PostgreSQL real como service_role: enqueue, dedup, toma humana, cancelación de IA y auditoría atómica pasan en rollback. No se llamó al transporte.
+- Sesión QA real contra API Next: 202 en reentregas sin jobs duplicados, 409 al cambiar texto, 422 en un intento nuevo sin grant; el intento ya registrado sigue consultable. IDs forjados en body no afectan el scope. 401 sin sesión; la RPC directa desde el cliente autenticado devuelve 42501.
+- Navegador autenticado: el botón envía a la cola, vacía el borrador al confirmar y muestra aviso de entrega aún no confirmada. La conversación pasa a Humano. Se encontró y corrigió un estado local obsoleto del interruptor de IA al refrescar; la key ahora incluye id y ai_enabled. Captura en `test-results/f3-human-browser/takeover-fixed.png`.
+- Fixture temporal retirado; se restauró el workspace habitual en navegador. Queda el laboratorio anterior con cinco mensajes, cero outbox y cero cron activos. Ningún proveedor recibió mensajes. Asesor: cero ERROR, mismos 10 WARN y 11 INFO heredados; las RPCs nuevas solo tienen EXECUTE para service_role.
+
+Reproducción: `tests/db/cloud-human-enqueue.mjs` prepara/asserta/limpia SQL; `tests/cloud/human-enqueue-smoke.mjs` requiere el intento sintético previo y flags del servidor. No ejecutar contra otra cuenta ni recrear fixture si ya existe. [Funciones de base de datos, documentación consultada](https://supabase.com/docs/guides/database/functions).
+
 ## Estado de las tareas
 
 | Tarea | Estado |
@@ -180,15 +202,15 @@ Smoke HTTP sobre Next local: sin autorización devuelve 401; autorizado devuelve
 | F3-T1.1 contratos/adaptador/política | Base local implementada y probada; validación por cuenta externa pendiente |
 | F3-T1.2 resolución/dispatch | Lector de identidad/capacidades y resolver por conexión preparados; WA compatible permanece; adaptadores Meta/web pendientes |
 | F3-T1.3 buffer/agente independiente de settings WA | Runtime extraído y herramientas limitadas por canal; rutinas de transportes nuevos pendientes de su pipeline durable |
-| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y captura autenticada + worker HTTP bajo flags probados local/Cloud; conectar generación/composer, scheduler, cuotas y backoff pendiente |
+| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y captura autenticada + worker HTTP bajo flags probados local/Cloud; productor humano conectado bajo flag; generación IA, scheduler, cuotas y backoff pendientes |
 | F3-T2.2 invalidación durable y revalidación inmediata | Permiso WA transaccional con grant/identidad/supresión/evento/membresía probado local/Cloud; falta integrar generación real |
 | F3-T2.3 receipts/unknown/conciliación | Job → mensaje visible, resultados y recuperación unknown probados; consumidores de ecos/receipts y conciliación pendientes |
-| F3-T3.1 inbox/composer omnicanal | Lectura/filtros, disponibilidad real y bloqueo servidor de texto/plantillas probados; entrega por pipeline nuevo pendiente |
+| F3-T3.1 inbox/composer omnicanal | Lectura/filtros, disponibilidad y enqueue humano probados en UI/API/Cloud; consumo/envío externo y vista permanente de pendientes por completar |
 | F3-T3.2 pruebas integrales | SQL/GoTrue/RLS/navegador/Realtime/toma humana pasan; cuentas y envíos de proveedores pendientes |
 
 ## Próximo paso y límites
 
-Conectar el productor humano autenticado/composer y la generación IA a la cola, con idempotencia del intento, toma humana antes del enqueue y transición sin doble envío. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
+Conectar la generación IA a la cola sin doble productor/envío. El productor humano ya está conectado y probado bajo flag, con toma humana, auditoría e idempotencia transaccionales. Completar la vista persistente de operaciones pendientes antes de habilitar uso operativo. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
 
 La base Cloud ya está inicializada; la app todavía no está desplegada ni enviando mensajes nuevos. No se usaron bases anteriores. Sin compras, push o merge. F1/F2/F3 continúan sin aceptación integral.
 
@@ -217,3 +239,5 @@ La base Cloud ya está inicializada; la app todavía no está desplegada ni envi
 - En Windows, las ediciones Python de documentación UTF-8 deben indicar encoding="utf-8" al leer y escribir; el locale por defecto produjo mojibake detectado y corregido antes del commit.
 
 - La captura durable debe ejecutarse antes del retorno legacy por duplicado: de lo contrario una caída entre las dos escrituras impide recuperar el evento al reentregar. No crear jobs desde ambos caminos.
+
+- El interruptor de IA conservaba el inicializador de useState tras router.refresh. La key por conversación y ai_enabled lo remonta cuando el servidor cambia el control, sin un efecto que copie props a estado. Verificar siempre el control visible junto con el valor persistido.

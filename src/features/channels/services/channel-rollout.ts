@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-type RolloutStage = "ingress" | "worker";
-const keys = { ingress: "CHANNEL_INGRESS_WORKSPACES", worker: "CHANNEL_WORKER_WORKSPACES" } as const;
+type RolloutStage = "ingress" | "worker" | "human";
+const keys = { ingress: "CHANNEL_INGRESS_WORKSPACES", worker: "CHANNEL_WORKER_WORKSPACES", human: "CHANNEL_HUMAN_WORKSPACES" } as const;
 
 /** Server-only, explicit workspace lists. Empty is off; no wildcard/global switch. */
 export function channelRolloutWorkspaces(

@@ -1,3 +1,4 @@
+import { channelRolloutWorkspaces } from "./channel-rollout";
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { channelSchema, connectionStatusSchema } from "../types/channel-contracts";
@@ -38,6 +39,10 @@ export async function readComposerAvailability(db: SupabaseClient, input: unknow
       message: "La cuenta necesita permisos para enviar. Revisá la conexión." };
     if (connection.status !== "ready") return { allowed: false, reason: "connection_not_ready",
       message: "Esta cuenta todavía no está lista para enviar mensajes." };
+    if (channelRolloutWorkspaces("human").includes(conversation.workspace_id)) {
+      if (!channelRolloutWorkspaces("worker").includes(conversation.workspace_id)) return unavailable;
+      return { ...legacy, deliveryMode: "queue" };
+    }
     return legacy;
   } catch {
     return unavailable;

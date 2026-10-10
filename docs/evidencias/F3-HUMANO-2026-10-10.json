@@ -1,0 +1,82 @@
+{
+  "date": "2026-10-10",
+  "phase": "F3",
+  "increment": 8,
+  "branch": "codex/omnichannel-f3-inbox",
+  "scope": "Productor humano del inbox hacia cola durable, toma humana atomica y reintentos por operacion",
+  "validation": {
+    "unit": {
+      "passed": 1782,
+      "failed": 0,
+      "added": 10
+    },
+    "database": {
+      "passed": 72,
+      "failed": 0,
+      "added": 8
+    },
+    "typecheck": "passed",
+    "lint": "passed on changed TypeScript files",
+    "cloudSql": "SET ROLE service_role: enqueue, dedup, takeover, AI cancellation and audit passed with rollback",
+    "cloudHttp": {
+      "checkedAt": "2026-10-10T18:56:30.613Z",
+      "workspace": "00000000-0000-4000-8000-000000992001",
+      "conversation": "00000000-0000-4000-8000-000000992031",
+      "operation": "bc91ca06-ab9b-4f7b-8987-885d1867b059",
+      "authenticatedRetry": 202,
+      "forgedScopeIgnored": true,
+      "duplicateJobs": 0,
+      "changedBody": 409,
+      "missingGrantNewAttempt": 422,
+      "missingGrantRetry": 202,
+      "unauthenticated": 401,
+      "browserRpcDenied": true,
+      "outbox": 0
+    },
+    "browser": {
+      "syntheticEnqueue": 202,
+      "toastObserved": "Mensaje en cola. Todavia no se confirmo la entrega.",
+      "takeoverObserved": true,
+      "staleAiSwitchFixed": true,
+      "screenshot": "test-results/f3-human-browser/takeover-fixed.png"
+    },
+    "productionBuild": "passed with fictitious Supabase URL and keys"
+  },
+  "migrations": [
+    "20261010185104_omnichannel_human_enqueue.sql",
+    "20261010185348_omnichannel_human_enqueue_audit.sql"
+  ],
+  "totalAppliedMigrations": 76,
+  "cleanup": {
+    "temporaryWorkspaceRemoved": true,
+    "retainedWorkspaces": 1,
+    "retainedMessages": 5,
+    "outbox": 0,
+    "activeCron": 0
+  },
+  "limits": [
+    "Transport worker not executed; no actual provider sends",
+    "Manual queue activation pauses AI unconditionally; legacy sleepOnManual preference remains only in legacy flow",
+    "Attempt ID retained while composer is mounted; no cross-reload draft recovery",
+    "Pending job acknowledgement is a toast; persistent message appears at send permit, not at enqueue",
+    "AI producer, receipts/reconciliation, quotas/backoff and actual account verification pending"
+  ],
+  "deploy": false,
+  "push": false,
+  "merge": false,
+  "references": [
+    "https://supabase.com/docs/guides/database/functions"
+  ],
+  "activation": {
+    "human": false,
+    "worker": false,
+    "ingress": false,
+    "schedulerCreated": false
+  },
+  "securityAdvisor": {
+    "errors": 0,
+    "warnings": 10,
+    "info": 11,
+    "newFindings": 0
+  }
+}

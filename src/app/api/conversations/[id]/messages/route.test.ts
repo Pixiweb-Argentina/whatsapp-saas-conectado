@@ -54,6 +54,12 @@ mock.module("@/features/agents/services/active-agent.ts", {
   exports: { getActiveAgent: async () => null },
 });
 
+const queuedCalls: Record<string, unknown>[] = [];
+mock.module("@/features/channels/services/human-message-producer.ts", { exports: {
+  enqueueHumanMessage: async (input: Record<string, unknown>) => {
+    queuedCalls.push(input); return { operationId: input.operationId, state: "pending", duplicate: false };
+  },
+} });
 const { POST } = await import("./route.ts");
 
 function makeReq(body: unknown) {
@@ -130,4 +136,47 @@ test("a revoked account rejects a direct API call before dispatch or sleeping th
     assert.equal(dispatchCalls.length, 0);
     assert.equal(transitions.length, 0);
   } finally { availability = { allowed: true, reason: "legacy_whatsapp", message: null }; }
+});
+
+const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
+test("human queue uses session scope, ignores forged body IDs and never dispatches legacy", async () => {
+  const savedConv=convRow, savedUser=currentUser;
+  process.env.CHANNEL_HUMAN_WORKSPACES=uuid(1);
+  convRow={...convRow,workspace_id:uuid(1)}; currentUser={id:uuid(101)};
+  memberResult={ok:true,userId:uuid(101),role:"agent"};
+  queuedCalls.length=0; dispatchCalls.length=0; transitions.length=0;
+  try {
+    const res=await POST(makeReq({body:"hola",operationId:uuid(91),deliveryMode:"queue",
+      workspaceId:uuid(9),senderUserId:uuid(999),eventId:uuid(999),actor:"ai",recipient:"forged"}),
+      {params:Promise.resolve({id:uuid(31)})});
+    assert.equal(res.status,202);
+    assert.deepEqual(queuedCalls,[{workspaceId:uuid(1),conversationId:uuid(31),senderUserId:uuid(101),
+      operationId:uuid(91),body:"hola"}]);
+    assert.equal(dispatchCalls.length,0); assert.equal(transitions.length,0);
+  } finally { delete process.env.CHANNEL_HUMAN_WORKSPACES;convRow=savedConv;currentUser=savedUser; }
+});
+test("pinned queue attempt cannot fall back when flag is disabled", async () => {
+  delete process.env.CHANNEL_HUMAN_WORKSPACES;
+  memberResult={ok:true,userId:"user_1",role:"agent"}; dispatchCalls.length=0; queuedCalls.length=0;
+  const res=await POST(makeReq({body:"hola",operationId:uuid(91),deliveryMode:"queue"}),params);
+  assert.equal(res.status,503); assert.equal(dispatchCalls.length,0); assert.equal(queuedCalls.length,0);
+});
+test("viewer and unauthenticated requests never reach the queue producer", async () => {
+  queuedCalls.length=0; const savedUser=currentUser;
+  try {
+    currentUser=null;
+    assert.equal((await POST(makeReq({body:"hola",deliveryMode:"queue",operationId:uuid(91)}),params)).status,401);
+    currentUser=savedUser; memberResult={ok:false,response:NextResponse.json({error:"Forbidden"},{status:403})};
+    assert.equal((await POST(makeReq({body:"hola",deliveryMode:"queue",operationId:uuid(91)}),params)).status,403);
+    assert.equal(queuedCalls.length,0);
+  } finally {currentUser=savedUser;memberResult={ok:true,userId:"user_1",role:"agent"};}
+});
+test("changed mode and missing operation cannot silently select another transport", async () => {
+  const saved=convRow; convRow={...convRow,workspace_id:uuid(1)};
+  process.env.CHANNEL_HUMAN_WORKSPACES=uuid(1);dispatchCalls.length=0;queuedCalls.length=0;
+  try {
+    assert.equal((await POST(makeReq({body:"hola",deliveryMode:"legacy",operationId:uuid(91)}),params)).status,409);
+    assert.equal((await POST(makeReq({body:"hola",deliveryMode:"queue"}),params)).status,400);
+    assert.equal(dispatchCalls.length,0);assert.equal(queuedCalls.length,0);
+  } finally {convRow=saved;delete process.env.CHANNEL_HUMAN_WORKSPACES;}
 });

@@ -1,3 +1,4 @@
+import { humanMessageResponse } from "@/features/channels/services/human-message-response";
 // F1-E1: Human agent sends a free-text message from the inbox composer.
 
 import { NextRequest, NextResponse } from "next/server";
@@ -11,6 +12,8 @@ import { readComposerAvailability } from "@/features/channels/services/composer-
 
 const BodySchema = z.object({
   body: z.string().min(1).max(4096),
+  operationId: z.uuid().optional(),
+  deliveryMode: z.enum(["legacy", "queue"]).optional(),
 });
 
 export async function POST(
@@ -55,6 +58,11 @@ export async function POST(
     minRole: "agent",
   });
   if (!auth.ok) return auth.response;
+
+  const queued = await humanMessageResponse({ workspaceId: conv.workspace_id, conversationId,
+    senderUserId: user.id, body: parsed.data.body, operationId: parsed.data.operationId,
+    deliveryMode: parsed.data.deliveryMode });
+  if (queued) return queued;
 
   const availability = await readComposerAvailability(supabase, conv);
   if (!availability.allowed) return NextResponse.json(

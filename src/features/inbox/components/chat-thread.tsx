@@ -21,6 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useComposerSend } from "@/features/inbox/hooks/use-composer-send";
 import { useRealtimeMessages } from "@/features/inbox/hooks/use-realtime-messages";
 import type { WorkspaceRole } from "@/features/inbox/hooks/use-role";
 import {
@@ -64,7 +65,8 @@ export function ChatThread({
   const [showObservability, setShowObservability] = useState(false);
   const [handoffLoading, setHandoffLoading] = useState(false);
   const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
+  const { send, sending } = useComposerSend(conversation.id, availability?.deliveryMode ?? "legacy",
+    (sent) => setDraft((current) => current.trim() === sent ? "" : current));
   const [noteMode, setNoteMode] = useState(false);
   const [note, setNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
@@ -89,27 +91,7 @@ export function ChatThread({
   const handleSend = async () => {
     const trimmed = draft.trim();
     if (!trimmed || sending || availability?.allowed === false || conversation.channel !== "whatsapp") return;
-    setSending(true);
-    try {
-      const res = await fetch(
-        `/api/conversations/${conversation.id}/messages`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ body: trimmed }),
-        },
-      );
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        toast.error((data as { error?: string }).error ?? "Error al enviar");
-        return;
-      }
-      setDraft("");
-    } catch {
-      toast.error("Error al enviar");
-    } finally {
-      setSending(false);
-    }
+    await send(trimmed);
   };
 
   const handleHandoffRequest = async () => {
@@ -320,6 +302,7 @@ export function ChatThread({
             </Button>
             {canUpdateConversation && (
               <AiToggleButton
+                key={`${conversation.id}:${conversation.ai_enabled}`}
                 conversationId={conversation.id}
                 initialEnabled={conversation.ai_enabled}
               />
