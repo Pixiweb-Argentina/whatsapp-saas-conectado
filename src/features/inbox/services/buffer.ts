@@ -37,10 +37,8 @@ import {
 import { getSetterConfig, evaluateLead } from "./setter";
 import { createHLOpportunity } from "./highlevel-client";
 import { workspaceSchedulingTimeZone } from "./scheduling-timezone";
-import {
-  loadWhatsAppSettings,
-  WHATSAPP_NOT_CONNECTED,
-} from "./whatsapp-provider";
+import { WHATSAPP_NOT_CONNECTED } from "./whatsapp-provider";
+import { legacyBufferSupports, loadConversationRuntime } from "@/features/channels/services/conversation-runtime";
 import { createHubSpotDeal } from "./hubspot-client";
 import { crmStatus } from "./crm-sync";
 
@@ -686,13 +684,19 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
     // ── 4. Load conversation record ─────────────────────────────────────────
     const { data: conversation, error: convError } = await supabase
       .from("conversations")
-      .select("id, workspace_id, contact_id, ai_enabled, summary")
+      .select("id, workspace_id, contact_id, channel, ai_enabled, summary")
       .eq("id", batch.conversation_id)
       .eq("workspace_id", batch.workspace_id)
       .single();
 
     if (convError || !conversation) {
       throw new Error(`${CONVERSATION_NOT_FOUND}: ${convError?.message}`);
+    }
+    if (!legacyBufferSupports(conversation.channel)) {
+      batch.meta = { ...batch.meta, skip_reason: "unsupported_channel" };
+      await saveBatchMeta(supabase, batch);
+      await markBatchProcessed(batch, mergedText, supabase);
+      return done();
     }
 
     // ── 5. What an earlier attempt left behind ─────────────────────────────
@@ -806,6 +810,7 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       mergedText,
       contactId: conversation.contact_id as string,
       reservationId: priorReservationId,
+      channelCapabilities: ["text", "template"],
     });
 
     const { decision, reason } = decisionResult;
@@ -857,12 +862,12 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
     // the verdict for the attempt that reclaims the batch.
     await saveBatchMeta(supabase, batch);
 
-    // ── 7b. The workspace must have an active WhatsApp provider ─────────────
+    // ── 7b. Resolve settings through the conversation's channel runtime ────
     // Checked before the model and its tools run: a reply with nowhere to go
     // must not repeat model spend or tool side effects on every attempt.
     // dispatchText() loads and decrypts the credentials itself.
-    const whatsapp = await loadWhatsAppSettings(supabase, batch.workspace_id);
-    if (!whatsapp) {
+    const runtime = await loadConversationRuntime(supabase, batch.workspace_id, conversation.channel);
+    if (!runtime) {
       throw new Error(`[buffer] ${WHATSAPP_NOT_CONNECTED}`);
     }
 
@@ -878,10 +883,7 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       // Opt-in: hand the thread to a person instead of leaving the customer
       // without a reply until tomorrow. Off by default — a handoff doesn't
       // come back to the AI by itself when the budget resets.
-      if (
-        (whatsapp.config as { cost_cut_handoff?: boolean }).cost_cut_handoff ===
-        true
-      ) {
+      if (runtime.costCutHandoff) {
         await handOff(supabase, batch, "cost_cut");
       }
       await markBatchProcessed(batch, mergedText, supabase);
@@ -894,19 +896,12 @@ export async function processNextBatch(): Promise<ProcessBatchResult> {
       conversationId: batch.conversation_id,
       contactId: conversation.contact_id as string,
       batchId: batch.id,
+      channel: runtime.channel,
+      channelCapabilities: runtime.implementedSendActions,
     };
 
     // ── 8b. Resolve conversational memory window (WS2: configurable) ─────────
-    // The workspace's WhatsApp integration config carries
-    // message_history_window; clamp to [5, 50] and default to 10 when unset or
-    // non-numeric.
-    const rawWindow = Number(
-      (whatsapp.config as { message_history_window?: number })
-        .message_history_window,
-    );
-    const historyWindow = Number.isFinite(rawWindow)
-      ? Math.min(50, Math.max(5, rawWindow))
-      : 10;
+    const historyWindow = runtime.historyWindow;
 
     // ── 8c. Load prior conversation turns (WS1: memory injection) ────────────
     // Up to this batch's last message: a later batch's messages get their own

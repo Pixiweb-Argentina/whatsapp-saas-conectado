@@ -125,7 +125,7 @@ mock.module("./handoff-notifier.ts", {
 const { decide, applyTransition } = await import("./decision-engine.ts");
 
 const FOUND = {
-  data: { state: "ai_active", workspace_id: "ws_1", state_version: 3 },
+  data: { channel: "whatsapp", state: "ai_active", workspace_id: "ws_1", state_version: 3 },
   error: null,
 };
 
@@ -160,13 +160,13 @@ test("decide abstains when the conversation lookup fails", async () => {
 });
 
 test("decide abstains when the conversation is not in ai_active state", async () => {
-  reset([{ data: { state: "paused" }, error: null }]);
+  reset([{ data: { channel: "whatsapp", state: "paused" }, error: null }]);
   const result = await decide(DECIDE);
   assert.deepEqual(result, { decision: "abstain", reason: "state:paused" });
 });
 
 test("decide moves a handoff phrase to handoff_pending and returns 'handoff'", async () => {
-  reset([{ data: { state: "ai_active" }, error: null }, FOUND, { error: null }, { error: null }]);
+  reset([{ data: { channel: "whatsapp", state: "ai_active" }, error: null }, FOUND, { error: null }, { error: null }]);
   const result = await decide({ ...DECIDE, mergedText: "quiero hablar con un humano" });
   assert.deepEqual(result, { decision: "handoff", reason: "handoff_trigger" });
   assert.equal(updates.length, 1);
@@ -177,7 +177,7 @@ test("decide moves a handoff phrase to handoff_pending and returns 'handoff'", a
 });
 
 test("decide rejects when the transition itself fails, instead of reporting a handoff", async () => {
-  reset([{ data: { state: "ai_active" }, error: null }, { data: null, error: { message: "boom" } }]);
+  reset([{ data: { channel: "whatsapp", state: "ai_active" }, error: null }, { data: null, error: { message: "boom" } }]);
   await assert.rejects(
     () => decide({ ...DECIDE, mergedText: "necesito hablar con alguien" }),
     /conversation not found: boom/,
@@ -185,7 +185,7 @@ test("decide rejects when the transition itself fails, instead of reporting a ha
 });
 
 test("decide still returns 'handoff' when only the notification fails", async () => {
-  reset([{ data: { state: "ai_active" }, error: null }, FOUND, { error: null }, { error: null }]);
+  reset([{ data: { channel: "whatsapp", state: "ai_active" }, error: null }, FOUND, { error: null }, { error: null }]);
   notifyShouldReject = true;
   const result = await decide({ ...DECIDE, mergedText: "quiero hablar con un humano" });
   assert.deepEqual(result, { decision: "handoff", reason: "handoff_trigger" });
@@ -193,14 +193,14 @@ test("decide still returns 'handoff' when only the notification fails", async ()
 });
 
 test("decide returns 'rate_limited' when reserveLlmTurn denies", async () => {
-  reset([{ data: { state: "ai_active" }, error: null }]);
+  reset([{ data: { channel: "whatsapp", state: "ai_active" }, error: null }]);
   rateLimitResult = { allowed: false, reason: "rate_limit_contact_hour" };
   const result = await decide(DECIDE);
   assert.deepEqual(result, { decision: "rate_limited", reason: "rate_limit_contact_hour" });
 });
 
 test("decide returns 'respond' with the enabled tools and the reservationId", async () => {
-  reset([{ data: { state: "ai_active" }, error: null }]);
+  reset([{ data: { channel: "whatsapp", state: "ai_active" }, error: null }]);
   const fakeTool = { name: "check_availability" } as never;
   enabledTools = [fakeTool];
   rateLimitResult = { allowed: true, reservationId: "res_1" };
@@ -214,7 +214,7 @@ test("decide returns 'respond' with the enabled tools and the reservationId", as
 });
 
 test("decide reuses the reservation an earlier attempt made instead of reserving again", async () => {
-  reset([{ data: { state: "ai_active" }, error: null }]);
+  reset([{ data: { channel: "whatsapp", state: "ai_active" }, error: null }]);
   // A fresh reservation would be denied: the contact is at the limit now,
   // counting the slot this batch itself took on its first attempt.
   rateLimitResult = { allowed: false, reason: "rate_limit_contact_hour" };
@@ -225,9 +225,33 @@ test("decide reuses the reservation an earlier attempt made instead of reserving
 });
 
 test("decide loads the tools before reserving, so a failure there spends no slot", async () => {
-  reset([{ data: { state: "ai_active" }, error: null }]);
+  reset([{ data: { channel: "whatsapp", state: "ai_active" }, error: null }]);
   enabledToolsError = new Error("tool_configs unavailable");
   await assert.rejects(() => decide(DECIDE), /tool_configs unavailable/);
+  assert.equal(reserveCalls, 0);
+});
+
+test("decide scopes its initial read and keyword transition to the workspace", async () => {
+  reset([{ data: { channel: "whatsapp", state: "ai_active" }, error: null }, FOUND, { error: null }, { error: null }]);
+  await decide({ ...DECIDE, mergedText: "quiero hablar con un humano" });
+  assert.ok(lookups.every((lookup) => lookup.some(([key, value]) => key === "workspace_id" && value === "ws_1")));
+  assert.ok(updates[0].eqArgs.some(([key, value]) => key === "workspace_id" && value === "ws_1"));
+});
+
+test("the model sees only tools reviewed for the stored channel and granted capability", async () => {
+  reset([{ data: { channel: "instagram", state: "ai_active" }, error: null }]);
+  enabledTools = [
+    { name: "legacy_tool" },
+    { name: "ig_read", supportedChannels: ["instagram"] },
+    { name: "ig_private", supportedChannels: ["instagram"], requiredChannelCapabilities: ["private_reply"] },
+  ];
+  const result = await decide(DECIDE);
+  assert.deepEqual(result.availableTools?.map((tool) => tool.name), ["ig_read"]);
+});
+
+test("an unknown stored channel cannot spend an LLM turn", async () => {
+  reset([{ data: { channel: "unknown", state: "ai_active" }, error: null }]);
+  assert.equal((await decide(DECIDE)).reason, "unsupported_channel");
   assert.equal(reserveCalls, 0);
 });
 
@@ -272,7 +296,7 @@ test("without workspaceId the lookup filters by id only (internal callers)", asy
 });
 
 test("throws TransitionError on an invalid transition", async () => {
-  reset([{ data: { state: "closed", workspace_id: "ws_1" }, error: null }]);
+  reset([{ data: { channel: "whatsapp", state: "closed", workspace_id: "ws_1" }, error: null }]);
   await assert.rejects(
     () => applyTransition("conv_1", "ai_active"),
     /Invalid transition: closed → ai_active/,
@@ -315,14 +339,14 @@ test("throws when the DB update fails", async () => {
 // ── applyTransition(): compare-and-swap ────────────────────────────────
 
 test("lost race to the same target: returns without a second event or notification", async () => {
-  reset([FOUND, { data: null }, { data: { state: "handoff_pending" }, error: null }]);
+  reset([FOUND, { data: null }, { data: { channel: "whatsapp", state: "handoff_pending" }, error: null }]);
   await applyTransition("conv_1", "handoff_pending", { trigger: "keyword" });
   assert.equal(inserts.length, 0, "no second state_change event");
   assert.equal(notifyCalls.length, 0, "no second notification");
 });
 
 test("lost race where the state moved elsewhere: throws state_mismatch", async () => {
-  reset([FOUND, { data: null }, { data: { state: "closed" }, error: null }]);
+  reset([FOUND, { data: null }, { data: { channel: "whatsapp", state: "closed" }, error: null }]);
   await assert.rejects(
     () => applyTransition("conv_1", "handoff_pending", { trigger: "keyword" }),
     (err: unknown) =>
@@ -333,7 +357,7 @@ test("lost race where the state moved elsewhere: throws state_mismatch", async (
 });
 
 test("lost race with an assignment: the other operator won, so this one is told", async () => {
-  reset([FOUND, { data: null }, { data: { state: "human_active" }, error: null }]);
+  reset([FOUND, { data: null }, { data: { channel: "whatsapp", state: "human_active" }, error: null }]);
   await assert.rejects(
     () => applyTransition("conv_1", "human_active", { userId: "user_2" }),
     /state moved under us/,
@@ -343,7 +367,7 @@ test("lost race with an assignment: the other operator won, so this one is told"
 test("before the migration (no state_version column) it compares on state only", async () => {
   reset([
     { data: null, error: { code: "42703", message: "column conversations.state_version does not exist" } },
-    { data: { state: "ai_active", workspace_id: "ws_1" }, error: null },
+    { data: { channel: "whatsapp", state: "ai_active", workspace_id: "ws_1" }, error: null },
     {},
     { error: null },
   ]);
@@ -359,7 +383,7 @@ test("before the migration (no state_version column) it compares on state only",
 test("si el INSERT del evento state_change falla, queda registrado server-side", async () => {
   reset();
   responseQueue = [
-    { data: { state: "ai_active", workspace_id: "ws_1" }, error: null },
+    { data: { channel: "whatsapp", state: "ai_active", workspace_id: "ws_1" }, error: null },
     { error: null }, // UPDATE
     { error: { code: "57014", message: "connection string leaked" } }, // INSERT: falla
   ];

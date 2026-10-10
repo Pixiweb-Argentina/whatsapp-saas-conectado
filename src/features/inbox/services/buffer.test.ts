@@ -371,6 +371,7 @@ function reset(meta: Row = {}) {
       id: "conv_1",
       workspace_id: "ws_1",
       contact_id: "contact_1",
+      channel: "whatsapp",
       ai_enabled: true,
       summary: null,
       state: "ai_active",
@@ -438,6 +439,22 @@ test("order: decide → Jev → WhatsApp provider → budget → KB search → m
   const positions = order.map((c) => calls.indexOf(c));
   assert.ok(positions.every((p) => p >= 0), calls.join(" → "));
   assert.deepEqual([...positions].sort((a, b) => a - b), positions, calls.join(" → "));
+});
+
+test("non-WhatsApp batches never run the legacy model, tools or provider", async () => {
+  for (const channel of ["instagram", "messenger", "web", null]) {
+    reset(); tables.conversations[0].channel = channel;
+    const result = await processNextBatch();
+    assert.equal(result.processed, true);
+    assert.equal((batchRow().meta as Row).skip_reason, "unsupported_channel");
+    assert.equal(calls.includes("decide"), false);
+    assert.equal(calls.includes("generate"), false);
+    assert.equal(calls.includes("loadWhatsAppSettings"), false);
+    assert.equal(dispatchArgs.length, 0);
+    assert.equal(toolsRun.length, 0);
+    assert.equal(usageRecords.length, 0);
+    assert.equal(tables.messages[0].body, "hola", "the inbound message is retained");
+  }
 });
 
 test("the history stops at this batch's last message", async () => {

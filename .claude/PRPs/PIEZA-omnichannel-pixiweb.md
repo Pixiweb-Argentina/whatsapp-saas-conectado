@@ -181,7 +181,9 @@ Yani pidió continuar el build. Se registró el bloqueo de acceso al Supabase nu
 
 Implementados contratos/adaptador de envío, política pura por cuenta y la integración del adaptador WA en dispatch. Comprobar canal evita que una conversación de Instagram con teléfono termine en WhatsApp. Timeouts/5xx/408/respuesta sin IDs quedan unknown, nunca retry automático; persiste la fila antes del POST. Regresión completa: 1.696 unitarias pasan. [Reporte F3](../../docs/F3-MOTOR-omnichannel.md).
 
-Pendientes: buffer/agente, eventos/jobs/outbox, revalidación transaccional, recibos/conciliación e inbox omnicanal. La evaluación pura de revisión/reserva aún no cancela jobs reales. No confundir soporte de código con capacidades verificadas en una cuenta externa.
+Segundo incremento: runtime de configuración separado del buffer y herramientas restringidas por canal/capacidad tanto al preparar el modelo como al ejecutar el registry. Se conserva KB/costos/historial/reintentos. El buffer legado no procesa canales nuevos; las lecturas y derivación del decision engine ahora llevan filtro de workspace. 121 pruebas dirigidas y 1.707 unitarias completas pasan, al igual que typecheck y lint.
+
+Pendientes: eventos/jobs/outbox, revalidación transaccional, recibos/conciliación, rutinas de nuevos transportes e inbox omnicanal. La evaluación pura de revisión/reserva aún no cancela jobs reales. No confundir soporte de código con capacidades verificadas en una cuenta externa.
 
 | Fecha | Acción | Evidencia |
 |---|---|---|

@@ -13,6 +13,9 @@ import { isMissingColumnError, reportMissingFunctionOnce } from "@/shared/lib/db
 import { reserveLlmTurn } from "./cost-tracker";
 import { getEnabledTools } from "@/features/tools/services/tool-configs";
 import type { Tool } from "@/features/tools/core/tool";
+import { toolsForChannel } from "@/features/tools/lib/channel-tools";
+import { channelSchema } from "@/features/channels/types/channel-contracts";
+import type { SendAction } from "@/features/channels/types/send-contracts";
 
 // The class lives in the pure state-machine module; callers of applyTransition
 // (the automation executor among them) import both from here.
@@ -50,6 +53,7 @@ export async function decide(opts: {
   conversationId: string;
   mergedText: string;
   contactId: string;
+  channelCapabilities?: readonly SendAction[];
   /**
    * The turn slot an earlier attempt of the same batch already reserved. A
    * retry reuses it instead of spending a second slot of the hourly limit.
@@ -62,8 +66,9 @@ export async function decide(opts: {
   // 1. Load conversation state
   const { data: conv, error: convError } = await supabase
     .from("conversations")
-    .select("state")
+    .select("state, channel")
     .eq("id", conversationId)
+    .eq("workspace_id", workspaceId)
     .single();
 
   if (convError || !conv) {
@@ -72,6 +77,8 @@ export async function decide(opts: {
   }
 
   const currentState = conv.state as ConversationState;
+  const channel = channelSchema.safeParse(conv.channel);
+  if (!channel.success) return { decision: "abstain", reason: "unsupported_channel" };
 
   // 2. Check if AI should respond in current state
   if (!aiShouldRespond(currentState)) {
@@ -91,6 +98,7 @@ export async function decide(opts: {
     if (canTransition(currentState, "handoff_pending")) {
       await applyTransition(conversationId, "handoff_pending", {
         trigger: "keyword",
+        workspaceId,
       });
     }
 
@@ -99,7 +107,9 @@ export async function decide(opts: {
 
   // 4. Load the enabled tools first: once a turn slot is reserved nothing in
   // here may throw, or the slot would be spent with no one holding its id.
-  const availableTools = await getEnabledTools(workspaceId);
+  const availableTools = toolsForChannel(await getEnabledTools(workspaceId), {
+    channel: channel.data, channelCapabilities: opts.channelCapabilities,
+  });
 
   // 5. Rate limit check — atomically reserves a turn slot so two concurrent
   // batches for the same contact can't both pass. A retry keeps its slot.

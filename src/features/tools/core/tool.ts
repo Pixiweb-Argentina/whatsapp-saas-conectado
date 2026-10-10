@@ -1,4 +1,6 @@
 import type { ZodSchema } from "zod";
+import type { Channel } from "@/features/channels/types/channel-contracts";
+import type { SendAction } from "@/features/channels/types/send-contracts";
 
 export type ToolSensitivity = "read" | "write" | "sensitive";
 
@@ -6,6 +8,9 @@ export interface ToolContext {
   workspaceId: string;
   conversationId: string;
   contactId: string;
+  /** Resolved by the server, never by the LLM. Absent only in legacy callers. */
+  channel?: Channel;
+  channelCapabilities?: readonly SendAction[];
   // SEC-01: identity anchored server-side — LLM cannot override these
   /**
    * The inbound batch this turn answers, when there is one (not in the
@@ -69,6 +74,9 @@ export interface Tool<TArgs = unknown> {
   name: string;
   description: string;
   sensitivity: ToolSensitivity;
+  /** Omission preserves WA only; opt into another channel after reviewing the tool. */
+  supportedChannels?: readonly Channel[];
+  requiredChannelCapabilities?: readonly SendAction[];
   schema: ZodSchema<TArgs>;
   enabledFor(workspaceId: string): boolean | Promise<boolean>;
   run(

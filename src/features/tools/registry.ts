@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createClient as createSbClient } from "@supabase/supabase-js";
+import { toolSupportsChannel } from "./lib/channel-tools";
 import type {
   Tool,
   ToolContext,
@@ -144,6 +145,9 @@ class ToolRegistry {
     ctx: ToolContext,
     opts?: ToolRunOptions,
   ): Promise<ToolResult> {
+    if (!toolSupportsChannel(tool, ctx)) {
+      return { ok: false, output: null, error: "Esta herramienta no está habilitada para este canal." };
+    }
     const parsed = tool.schema.safeParse(args);
     if (!parsed.success) {
       return { ok: false, output: null, error: parsed.error.message };

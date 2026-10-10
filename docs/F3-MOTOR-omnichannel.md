@@ -24,13 +24,27 @@ Los vencimientos de política se reciben de evidencia validada en servidor; esta
 - La suite de dispatch usa proveedores y base simulados, con dos tenants/proveedores; comprueba inserción antes del envío, rechazo de canal distinto, enlace de contacto ajeno, opt-out, plantillas y persistencia fallida después de aceptación.
 - No se modificaron SQL, pantallas ni dependencias. Las 14 pruebas DB y 20 E2E previas corresponden a F1/F2; no se presentan como validación Cloud de este incremento.
 
+## Incremento 2: runtime del buffer y herramientas
+
+El buffer obtiene ventana de historial y handoff por presupuesto desde `conversation-runtime`, que conserva los valores/defaults del proveedor WA activo. KB, costos, memoria, Jev y reintentos mantienen el orden probado. El buffer heredado descarta canales no soportados antes de reservar turnos, ejecutar herramientas o generar respuestas; conserva el mensaje entrante y registra `skip_reason=unsupported_channel` en el lote.
+
+Las herramientas declaran canales soportados y capacidades necesarias; omitir esa declaración conserva compatibilidad solo con WA. Hay filtro tanto al preparar herramientas para el modelo como en la ejecución común del registry (incluidas herramientas dinámicas), antes de hooks o efectos externos. La identidad/capacidades del contexto vienen del servidor.
+
+La lectura inicial y la derivación por palabra clave en `decide` ahora se filtran explícitamente por workspace. La conexión/rutina de los nuevos canales sigue pendiente: no se habilita IA multicanal con un token o una declaración de herramienta.
+
+Verificación dirigida: 121 pruebas de buffer, decision engine, runtime y registry pasan; typecheck y lint dirigido pasan. Log ignorado `test-results/f3-runtime.log`.
+
+Regresión completa posterior: **1.707 unitarias pasan**, 0 fallos/omitidas. Son 41 pruebas nuevas sobre las 1.666 de F1/F2. Log ignorado `test-results/f3-unit-final.log`.
+
+Build de producción local posterior también aprobado (`test-results/f3-build-final.log`), con configuración pública ficticia y sin despliegue. No hubo cambios visuales que requirieran repetir las capturas de F2.
+
 ## Estado de las tareas
 
 | Tarea | Estado |
 |---|---|
 | F3-T1.1 contratos/adaptador/política | Base local implementada y probada; validación por cuenta externa pendiente |
 | F3-T1.2 resolución/dispatch | Ruta WA integrada y protegida; resolución de identidades/cuentas de los nuevos transportes pendiente |
-| F3-T1.3 buffer/agente independiente de settings WA | Pendiente |
+| F3-T1.3 buffer/agente independiente de settings WA | Runtime extraído y herramientas limitadas por canal; rutinas de transportes nuevos pendientes de su pipeline durable |
 | F3-T2.1 eventos/jobs/outbox y lease/fencing | Pendiente |
 | F3-T2.2 invalidación durable y revalidación inmediata | Política pura preparada; integración durable pendiente |
 | F3-T2.3 receipts/unknown/conciliación | Unknown en transporte WA preparado; ecos/receipts y conciliación durable pendientes |
@@ -39,7 +53,7 @@ Los vencimientos de política se reciben de evidencia validada en servidor; esta
 
 ## Próximo paso y límites
 
-Desacoplar configuración/herramientas del buffer conservando KB, presupuesto y semántica de reintento. Luego implementar eventos/jobs/outbox con restricciones SQL, leases y revisión de conversación antes de habilitar transportes nuevos. No usar la política pura como sustituto de una reserva transaccional.
+Implementar eventos/jobs/outbox con restricciones SQL, leases y revisión de conversación antes de habilitar transportes nuevos. Conectar la política y el runtime a ese pipeline. No usar la política pura como sustituto de una reserva transaccional.
 
 El proyecto nuevo identificado es `bzanbpyzujlogipxvkfn`. La última consulta del conector volvió a devolver falta de permisos; sigue autorizada la cuenta anterior. No se usaron bases anteriores, no se aplicaron migraciones remotas ni se enviaron mensajes reales. Sin compras, push, merge o despliegue.
 
@@ -48,3 +62,4 @@ El proyecto nuevo identificado es `bzanbpyzujlogipxvkfn`. La última consulta de
 - El teléfono es un atributo del contacto, no el selector de canal. Cada resolución debe comprobar canal y workspace antes de enviar.
 - Un código de rate limit dentro de HTTP 5xx/408 no convierte una respuesta ambigua en un rechazo seguro. El estado y el texto mostrado deben indicar incertidumbre; nunca sugerir retry automático por ese código aislado.
 - Soporte de un método no equivale a permiso concedido o integración probada. El pipeline nuevo exige evidencia por cuenta y continúa deshabilitado hasta validar la integración.
+- Filtrar herramientas solo en el prompt es insuficiente: el registry debe repetir la comprobación antes de ejecutar, incluso para herramientas dinámicas. Un canal nuevo no hereda herramientas WA por omisión.
