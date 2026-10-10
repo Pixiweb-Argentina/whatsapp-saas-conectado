@@ -1,11 +1,11 @@
 # La Pieza: Omnichannel Pixiweb
 
 > **Estado del alcance:** APROBADO por Yani el 2026-10-10: «apruebo el blueprint comienza».
-> **Ejecución:** Build Manual elegido por Yani el 2026-10-10; F1 EN_PROGRESO; 0/9 fases completadas.
+> **Ejecución:** Build Manual; F1 con validación Cloud pendiente. Yani autorizó avanzar F2 independientemente el 2026-10-10; 0/9 fases con aceptación integral.
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F1:** codex/omnichannel-f1-base; worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado.
+> **Rama activa F2:** codex/omnichannel-f2-pixiweb, desde F1 5753e34. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -81,7 +81,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** contratos WA, conteos/IDs, dos tenants, rollback y evidencia de pruebas externas; accesos faltantes quedan pendientes.
 
 ### F2 — Sistema Pixiweb y rediseño transversal
-**Estado:** PENDIENTE. **Historias:** US-004–005. **Estimación:** 4–7 días-persona.
+**Estado:** EN_PROGRESO; sistema visual implementado localmente, QA autenticada pendiente. **Historias:** US-004–005. **Estimación:** 4–7 días-persona.
 **Objetivo:** tokens, componentes y pantallas existentes con Manrope, Instrument Serif, piedra/violeta/lima.
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
@@ -158,7 +158,18 @@ Next dev regenera next-env.d.ts apuntando a .next/dev/types/routes.d.ts. Tras el
 - Verificación actual: 1.666 unitarias, 14 pruebas DB, 10 pruebas de navegador; typecheck, lint dirigido y build pasan. Límites y procedimiento en [reporte F1](../../docs/F1-BASELINE-omnichannel.md).
 - No se habilitaron canales, no se hicieron compras, push/merge ni despliegues.
 
-Próximo paso: identificar la base del fork (pregunta enviada: db-whatsapp activa o db-chatfuel pausada) y preparar una copia aislada para validar en Supabase/PostgreSQL 17. No se modificó ningún proyecto remoto ni se habilitó facturación. F1 sigue incompleta hasta probar datos y contratos externos.
+Decisión posterior de Yani: usar una cuenta Supabase nueva; las anteriores están saturadas. La pregunta db-whatsapp/db-chatfuel queda resuelta: ninguna se usará para este fork. Falta identificar/conectar el proyecto nuevo; no se modificó ningún proyecto remoto ni se habilitó facturación. F1 sigue incompleta hasta probar datos y contratos externos.
+
+## Avance F2 — 2026-10-10
+
+Autorizado por Yani: «dale avanza y así lo haremos, ya creé una nueva cuenta». Se avanza diseño sin simular cierre de F1. Rama propia desde 5753e34; no merge a main.
+
+- Tokens Pixiweb, tipografías, botones/campos/cards/foco/reduced-motion y temas; COMPONENT_RULES actualizado.
+- Navegación compartida en app/agencia, login editorial, inbox móvil con regreso y panel de detalle adaptable. Queries, roles y acciones de servidor conservadas.
+- Cinco previews de diseño con datos ficticios y sin escrituras externas; no son los canales operativos.
+- Pruebas y alcance de QA registrados en docs/F2-DISENO-omnichannel.md. Pendiente aceptación completa en sesión autenticada del Supabase nuevo.
+
+Auto-Blindaje F2: los tokens deben seguir siendo triplets OKLCH, no hex dentro de oklch(var()). text-primary necesita violeta profundo sobre piedra; el violeta de CTA se mantiene separado. El tema oscuro requiere texto oscuro sobre lavanda. Las variables electric-lime no definidas se reemplazaron por tokens semánticos; no recrear variables HSL incompatibles.
 
 Auto-Blindaje de este incremento: un cambio del proveedor WA no debe etiquetar mensajes nuevos con la conexión histórica. El trigger conserva esos mensajes sin mapear y el backfill rechaza historial ambiguo. Playwright transforma imports TSX como componentes de prueba: para revisar el componente real se renderiza en un proceso Node separado y se carga con los estilos de la app; esto no acredita un inbox autenticado.
 

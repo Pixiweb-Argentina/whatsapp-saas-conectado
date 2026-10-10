@@ -4,7 +4,9 @@ Actualizado: 2026-10-10. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb
 
 ## Resultado
 
-Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. /build iniciado en preparación; [La Pieza](../.claude/PRPs/PIEZA-omnichannel-pixiweb.md) generada. Yani eligió Build Manual: «ok avanzamos con manual». Fases implementadas: 0/9.
+Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F1 preparada localmente; F2 visual en ejecución por autorización expresa mientras se configura una cuenta Supabase nueva. Fases con aceptación integral: 0/9.
+
+**Continuar en:** C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, ahora en rama codex/omnichannel-f2-pixiweb desde 5753e34. Se reutiliza el worktree; no crear otra F2 por su nombre heredado.
 
 ## Decisiones de Yani incorporadas
 
@@ -72,10 +74,18 @@ Se leyeron AGENTS.md, el comando build, el template pieza-base y la referencia d
 
 ## F1 en ejecución — Build Manual
 
-Continuar en C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, rama codex/omnichannel-f1-base. Rama de preparación conserva el plan; main no se modificó. AGENTS.md se copió al worktree como instrucción local sin incorporarlo a los commits.
+F1 quedó en codex/omnichannel-f1-base, commit 5753e34. El worktree se reutiliza para F2. Rama de preparación conserva el plan; main no se modificó. AGENTS.md permanece como instrucción local sin incorporar a commits.
 
 Implementado: contratos Zod, normalización WA y preflight; tres migraciones aditivas con RLS, credenciales privadas, identidades por conexión y backfill acotado/reanudable. ContactRow, búsqueda, presentación y envío toleran teléfono ausente; WhatsApp sigue exigiéndolo. Nuevos canales permanecen deshabilitados. No hay cambios aplicados a Cloud.
 
 Verificado: 1.666 unitarias, 14 comprobaciones DB y 10 pruebas de navegador desktop/móvil; typecheck, lint dirigido y build pasan. Ensayo DB local con PGlite/PostgreSQL 18.3, 65 de 66 migraciones heredadas, fixtures sintéticos y restauración de copia; no sustituye Supabase/PostgreSQL 17 ni login real. Reporte y procedimiento: [F1 baseline](F1-BASELINE-omnichannel.md). Logs/reportes HTML en carpetas ignoradas.
 
-F1 incompleta: validar una copia de la base real, autenticación, concurrencia y cuentas Meta/Brevo. Lista Roja ya confirmada. Pregunta pendiente de identificación: db-whatsapp activa o db-chatfuel pausada. Se listaron proyectos de forma read-only; no se consultaron datos operativos ni se modificaron bases. No comprar ni habilitar facturación. No repetir aprobación de blueprint, Manual ni invariantes. main sigue en 28a1530; sin push/merge/deploy.
+F1 incompleta: validar en Supabase, autenticación, concurrencia y cuentas Meta/Brevo. Lista Roja ya confirmada. Yani resolvió usar una cuenta nueva porque las anteriores están saturadas: no usar db-whatsapp ni db-chatfuel. No se consultaron datos operativos ni se modificaron bases. No comprar ni habilitar facturación. No repetir aprobación de blueprint, Manual ni invariantes. main sigue en 28a1530; sin push/merge/deploy.
+
+## F2 en ejecución — 2026-10-10
+
+Yani autorizó avanzar diseño mientras se prepara Supabase: «dale avanza y así lo haremos, ya creé una nueva cuenta». Esta excepción permite trabajo local independiente, sin declarar F1 completa.
+
+Implementado: sistema Pixiweb claro/oscuro, Manrope/Instrument Serif, componentes compartidos, navegación negra app/agencia, login editorial, inbox móvil y panel de detalle accesible. Cinco vistas de desarrollo con ejemplos ficticios; no habilitan Meta/Brevo/widget.
+
+Verificación y capturas en [F2 diseño](F2-DISENO-omnichannel.md). Próximo paso: revisión visual de Yani y conexión al proyecto de su cuenta nueva para probar pantallas privadas, aislamiento, roles, migraciones y flujos reales. No se tocó ninguna cuenta anterior.
