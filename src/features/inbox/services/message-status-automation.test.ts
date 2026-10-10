@@ -28,7 +28,7 @@ function client(): SupabaseClient {
     from: () => ({
       select: () => {
         const q: any = {
-          eq: () => q,
+          eq: () => q, is: () => q,
           limit: () => q,
           then: (resolve: (v: unknown) => void) => resolve({ data: [{ ...row }], error: null }),
         };

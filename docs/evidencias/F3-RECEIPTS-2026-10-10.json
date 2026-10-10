@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-10",
+  "phase": "F3",
+  "increment": 12,
+  "branch": "codex/omnichannel-f3-inbox",
+  "scope": "Signed WhatsApp delivery receipts and exact durable reconciliation without resend",
+  "unit": {
+    "passed": 1825,
+    "failed": 0
+  },
+  "database_local": {
+    "passed": 95,
+    "failed": 0,
+    "directed_after_harness_refactor": 74
+  },
+  "typecheck": "passed",
+  "targeted_lint": "passed",
+  "production_build": "passed with temporary compilation-only placeholders",
+  "cloud": {
+    "actualNextHandlers": true,
+    "invalidSignaturesDenied": true,
+    "kapsoWrongAccountDenied": true,
+    "ycloudUnknownReconciled": true,
+    "kapsoReadReconciled": true,
+    "duplicateCallbacksIdempotent": true,
+    "outOfOrderReadPreserved": true,
+    "noNewJobsOrBatches": true,
+    "publicRpcDenied": true,
+    "noTransportCalled": true
+  },
+  "cloud_before_cleanup": {
+    "receipts_planned": 3,
+    "jobs_accepted": 2,
+    "messages_read": 2,
+    "batches": 0
+  },
+  "browser": {
+    "authenticated": true,
+    "one_read_message_per_conversation": true,
+    "uncertainty_warning_absent": true,
+    "warnings": 0,
+    "errors": 0,
+    "workspace_restored": true,
+    "captures": [
+      "test-results/f3-receipt-browser/ycloud-read.png",
+      "test-results/f3-receipt-browser/kapso-read.png"
+    ]
+  },
+  "migration": {
+    "version": "20261010205151",
+    "name": "omnichannel_delivery_receipts",
+    "applied_total": 80,
+    "local_history_matches": true
+  },
+  "security_advisor": {
+    "errors": 0,
+    "warnings": 10,
+    "info": 13,
+    "new_findings": [
+      {
+        "level": "INFO",
+        "table": "private.channel_delivery_receipts",
+        "reason": "RLS enabled without browser policies, intentional service-only access"
+      }
+    ]
+  },
+  "cleanup": {
+    "temporary_fixture_removed": true,
+    "receipts": 0,
+    "preparations": 0,
+    "retained_workspaces": 1,
+    "retained_messages": 5,
+    "outbox": 0,
+    "active_cron": 0
+  },
+  "rollout": {
+    "ingress": "off",
+    "worker": "off",
+    "human": "off",
+    "ai": "off",
+    "scheduler_created": false,
+    "local_server_restored_without_test_flags": true
+  },
+  "limits": [
+    "Synthetic SQL states and signed callbacks do not prove real provider delivery.",
+    "Unknown without stored IDs or verifiable YCloud operation reference requires review; never auto-resend.",
+    "No provider polling; human Business App echoes remain legacy.",
+    "Turning ingress off stops capture of new receipts, while already persisted receipts can be reconciled.",
+    "Real account/grant verification, quota/backoff/comment reservation, Meta/widget/Brevo and integral acceptance remain pending.",
+    "No purchases, real messages, LLM calls, push, merge or deploy."
+  ]
+}

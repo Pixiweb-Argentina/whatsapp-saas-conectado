@@ -1,4 +1,5 @@
 import { captureWhatsAppDelivery } from "@/features/channels/services/whatsapp-event-ingress";
+import { captureWhatsAppReceipt } from "@/features/channels/services/delivery-receipt-store";
 import { type NextRequest, NextResponse, after } from "next/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import {
@@ -157,6 +158,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // WH-02: monotonic status updates — only reached after signature verification.
     if (isStatusUpdate) {
+      await captureWhatsAppReceipt(supabase, { workspaceId: ws.workspace_id, integrationId: ws.id,
+        provider: "ycloud", configuredAccountId: ws.config.phone_number, payload: body });
       const statusData = (
         body as {
           whatsappMessage?: { id?: string; wamid?: string; status?: string };

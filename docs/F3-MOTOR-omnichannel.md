@@ -244,6 +244,26 @@ Piloto queue limitado a texto, con herramientas del modelo vacías y guarda prev
 
 Reproducción: tests/db/cloud-ai-buffer.mjs contiene setup/settle/cleanup sintéticos; tests/cloud/ai-buffer-smoke.mjs llama al endpoint local con secreto ignorado. Sólo el proyecto nuevo bzanbpyzujlogipxvkfn, reconciliar fixture antes de repetir. [Evidencia](evidencias/F3-IA-BUFFER-2026-10-10.json).
 
+## Incremento 12 — comprobantes firmados y conciliación durable
+
+Recepción YCloud/Kapso después de verificar la firma, bajo CHANNEL_INGRESS_WORKSPACES. Conexión, integración, workspace y cuenta física exactos; Kapso también comprueba phone_number_id antes del camino legacy. Sólo cloud_api participa en comprobantes: Business App/history/other_app quedan fuera de este consumidor. Zod descarta eventos sin timestamp válido, del futuro, sin IDs o de otra cuenta. Se guardan estado, IDs, destinatario opcional y fecha; ningún cuerpo, URL, token ni detalle remoto de error.
+
+private.channel_delivery_receipts tiene RLS sin políticas públicas, dedup por cuenta/evento y RPCs SECURITY INVOKER sólo service_role. El envío de texto YCloud añade externalId=channel:UUID para poder identificar unknown aun sin respuesta HTTP. Kapso usa wamid conocido; unknown sin ID almacenado ni referencia externa permanece incierto. Nunca correlacionar sólo por teléfono/texto/tiempo, ni tratar externalId como idempotencia remota. Un ID o destinatario contradictorio no altera el job.
+
+La transacción exige un permiso/outbox ya existente con el mismo fence; sólo concilia sending/unknown/accepted. Actualiza una única fila visible y termina job/outbox como accepted, que significa aceptación del transporte, no entrega exitosa. El estado visible puede seguir failed si la entrega falló. Leído/entregado ganan ante callbacks tardíos; una falla contradictoria conserva delivery_conflict. Un worker tardío no puede sobrescribir el resultado. Sin nuevos jobs, mensajes, lotes, grants, ventanas ni IA.
+
+Un callback anterior al resultado persiste pendiente y se vuelve a conciliar antes de recuperar jobs y después de finish, con límite de 50. Un fallo posterior a finish no revierte la aceptación ni autoriza reenvío. El camino legacy de actualización de estados excluye mensajes con channel_operation_id para no degradar una fila que pertenece a la cola. Al apagar ingress no se capturan comprobantes nuevos; los ya persistidos siguen siendo recuperables. No se creó cron ni polling del proveedor.
+
+### Verificación del incremento 12
+
+- **1.825 unitarias y 95 DB completas**, typecheck, lint dirigido y build de producción con claves ficticias pasan. Después de separar funciones del harness: 74 DB dirigidas. Incluye llegada temprana, unknown correlacionado, stale fence, contradicciones, scope/IDs/destinatario, ausencia de permiso y roles anon/authenticated denegados.
+- API Next real + HMAC + Supabase nuevo: diez controles pasan. Firma inválida/cuenta Kapso ajena devuelven 401; duplicados devuelven 200 sin nuevas operaciones. YCloud unknown y Kapso accepted quedan read; sent tardío mantiene read. Tres comprobantes planned, dos jobs accepted, dos mensajes read, cero batches.
+- Navegador autenticado verifica las dos conversaciones con un único mensaje leído y sin aviso Sin confirmar; cero errores/warnings. Capturas ignoradas: test-results/f3-receipt-browser/ycloud-read.png y kapso-read.png. Workspace habitual restaurado antes de limpiar.
+- Migración **20261010205151_omnichannel_delivery_receipts.sql**, total **80**, historial/nombres locales iguales. No repetir. Asesor: cero ERROR, diez WARN heredados y trece INFO; tabla privada nueva deliberadamente sin políticas para el navegador.
+- Fixture 995 retirado con guarda; quedan un workspace QA y cinco mensajes previos, cero receipts/preparaciones/outbox/cron activos. Flags apagados; servidor 3100 restaurado sin flags temporales. No hubo transporte, modelo, compra, push, merge o deploy.
+
+Reproducción: tests/db/cloud-delivery-receipts.mjs exporta setup/cleanup; tests/cloud/delivery-receipt-smoke.mjs requiere ese fixture y servidor local con ingress limitado exclusivamente al workspace sintético. Cumple una integración WA activa por workspace, alternando proveedores durante la prueba. Reconciliar el fixture antes de repetir; no ejecutar contra otra cuenta. [Evidencia](evidencias/F3-RECEIPTS-2026-10-10.json). Fuentes oficiales consultadas: [YCloud delivery y externalId](https://docs.ycloud.com/reference/whatsapp-message-updated-webhook-examples), [Kapso message events](https://docs.kapso.ai/docs/platform/webhooks/message-events), [Supabase RPC y permisos](https://supabase.com/docs/guides/database/functions).
+
 ## Estado de las tareas
 
 | Tarea | Estado |
@@ -253,13 +273,13 @@ Reproducción: tests/db/cloud-ai-buffer.mjs contiene setup/settle/cleanup sinté
 | F3-T1.3 buffer/agente independiente de settings WA | Runtime extraído y herramientas limitadas por canal; rutinas de transportes nuevos pendientes de su pipeline durable |
 | F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y captura autenticada + worker HTTP bajo flags probados local/Cloud; productor humano conectado bajo flag; productor IA de texto conectado con checkpoint/handoff; herramientas durables, scheduler, cuotas y backoff pendientes |
 | F3-T2.2 invalidación durable y revalidación inmediata | Permiso WA transaccional con grant/identidad/supresión/evento/membresía probado local/Cloud; generación mock probada y recuperación Cloud real; LLM/proveedor real pendiente |
-| F3-T2.3 receipts/unknown/conciliación | Job → mensaje visible, resultados y recuperación unknown probados; consumidores de ecos/receipts y conciliación pendientes |
+| F3-T2.3 receipts/unknown/conciliación | Comprobantes firmados WA, dedup/estados monotónicos y conciliación exacta local/Cloud/UI probados; ecos humanos durables, polling y proveedores reales pendientes |
 | F3-T3.1 inbox/composer omnicanal | Lectura/filtros, disponibilidad y enqueue humano probados en UI/API/Cloud; vista permanente de pendientes probada; consumo/envío externo pendiente |
 | F3-T3.2 pruebas integrales | SQL/GoTrue/RLS/navegador/Realtime/toma humana pasan; cuentas y envíos de proveedores pendientes |
 
 ## Próximo paso y límites
 
-Verificar cuentas/identidades/grants reales y completar receipts/ecos/conciliación, cuotas/backoff y reserva por comentario. El productor IA de texto ya está conectado al buffer con checkpoint privado y handoff interno sin ACK legacy; herramientas externas, n8n, Setter y efectos posteriores siguen fuera del piloto queue. El productor humano ya está conectado y probado bajo flag, con toma humana, auditoría e idempotencia transaccionales. La vista persistente de pendientes ya está implementada y probada; no habilita el transporte. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
+Integrar ecos humanos de WhatsApp Business al pipeline durable, verificar cuentas/identidades/grants reales y completar cuotas/backoff y reserva por comentario. El productor IA de texto ya está conectado al buffer con checkpoint privado y handoff interno sin ACK legacy; herramientas externas, n8n, Setter y efectos posteriores siguen fuera del piloto queue. El productor humano ya está conectado y probado bajo flag, con toma humana, auditoría e idempotencia transaccionales. La vista persistente de pendientes ya está implementada y probada; no habilita el transporte. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
 
 La base Cloud ya está inicializada; la app todavía no está desplegada ni enviando mensajes nuevos. No se usaron bases anteriores. Sin compras, push o merge. F1/F2/F3 continúan sin aceptación integral.
 
@@ -295,3 +315,7 @@ La base Cloud ya está inicializada; la app todavía no está desplegada ni envi
 
 - El texto de metadata del batch es modificable por el cliente: queue sólo usa el checkpoint privado para encolar. Nunca confiar en pending_reply para emitir un mensaje.
 - Persistir intención de handoff antes de los efectos de Jev; una caída entre veredicto y transición no puede perder la derivación. No cerrar un batch mientras el handoff devuelve settled=false.
+
+- Los fixtures Cloud deben respetar uq_integrations_one_active_whatsapp: alternar proveedores antes del permiso; nunca habilitar dos WA a la vez para simplificar una prueba.
+- Separar delivery-receipt-recovery del consumidor de ingress: job-store no puede importar receipt-store porque ingress ya depende de job-store. Evitar el ciclo de módulos.
+- La actualización legacy de estados excluye filas de la cola. Un callback duplicado/tardío no puede sobrescribir la conciliación transaccional.

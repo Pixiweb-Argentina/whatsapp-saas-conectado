@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { runReceiptDatabaseChecks } from "./receipt-checks.mjs";
 import { runAiReplyDatabaseChecks } from "./ai-reply-checks.mjs";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
@@ -76,6 +77,7 @@ test("F3 durable message queue on PostgreSQL", async (t) => {
     return scalar(db, "select public.enqueue_human_channel_text($1,$2,$3,$4,$5) result", Object.values(args));
   }
   await runAiReplyDatabaseChecks({db,id,scalar,persist,claim,begin,finish,reject,isolated});
+  await runReceiptDatabaseChecks({db,id,scalar,enqueue,claim,begin,finish,reject,isolated});
   async function queueAs(user = 101, workspace = 1, conversation = 31) {
     await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id(user)]);
     await db.exec("SET ROLE authenticated");

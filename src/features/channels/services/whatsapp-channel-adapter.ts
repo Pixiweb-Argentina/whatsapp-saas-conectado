@@ -54,7 +54,7 @@ async function send(
   if (!sender.live) return rejected("NOT_LIVE");
   try {
     const sent = request.action === "text"
-      ? await sender.sendText(request.recipient, request.body)
+      ? await sender.sendText(request.recipient, request.body, { operationId: request.operationId })
       : await sender.sendTemplate({ to: request.recipient,
         templateName: request.templateName, language: request.language,
         components: request.components });

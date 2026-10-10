@@ -26,7 +26,7 @@ export interface WhatsAppSender {
   label: string;
   /** False for a missing/"placeholder" key: dev mode, nothing is sent. */
   live: boolean;
-  sendText(to: string, body: string): Promise<SendResult>;
+  sendText(to: string, body: string, correlation?: { operationId: string }): Promise<SendResult>;
   sendTemplate(params: {
     to: string;
     templateName: string;
@@ -106,8 +106,9 @@ export function whatsappSender(
     provider,
     label,
     live,
-    async sendText(to, body) {
-      const sent = await ycloud.sendText({ apiKey, from: from(), to, body });
+    async sendText(to, body, correlation) {
+      const sent = await ycloud.sendText({ apiKey, from: from(), to, body,
+        ...(correlation ? { externalId: `channel:${correlation.operationId}` } : {}) });
       return {
         wamid: sent.wamid || undefined,
         providerMessageId: sent.id || undefined,

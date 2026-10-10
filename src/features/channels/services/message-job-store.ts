@@ -4,6 +4,7 @@ import { inboundEventSchema } from "../types/channel-contracts";
 import { claimedJobSchema, enqueueJobSchema, type ClaimedJob } from "../types/message-job";
 import { channelSendResultSchema, type ChannelSendResult } from "../types/send-contracts";
 import type { SendPolicyDecision } from "../types/send-policy";
+import { reconcileChannelReceipts } from "./delivery-receipt-recovery";
 
 export interface MessageJobStore {
   recover(workspaceId: string): Promise<number>;
@@ -54,6 +55,7 @@ export function createMessageJobStore(db: SupabaseClient): MessageJobStore & {
     persistEvent: (value, historical) => persistEvent(rpc, value, historical),
     enqueue: (value) => enqueueJob(rpc, value),
     async recover(workspaceId) {
+      await reconcileChannelReceipts(db, workspaceId);
       return z.number().int().nonnegative().parse(await rpc("recover_channel_jobs", {
         p_workspace_id: z.uuid().parse(workspaceId),
       }));
@@ -79,8 +81,10 @@ export function createMessageJobStore(db: SupabaseClient): MessageJobStore & {
         p_reason: z.string().min(1).max(100).regex(/^[a-z0-9_]+$/i).parse(reason) }));
     },
     async finish(job, result) {
-      return z.boolean().parse(await rpc("finish_channel_send", { ...leaseArgs(job),
+      const finished = z.boolean().parse(await rpc("finish_channel_send", { ...leaseArgs(job),
         p_result: channelSendResultSchema.parse(result) }));
+      await reconcileChannelReceipts(db, job.workspace_id);
+      return finished;
     },
   };
 }

@@ -25,7 +25,7 @@ const rowSchema = z.object({
 export type IngressResult = { status: "disabled" | "ignored"; reason?: string }
   | { status: "persisted"; eventId: string };
 
-async function resolveConnection(db: SupabaseClient, input: AuthenticatedWhatsAppDelivery) {
+export async function resolveWhatsAppConnection(db: SupabaseClient, input: AuthenticatedWhatsAppDelivery) {
   const scope = z.object({ workspaceId: z.uuid(), integrationId: z.uuid(),
     provider: z.enum(["ycloud", "kapso"]), configuredAccountId: z.string().min(1) }).safeParse(input);
   if (!scope.success) throw new Error("CHANNEL_INGRESS_CONTEXT_INVALID");
@@ -50,7 +50,7 @@ export async function captureWhatsAppDelivery(
   db: SupabaseClient, input: AuthenticatedWhatsAppDelivery, now: () => number = Date.now,
 ): Promise<IngressResult> {
   if (!channelRolloutWorkspaces("ingress").includes(input.workspaceId)) return { status: "disabled" };
-  const row = await resolveConnection(db, input);
+  const row = await resolveWhatsAppConnection(db, input);
   if (row.revoked_at || row.status === "revoked") return { status: "ignored", reason: "revoked" };
   const receivedAt = new Date(now()).toISOString();
   const result = normalizeWhatsAppEvent({

@@ -12,6 +12,7 @@ type Row = {
   status: string | null;
   meta?: Record<string, unknown>;
   error_message?: string | null;
+  channel_operation_id?: string | null;
 };
 
 /**
@@ -74,6 +75,7 @@ function fakeDb(
         let limit = Infinity;
         const q: any = {
           eq: (col: string, val: unknown) => (filters.push((r) => field(r, col) === val), q),
+          is: (col: string, _val: null) => (filters.push((r) => field(r, col) == null), q),
           contains: (col: string, val: Record<string, unknown>) => (
             filters.push((r) =>
               Object.entries(val).every(
@@ -249,4 +251,14 @@ test("a database error throws, so the webhook answers 500 and the provider retri
     applyMessageStatus(client, "ws_a", { wamid: "wamid.1", status: "read" }),
     /lookup failed/,
   );
+});
+
+
+test("legacy status updates cannot mutate a durable queue message by either provider ID", async () => {
+  const rows: Row[] = [{id:"queued",workspace_id:"ws",direction:"out",wamid:"wamid.queue",status:"failed",
+    channel_operation_id:"operation",meta:{ycloud_id:"provider.queue",send_outcome:"unknown"}}];
+  const db=fakeDb(rows);
+  await applyMessageStatus(db.client as unknown as SupabaseClient,"ws",{wamid:"wamid.queue",status:"read"});
+  await applyMessageStatus(db.client as unknown as SupabaseClient,"ws",{providerMessageId:"provider.queue",status:"read"});
+  assert.equal(rows[0].status,"failed");assert.equal(db.updates.length,0);
 });

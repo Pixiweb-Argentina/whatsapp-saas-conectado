@@ -65,3 +65,15 @@ test("inbound payload rejects credentials and invalid envelopes before database 
   await assert.rejects(f.store.persistEvent({ access_token: "forbidden", kind: "message" }));
   assert.equal(f.calls.length, 0);
 });
+
+
+test("worker reconciles durable receipts before recovery and after finalization, without any transport dependency",async()=>{
+  const names:string[]=[];
+  const db={rpc:async(name:string)=>{names.push(name);return {error:null,data:name === "reconcile_channel_receipts" ? 1 : name === "recover_channel_jobs" ? 0 : true};}} as unknown as SupabaseClient;
+  const store=createMessageJobStore(db);
+  await store.recover(id(1));
+  await store.finish({operation_id:id(61),workspace_id:id(1),connection_id:id(51),conversation_id:id(31),event_id:null,
+    actor:"ai",request:{...enqueue.request,action:"text",channel:"whatsapp"},expected_state_revision:0,state:"leased",attempts:1,fence:1,
+    lease_owner:id(71),lease_until:new Date(Date.now()+60_000).toISOString()}, {status:"unknown",operationId:id(61)});
+  assert.deepEqual(names,["reconcile_channel_receipts","recover_channel_jobs","finish_channel_send","reconcile_channel_receipts"]);
+});

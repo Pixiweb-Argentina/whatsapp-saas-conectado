@@ -55,6 +55,7 @@ async function findMessage(
       .from("messages")
       .select("id, status, wamid, meta")
       .eq("workspace_id", workspaceId)
+      .is("channel_operation_id", null)
       .eq("wamid", event.wamid)
       .limit(1);
     if (error) throw new Error(`[message-status] lookup failed: ${error.message}`);
@@ -69,6 +70,7 @@ async function findMessage(
       .select("id, status, wamid, meta")
       .eq("workspace_id", workspaceId)
       .eq("direction", "out")
+      .is("channel_operation_id", null)
       .contains("meta", { ycloud_id: event.providerMessageId })
       .limit(1);
     if (error) throw new Error(`[message-status] lookup failed: ${error.message}`);

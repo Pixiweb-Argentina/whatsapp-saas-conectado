@@ -1,4 +1,5 @@
 import { captureWhatsAppDelivery } from "@/features/channels/services/whatsapp-event-ingress";
+import { captureWhatsAppReceipt } from "@/features/channels/services/delivery-receipt-store";
 import { type NextRequest, NextResponse, after } from "next/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import {
@@ -151,6 +152,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    if (phoneNumberIdStr && ws.config.phone_number_id && phoneNumberIdStr !== ws.config.phone_number_id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     // Coexistence: a `whatsapp.message.sent` carrying origin 'business_app' is
     // not a status update — it's a human answering from the WhatsApp Business
     // App on their phone. Record it and hand the conversation to them, before
@@ -168,6 +173,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // WH-02: monotonic status updates — only reached after signature verification.
     if (isStatusUpdate) {
+      await captureWhatsAppReceipt(supabase, { workspaceId: ws.workspace_id, integrationId: ws.id,
+        provider: "kapso", configuredAccountId: ws.config.phone_number_id, payload: body, kapsoEventName: eventName });
       const statusData = parseStatusUpdate(body, eventName);
       if (statusData) {
         await applyMessageStatus(supabase, ws.workspace_id, statusData);

@@ -36,3 +36,17 @@ test("a configured Kapso sender still sends", async () => {
   assert.equal(sent.wamid, "wamid.1");
   assert.equal(fetchCalls, 1);
 });
+
+
+test("YCloud queue text carries a correlation reference while legacy sends omit it", async () => {
+  const bodies:Record<string,unknown>[]=[];
+  globalThis.fetch=(async(_url,init)=>{
+    bodies.push(JSON.parse(String(init?.body)) as Record<string,unknown>);
+    return new Response(JSON.stringify({id:"fixture-provider-id"}),{status:200});
+  }) as typeof fetch;
+  const sender=whatsappSender("ycloud",{ycloud_api_key:"fixture-only"},{phone_number:"+15555550100"});
+  await sender.sendText("+15555550101","synthetic",{operationId:"00000000-0000-4000-8000-000000000061"});
+  await sender.sendText("+15555550101","legacy");
+  assert.equal(bodies[0].externalId,"channel:00000000-0000-4000-8000-000000000061");
+  assert.equal("externalId" in bodies[1],false);
+});

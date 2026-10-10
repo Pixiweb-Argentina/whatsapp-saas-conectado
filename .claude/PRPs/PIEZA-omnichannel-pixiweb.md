@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; 79 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto, mensajes de jobs y productor humano transaccionales; captura/worker bajo flags apagados. Cola persistente y productor IA de texto conectado al buffer con checkpoint privado/handoff interno. Faltan herramientas durables, cuentas reales, otros tipos de evidencia y conciliación. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 80 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto, mensajes de jobs y productor humano transaccionales; captura/worker bajo flags apagados. Cola persistente y productor IA de texto conectado al buffer con checkpoint privado/handoff interno. Comprobantes firmados WA y conciliación exacta probados local/Cloud/UI. Faltan ecos humanos durables, herramientas, cuentas reales, otros tipos de evidencia y cuotas/backoff. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -223,3 +223,9 @@ Undécimo incremento: IA de texto conectada al buffer antes de decisiones/modelo
 **Próximo paso vigente:** cuentas/identidades/grants reales; receipts/ecos/conciliación, cuotas/backoff y reserva por comentario. Extender herramientas sólo con contratos durables. La generación nueva usa mocks en pruebas; Cloud probó recuperación, no LLM/entrega real. Flags apagados, cero outbox/cron, sin compras/envíos/push/merge/deploy. F3 sin aceptación integral.
 
 Auto-Blindaje: message_batches.meta es modificable por el cliente y nunca es autoridad para el texto outbound en modo queue. El checkpoint está en private.ai_reply_preparations. Una decisión de handoff debe persistir antes de efectos/etapas; no cerrar el batch si hay una operación pendiente y la transición devuelve settled=false.
+
+Duodécimo incremento: comprobantes YCloud/Kapso firmados y privados, correlación por cuenta/IDs y externalId YCloud, conciliación sin reenvío ni IA. Mensaje/job/outbox transaccionales, fence, dedup y estados monotónicos; worker recupera comprobantes tempranos. Legacy excluye mensajes de la cola. 1.825 unitarias, 95 DB, typecheck/lint/build, diez controles HTTP Next/Supabase y lectura en navegador pasan. Migración 80 aplicada; fixture 995 retirado y workspace habitual restaurado. [Evidencia](../../docs/evidencias/F3-RECEIPTS-2026-10-10.json).
+
+**Próximo paso vigente:** ecos humanos de WhatsApp Business durables, cuentas/identidades/grants reales, cuotas/backoff y reservas por comentario. Unknown sin IDs/referencia continúa incierto; no hay polling remoto. Flags apagados, cero receipts/preparaciones/outbox/cron y cinco mensajes QA anteriores; sin compras/envíos/push/merge/deploy. F3 sin aceptación integral; Meta/widget/Brevo pendientes.
+
+Auto-Blindaje: fixtures respetan una integración WA activa por workspace, alternando proveedores antes del permiso. Recuperación de receipts separada de ingress para evitar ciclo job-store → receipt-store → ingress → job-store. Legacy no actualiza mensajes con channel_operation_id.

@@ -37,6 +37,8 @@ interface SendTextParams {
   from: string;
   to: string;
   body: string;
+  /** Correlation only; YCloud does not promise idempotent sends for this field. */
+  externalId?: string;
 }
 
 /**
@@ -60,6 +62,7 @@ export async function sendText(
       from,
       to,
       text: { body },
+      ...(params.externalId ? { externalId: params.externalId } : {}),
     }),
   });
 

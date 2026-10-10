@@ -33,8 +33,9 @@ const fakeSvc = {
     return q;
   },
   async rpc(name: string, args: Record<string, unknown>) {
-    assert.equal(name, "persist_channel_event"); trace.push("persist-event");
-    envelopes.push(args.p_event as Record<string, unknown>);
+    assert.ok(["persist_channel_event","persist_channel_receipt"].includes(name));
+    trace.push(name === "persist_channel_event" ? "persist-event" : "persist-receipt");
+    envelopes.push((args.p_event ?? args.p_receipt) as Record<string, unknown>);
     return { data: id(4), error: storageFails ? { message: "private details" } : null };
   },
 };
@@ -51,7 +52,7 @@ mock.module("@/features/inbox/services/buffer.ts", { exports: {
 mock.module("@/features/inbox/services/cost-tracker.ts", { exports: { checkRateLimits: unused } });
 mock.module("@/features/inbox/services/media-handler.ts", { exports: { downloadAndStoreMedia: unused, patchMessageMedia: unused } });
 mock.module("@/features/inbox/services/media-understanding.ts", { exports: { transcribeAudio: unused, describeImage: unused } });
-mock.module("@/features/inbox/services/message-status.ts", { exports: { applyMessageStatus: unused } });
+mock.module("@/features/inbox/services/message-status.ts", { exports: { applyMessageStatus: async () => { trace.push("legacy-status"); } } });
 mock.module("@/features/inbox/services/daily-events.ts", { exports: { emitEventOncePerDay: unused } });
 const ycloud = await import("@/app/api/webhooks/ycloud/route.ts");
 const kapso = await import("@/app/api/webhooks/kapso/route.ts");
@@ -62,14 +63,14 @@ function payload() {
   return provider === "ycloud" ? { ...YCLOUD_TEXT, createTime: new Date(time).toISOString() }
     : { ...KAPSO_TEXT, message: { ...KAPSO_TEXT.message, timestamp: String(Math.floor(time / 1000)) } };
 }
-function send(body: unknown = payload(), secret = "fixture-signature-secret") {
+function send(body: unknown = payload(), secret = "fixture-signature-secret", eventName = "whatsapp.message.received") {
   const raw = JSON.stringify(body);
   const time = Math.floor(Date.now() / 1000);
   const signed = provider === "ycloud" ? `${time}.${raw}` : raw;
   const digest = createHmac("sha256", secret).update(signed).digest("hex");
   const headers: Record<string, string> = provider === "ycloud"
     ? { "YCloud-Signature": `t=${time},s=${digest}` }
-    : { "X-Webhook-Signature": digest, "X-Webhook-Event": "whatsapp.message.received" };
+    : { "X-Webhook-Signature": digest, "X-Webhook-Event": eventName };
   const request = new NextRequest(`http://localhost/api/webhooks/${provider}?wsid=${id(1)}`, { method: "POST", body: raw, headers });
   return (provider === "ycloud" ? ycloud : kapso).POST(request);
 }
@@ -109,5 +110,27 @@ for (const channel of ["ycloud", "kapso"] as const) {
       : { ...KAPSO_TEXT, phone_number_id: "wrong-account" };
     assert.equal((await send(body)).status, channel === "ycloud" ? 200 : 401);
     assert.deepEqual(trace, []);
+  });
+}
+
+function receiptPayload() {
+  const time=Date.now()-10_000;
+  return provider === "ycloud" ? {id:"evt.receipt",type:"whatsapp.message.updated",createTime:new Date(time).toISOString(),
+    whatsappMessage:{id:"provider.receipt",wamid:"wamid.receipt",from:"+15555550100",to:"+15555550101",status:"read"}}
+    : {phone_number_id:"synthetic-phone-id",message:{id:"wamid.receipt",timestamp:String(Math.floor(time/1000)),
+      to:"15555550101",kapso:{origin:"cloud_api",status:"read"}}};
+}
+for (const channel of ["ycloud","kapso"] as const) {
+  test(`${channel}: receipt signature precedes durable persistence; no batch/model/incoming message is reached`,async()=>{
+    provider=channel;const payload=receiptPayload();
+    assert.equal((await send(payload,"wrong","whatsapp.message.read")).status,401);assert.deepEqual(trace,[]);
+    assert.equal((await send(payload,"fixture-signature-secret","whatsapp.message.read")).status,200);
+    assert.deepEqual(trace,["resolve-connection","persist-receipt","legacy-status"]);
+    assert.equal(envelopes[0].connectionId,id(3));assert.equal("content" in envelopes[0],false);
+  });
+  test(`${channel}: receipt storage failure asks for webhook retry before any legacy update`,async()=>{
+    provider=channel;storageFails=true;
+    assert.equal((await send(receiptPayload(),"fixture-signature-secret","whatsapp.message.read")).status,500);
+    assert.deepEqual(trace,["resolve-connection","persist-receipt"]);
   });
 }
