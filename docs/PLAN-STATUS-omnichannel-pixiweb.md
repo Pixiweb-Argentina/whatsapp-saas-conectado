@@ -1,6 +1,6 @@
 # Estado de /plan — Omnichannel Pixiweb
 
-> **Trabajo activo de F1:** continuar en C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, rama codex/omnichannel-f1-base. Su copia de este documento y La Pieza contienen el estado actualizado. Modo Manual confirmado; contratos/preflight preparados, 1.662 unitarias y ocho E2E pasan. F1 aún incompleta: confirmación Lista Roja, copia DB e integración/pruebas externas pendientes. Esta rama conserva la preparación; no comenzar otra F1 aquí.
+> **Trabajo activo de F1:** continuar en C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, rama codex/omnichannel-f1-base. Su copia de este documento y La Pieza contienen el estado actualizado. Manual e invariantes confirmados; tres migraciones aditivas/backfill y contactos sin teléfono implementados localmente. Pasan 1.666 unitarias, 14 pruebas DB, 10 navegador y build. Commits de implementación: 62ebc59 y 1099343. F1 aún incompleta: copia Supabase, concurrencia, login y pruebas externas pendientes. Pregunta de base del fork (db-whatsapp/db-chatfuel) enviada; no hubo cambios Cloud. Esta rama conserva la preparación; no comenzar otra F1 aquí.
 
 Actualizado: 2026-10-10. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb.md](../BLUEPRINT-omnichannel-pixiweb.md).
 
