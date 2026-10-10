@@ -50,8 +50,8 @@ export function ConversationItem({
       onClick={onClick}
       className={cn(
         "w-full flex items-start gap-3 px-4 py-3 text-left transition-colors duration-150",
-        "hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-        isActive && "glass",
+        "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+        isActive && "bg-primary/10 border-l-2 border-primary",
       )}
       aria-current={isActive ? "page" : undefined}
     >
@@ -98,7 +98,7 @@ export function ConversationItem({
           )}
         </div>
 
-        <p className="font-mono text-[10px] text-muted-foreground/60">
+        <p className="font-mono text-[10px] text-muted-foreground">
           {contact.phone ?? "Sin teléfono"}
         </p>
       </div>

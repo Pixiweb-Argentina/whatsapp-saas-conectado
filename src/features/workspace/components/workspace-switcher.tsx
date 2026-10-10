@@ -43,9 +43,9 @@ export function WorkspaceSwitcher({
           type="button"
           disabled={isPending}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-2 py-1 transition-colors",
-            "font-mono text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40",
-            "max-w-[160px] sm:max-w-[220px]",
+            "flex items-center gap-1.5 min-h-11 rounded-md px-2 py-1 transition-colors",
+            "font-body text-sm text-muted-foreground hover:text-foreground hover:bg-muted/40",
+            "max-w-[160px] sm:max-w-[260px]",
           )}
           aria-label="Cambiar de workspace"
         >

@@ -27,17 +27,17 @@ const STATE_CONFIG: Record<
 > = {
   ai_active: {
     label: "IA activa",
-    className: "text-[hsl(var(--electric-lime))]",
+    className: "text-primary",
     Icon: Bot,
   },
   human_active: {
     label: "Humano",
-    className: "text-blue-400",
+    className: "text-info",
     Icon: User,
   },
   handoff_pending: {
     label: "Handoff pendiente",
-    className: "text-amber-400",
+    className: "text-warning",
     Icon: AlertCircle,
   },
   waiting_reply: {
@@ -52,7 +52,7 @@ const STATE_CONFIG: Record<
   },
   closed: {
     label: "Cerrado",
-    className: "text-muted-foreground/50",
+    className: "text-muted-foreground",
     Icon: XCircle,
   },
 };

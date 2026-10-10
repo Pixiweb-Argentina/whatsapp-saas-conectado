@@ -1,22 +1,27 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
-import { Space_Grotesk } from "next/font/google";
+import { Manrope, Instrument_Serif } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Agentation } from "agentation";
 import { brandStyleOverride } from "@/lib/branding";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-display",
+  variable: "--font-manrope",
+  display: "swap",
+});
+const editorial = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: "italic",
+  variable: "--font-editorial",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Agente WhatsApp",
-  description: "Plataforma de inbox conversacional para WhatsApp con IA",
+  title: "Pixiweb · Mensajería",
+  description: "Espacio de atención y automatización de conversaciones",
 };
 
 export default function RootLayout({
@@ -35,11 +40,11 @@ export default function RootLayout({
         </head>
       )}
       <body
-        className={`${GeistSans.variable} ${GeistMono.variable} ${spaceGrotesk.variable} font-body antialiased`}
+        className={`${manrope.variable} ${editorial.variable} font-body antialiased`}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >

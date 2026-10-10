@@ -98,13 +98,13 @@ import {
 // Primary source: globals.css CSS variables.
 // ============================================================
 const BRAND = {
-  name: "Agente WhatsApp",
-  primaryHex: "#B5F23D", // oklch(0.90 0.21 126) — Electric Lime
-  accentHex: "#B5F23D",
-  font: "Space Grotesk (display) · Geist Sans (body) · Geist Mono",
-  personality: "Glass + Electric — Apple/visionOS glassmorphism",
+  name: "Pixiweb · Mensajería",
+  primaryHex: "#5D47CE", // Violet primary in light mode
+  accentHex: "#CBE269",
+  font: "Manrope · Instrument Serif (editorial) · mono del sistema",
+  personality: "Piedra, violeta y acento lima",
   audience: "B2B · operadores / setters / admins",
-  radius: "14px",
+  radius: "14 / 16 / 24px",
 };
 
 const HAS_AGENTATION = process.env.NEXT_PUBLIC_HAS_AGENTATION === "true";
@@ -283,8 +283,8 @@ function Typography() {
   return (
     <Section
       title="Typography"
-      description="Space Grotesk para display, Geist Sans para body, Geist Mono para datos."
-      tokens={["--font-display", "--font-geist-sans", "--font-geist-mono"]}
+      description="Manrope para interfaz, Instrument Serif para acentos editoriales y mono del sistema para datos."
+      tokens={["--font-manrope", "--font-editorial", "font-mono"]}
       when="Máximo 3 tamaños de texto por pantalla. tracking-tight en headings grandes."
       whenNot="No usar text-xs para texto de lectura sostenida."
     >
@@ -300,7 +300,7 @@ function Typography() {
         </p>
         <p className="text-xl font-medium">H3 · Detalle del contacto</p>
         <p className="text-base">
-          Body — texto base de la interfaz (Geist Sans).
+          Body — texto base de la interfaz (Manrope).
         </p>
         <p className="text-sm text-muted-foreground">
           Small / Caption — metadatos.
@@ -496,7 +496,7 @@ function Cards() {
         <div className="glass rounded-lg p-6">
           <p className="font-display text-base font-semibold">Glass</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Translúcida + backdrop-blur. La firma visionOS.
+            Translúcida + backdrop-blur. Superficie de bienvenida; nunca detrás de mensajes.
           </p>
         </div>
       </div>
@@ -1114,7 +1114,7 @@ function PatternSidebar() {
               <MessageSquare className="h-4 w-4" />
             </div>
             <span className="font-display text-sm font-semibold">
-              Agente WhatsApp
+              Pixiweb · Mensajería
             </span>
           </div>
           <nav className="flex-1 space-y-1">
@@ -1234,7 +1234,7 @@ function PatternNavbar() {
               <MessageSquare className="h-4 w-4" />
             </div>
             <span className="font-display text-sm font-semibold">
-              Agente WhatsApp
+              Pixiweb · Mensajería
             </span>
           </div>
           <nav className="hidden items-center gap-1 sm:flex">
@@ -1301,6 +1301,7 @@ export function ComponentShowcase() {
             <ThemeToggle />
           </header>
 
+          <p className="mb-6 text-sm text-muted-foreground">Todos los datos de esta biblioteca son ejemplos ficticios. <a className="text-primary underline" href="/ui/preview">Abrir vistas omnicanal</a></p>
           <HowToPanel hasAgentation={HAS_AGENTATION} />
 
           {/* Part 1 */}

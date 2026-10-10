@@ -63,11 +63,12 @@ export function InboxLayout({
   }, [conversations, search, activeTab]);
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="app-inbox flex overflow-hidden">
       {/* Left panel — conversation list */}
       <aside
         className={cn(
-          "w-80 shrink-0 border-r border-border/50 flex flex-col overflow-hidden",
+          "w-full md:w-80 shrink-0 border-r border-border/50 flex flex-col overflow-hidden bg-card",
+          pathname !== "/inbox" && "hidden md:flex",
         )}
         aria-label="Conversaciones"
       >
@@ -102,7 +103,7 @@ export function InboxLayout({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nombre o teléfono..."
-              className="pl-8 h-8 text-xs bg-muted/30 border-border/40 placeholder:text-muted-foreground/50"
+              className="pl-8 h-11 text-sm bg-card border-input placeholder:text-muted-foreground"
               aria-label="Buscar conversaciones"
             />
           </div>
@@ -123,7 +124,7 @@ export function InboxLayout({
                 size="sm"
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "h-6 px-2 text-[11px] rounded-md transition-colors",
+                  "min-h-11 px-2 text-xs rounded-md transition-colors",
                   activeTab === tab.id
                     ? "bg-primary/10 text-primary font-medium"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
@@ -143,7 +144,7 @@ export function InboxLayout({
                   ? "Sin resultados"
                   : "No hay conversaciones"}
               </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {search || activeTab !== "all"
                   ? "Intenta con otro filtro o búsqueda"
                   : "Los contactos de WhatsApp aparecerán aquí"}
@@ -169,7 +170,7 @@ export function InboxLayout({
       </aside>
 
       {/* Right panel — thread / detail */}
-      <main className="flex-1 overflow-hidden">{children}</main>
+      <main className={cn("min-w-0 flex-1 overflow-hidden", pathname === "/inbox" && "hidden md:block")}>{children}</main>
     </div>
   );
 }

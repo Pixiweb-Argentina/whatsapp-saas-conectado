@@ -70,7 +70,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )}
           <div className="flex justify-end">
             <span
-              className="font-mono text-[10px] text-muted-foreground/60"
+              className="font-mono text-[10px] text-muted-foreground"
               suppressHydrationWarning
             >
               {time}

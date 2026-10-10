@@ -58,8 +58,8 @@ function Initials({ name }: { name: string | null }) {
     : "?";
 
   return (
-    <div className="h-10 w-10 rounded-full bg-[hsl(var(--electric-lime)/0.15)] border border-[hsl(var(--electric-lime)/0.3)] flex items-center justify-center shrink-0">
-      <span className="text-xs font-semibold text-[hsl(var(--electric-lime))] font-mono">
+    <div className="h-10 w-10 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+      <span className="text-xs font-semibold text-primary font-mono">
         {letters}
       </span>
     </div>
@@ -165,7 +165,7 @@ export function CrmPanel({
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <aside className="w-72 shrink-0 flex flex-col gap-0 border-l border-border/50 glass overflow-y-auto text-sm">
+    <aside className="w-full flex flex-col gap-0 bg-card text-sm">
       {/* ── Section: Contact info ── */}
       <section>
         <button
@@ -173,7 +173,7 @@ export function CrmPanel({
           onClick={() => setContactOpen((v) => !v)}
           className="w-full flex items-center justify-between px-4 py-2.5 border-b border-border/40 hover:bg-muted/20 transition-colors"
         >
-          <span className="text-xs font-semibold text-[hsl(var(--electric-lime))] uppercase tracking-wider">
+          <span className="text-xs font-semibold text-primary uppercase tracking-wider">
             Contacto
           </span>
           {contactOpen ? (
@@ -197,7 +197,7 @@ export function CrmPanel({
 
             {/* Name */}
             <div className="space-y-1">
-              <Label className="text-[10px] text-[hsl(var(--electric-lime))] uppercase tracking-wider">
+              <Label className="text-[10px] text-primary uppercase tracking-wider">
                 Nombre
               </Label>
               <Input
@@ -210,7 +210,7 @@ export function CrmPanel({
 
             {/* Email */}
             <div className="space-y-1">
-              <Label className="text-[10px] text-[hsl(var(--electric-lime))] uppercase tracking-wider">
+              <Label className="text-[10px] text-primary uppercase tracking-wider">
                 Email
               </Label>
               <Input
@@ -224,7 +224,7 @@ export function CrmPanel({
 
             {/* Opt-in switch */}
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] text-[hsl(var(--electric-lime))] uppercase tracking-wider">
+              <Label className="text-[10px] text-primary uppercase tracking-wider">
                 WhatsApp Opt-in
               </Label>
               <Switch
@@ -244,7 +244,7 @@ export function CrmPanel({
           onClick={() => setCrmOpen((v) => !v)}
           className="w-full flex items-center justify-between px-4 py-2.5 border-b border-border/40 hover:bg-muted/20 transition-colors"
         >
-          <span className="text-xs font-semibold text-[hsl(var(--electric-lime))] uppercase tracking-wider">
+          <span className="text-xs font-semibold text-primary uppercase tracking-wider">
             CRM
           </span>
           {crmOpen ? (
@@ -258,7 +258,7 @@ export function CrmPanel({
           <div className="px-4 py-3 space-y-3">
             {/* Stage */}
             <div className="space-y-1">
-              <Label className="text-[10px] text-[hsl(var(--electric-lime))] uppercase tracking-wider">
+              <Label className="text-[10px] text-primary uppercase tracking-wider">
                 Etapa
               </Label>
               <Select value={stage} onValueChange={(v) => setStage(v as Stage)}>
@@ -277,7 +277,7 @@ export function CrmPanel({
 
             {/* Tags */}
             <div className="space-y-1.5">
-              <Label className="text-[10px] text-[hsl(var(--electric-lime))] uppercase tracking-wider">
+              <Label className="text-[10px] text-primary uppercase tracking-wider">
                 Etiquetas
               </Label>
               {tags.length > 0 && (

@@ -47,6 +47,12 @@ const config: Config = {
         border: "oklch(var(--border) / <alpha-value>)",
         input: "oklch(var(--input) / <alpha-value>)",
         ring: "oklch(var(--ring) / <alpha-value>)",
+        "primary-hover": "oklch(var(--primary-hover) / <alpha-value>)",
+        sidebar: "oklch(var(--sidebar) / <alpha-value>)",
+        "sidebar-foreground": "oklch(var(--sidebar-foreground) / <alpha-value>)",
+        "sidebar-active": "oklch(var(--sidebar-active) / <alpha-value>)",
+        "sidebar-muted": "oklch(var(--sidebar-muted) / <alpha-value>)",
+        lavender: "oklch(var(--lavender) / <alpha-value>)",
         chart: {
           "1": "oklch(var(--chart-1) / <alpha-value>)",
           "2": "oklch(var(--chart-2) / <alpha-value>)",
@@ -56,30 +62,39 @@ const config: Config = {
         },
       },
       borderRadius: {
+        xl: "1.5rem",
+        "2xl": "2.5rem",
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 4px)",
-        sm: "calc(var(--radius) - 8px)",
+        md: "0.875rem",
+        sm: "0.5rem",
+      },
+      textColor: {
+        primary: {
+          DEFAULT: "oklch(var(--primary-text) / <alpha-value>)",
+          foreground: "oklch(var(--primary-foreground) / <alpha-value>)",
+        },
       },
       fontFamily: {
         display: [
-          "var(--font-display)",
+          "var(--font-manrope)",
           "ui-sans-serif",
           "system-ui",
           "sans-serif",
         ],
         body: [
-          "var(--font-geist-sans)",
+          "var(--font-manrope)",
           "ui-sans-serif",
           "system-ui",
           "sans-serif",
         ],
         sans: [
-          "var(--font-geist-sans)",
+          "var(--font-manrope)",
           "ui-sans-serif",
           "system-ui",
           "sans-serif",
         ],
-        mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
+        mono: ["ui-monospace", "SFMono-Regular", "Consolas", "monospace"],
+        editorial: ["var(--font-editorial)", "Georgia", "serif"],
       },
       keyframes: {
         "accordion-down": {

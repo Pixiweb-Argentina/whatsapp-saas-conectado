@@ -41,7 +41,7 @@ export function ThemeToggle() {
       size="icon"
       aria-label={isDark ? "Activar tema claro" : "Activar tema oscuro"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="text-muted-foreground hover:text-foreground"
+      className="text-muted-foreground hover:bg-muted hover:text-foreground"
     >
       {isDark ? (
         <Sun className="h-4 w-4" aria-hidden="true" />

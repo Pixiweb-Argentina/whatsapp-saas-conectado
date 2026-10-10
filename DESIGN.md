@@ -1,6 +1,6 @@
 # DESIGN — Pixiweb aplicado al SaaS omnicanal
 
-Versión 1.0 · Observación 2026-10-10 · **Especificación propuesta, no UI implementada**.
+Versión 1.1 · Observación 2026-10-10 · **Sistema base implementado localmente en F2; validación autenticada pendiente**.
 
 ## Fuente actual y alcance
 
@@ -8,7 +8,7 @@ Fuente solicitada: [pixiweb.com.ar](https://pixiweb.com.ar/). Se inspeccionaron 
 
 La captura de Chatfuel informa capacidades y organización. La referencia estética es el sitio actual de Pixiweb. No importar automáticamente textos comerciales, precios, promesas, datos ni el historial de paletas anteriores.
 
-El fork tiene Glass + Electric Lime, Space Grotesk/Geist y oscuro por defecto. El rediseño debe actualizar tokens, fuentes, componentes, estados y `COMPONENT_RULES.md`, no solo cambiar un color de botón.
+El fork partía de Glass + Electric Lime, Space Grotesk/Geist y oscuro por defecto. F2 actualiza tokens, fuentes, componentes, estados y COMPONENT_RULES.md. El claro es inicial; se conserva la preferencia guardada. Evidencia y pendientes: docs/F2-DISENO-omnichannel.md.
 
 ## Tokens observados en Pixiweb
 
@@ -111,4 +111,13 @@ No crear nuevas páginas de calendario/Kanban/billing por el solo rediseño. Don
 - No hay una mezcla accidental de Space Grotesk/Geist con Manrope ni variables hardcodeadas dispersas.
 - Cinco previews obligatorias: inbox con 4 canales, regla «hola», conexión con permiso faltante, conflicto Brevo, widget en web cliente.
 - QA visual y accesibilidad con capturas reales se realiza durante /build; este documento no certifica UI ni contraste integral de la aplicación.
+
+## Decisiones de implementación F2
+
+- Tokens OKLCH convertidos desde los hex observados, sin dependencias nuevas. Manrope e Instrument Serif con next/font; mono del sistema para datos.
+- CTA claro violeta #5d47ce/blanco; text-primary usa #432fb0 para cumplir AA sobre piedra. Oscuro usa lavanda #b9a0ff con texto #101014 para conservar legibilidad. Override de marca por deployment se mantiene; requiere su propia verificación de contraste.
+- Card opaca para trabajo, glass heredado casi opaco solo para compatibilidad; sin glow continuo sobre datos.
+- AppFrame/AppShell compartidos: sidebar negra 216px desde 1024px, navegación inferior antes. Inbox una columna bajo 768px; DetailPanel lateral desde 1440px y drawer accesible antes.
+- Cinco previews en /ui/preview (solo desarrollo, ficticias); no habilitan fuentes ni muestran métricas comerciales reales.
+- Pendiente: revisión completa de pantallas privadas/roles/estados con el nuevo Supabase, incluidos filtros y scroll tras navegación real.
 

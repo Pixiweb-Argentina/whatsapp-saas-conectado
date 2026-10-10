@@ -1,13 +1,13 @@
 // Per-deployment brand accent override.
 //
-// The design system ("Glass + Electric Lime", see globals.css) is the product
+// The design system ("Pixiweb", see globals.css) is the product
 // default. A deployment dedicated to one customer can tint the accent to their
 // brand without forking the stylesheet: set the env vars below in that Vercel
 // project only. Unset means every deployment keeps the default look.
 //
 // Values are raw OKLch triplets "L C H" — the same format globals.css uses, so
 // Tailwind can still inject alpha via oklch(var(--token) / <alpha-value>).
-// Convert a hex with any OKLch picker; keep L high enough that
+// Convert a hex with any OKLch picker; verify contrast in both themes so that
 // --primary-foreground stays readable on top.
 //
 //   NEXT_PUBLIC_BRAND_PRIMARY            e.g. "0.4519 0.1632 346.31"
@@ -38,11 +38,11 @@ export function brandStyleOverride(): string | null {
   const vars: string[] = [];
   if (primary) {
     // --ring follows --primary so focus states stay on-brand.
-    vars.push(`--primary:${primary}`, `--ring:${primary}`, `--chart-1:${primary}`);
+    vars.push(`--primary:${primary}`, `--primary-text:${primary}`, `--ring:${primary}`, `--chart-1:${primary}`);
   }
   if (primaryFg) vars.push(`--primary-foreground:${primaryFg}`);
   if (accent) vars.push(`--chart-2:${accent}`);
 
-  // Applied to both themes: these tokens are identical in :root and .dark.
+  // Applied to both themes: an explicit deployment override takes precedence over both themes.
   return `:root,.dark{${vars.join(";")}}`;
 }

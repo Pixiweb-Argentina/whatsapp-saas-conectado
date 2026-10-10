@@ -12,12 +12,12 @@ export const motion = {
     instant: "75ms", // Icon swaps, checkmarks appearing
     sm: "150ms", // Hover states, focus rings, small badge changes
     md: "200ms", // Entrances, state changes, dropdown open
-    lg: "350ms", // Page transitions, drawer slides, modal appear
-    xl: "500ms", // Complex sequences, orchestrated multi-element animations
+    lg: "220ms", // Page transitions, drawer slides, modal appear
+    xl: "220ms", // Complex sequences, orchestrated multi-element animations
   },
   easing: {
     // Default for most interactions — snaps into position, smooth stop
-    default: "cubic-bezier(0.16, 1, 0.3, 1)", // ease-out-expo
+    default: "cubic-bezier(.22, 1, .36, 1)", // ease-out-expo
     // Elements entering the screen
     enter: "cubic-bezier(0.0, 0.0, 0.2, 1)",
     // Elements leaving the screen
@@ -30,7 +30,7 @@ export const motion = {
     hover: "transition-colors duration-150 ease-out",
     enter: "transition-all duration-200 ease-out",
     exit: "transition-all duration-200 ease-in",
-    drawer: "transition-transform duration-[350ms] ease-out",
+    drawer: "transition-transform duration-200 ease-out",
     modal: "transition-all duration-200 ease-out",
   },
   // What to animate (always) vs what to NEVER animate
@@ -65,5 +65,5 @@ export const motionClasses = {
   // Zoom in (modals, dialogs)
   zoomIn: "animate-in zoom-in-95 fade-in duration-200",
   // Slide in from right (drawers, side panels)
-  slideInRight: "animate-in slide-in-from-right duration-[350ms]",
+  slideInRight: "animate-in slide-in-from-right duration-200",
 } as const;
