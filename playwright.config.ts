@@ -8,6 +8,8 @@ const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // Playwright clears this directory at startup; preserve Cloud QA ledgers and logs outside it.
+  outputDir: "./test-results/playwright",
   fullyParallel: false,
   workers: 1,
   retries: 0,
@@ -29,6 +31,7 @@ export default defineConfig({
       NEXT_TELEMETRY_DISABLED: "1",
       NEXT_PUBLIC_SUPABASE_URL: "https://supabase.example.invalid",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "public-test-placeholder",
+      SUPABASE_SERVICE_ROLE_KEY: "server-test-placeholder",
     },
   },
 });

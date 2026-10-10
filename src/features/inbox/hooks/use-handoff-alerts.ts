@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import { shouldNotifyHandoff } from "./handoff-alert";
 import { createClient } from "@/lib/supabase/client";
+import { useNotificationPermission, requestNotificationPermission } from "./use-notification-permission";
 import type { ConversationRow, ConversationWithContact } from "@/features/inbox/types";
-
-type NotificationSupport = "unsupported" | NotificationPermission;
 
 // Título base de la pestaña, capturado UNA sola vez por documento (no por
 // instancia del hook). Re-leer document.title en cada montaje obligaría a
@@ -65,17 +64,8 @@ export function useHandoffAlerts(
     };
   }, []);
 
-  const [permission, setPermission] = useState<NotificationSupport>(() =>
-    typeof window !== "undefined" && "Notification" in window
-      ? Notification.permission
-      : "unsupported",
-  );
-
-  // Pedir permiso solo desde un control explícito (botón), nunca al cargar.
-  const requestPermission = useCallback(() => {
-    if (typeof window === "undefined" || !("Notification" in window)) return;
-    Notification.requestPermission().then(setPermission);
-  }, []);
+  const permission = useNotificationPermission();
+  const requestPermission = requestNotificationPermission;
 
   // Conversaciones que ya avisaron. Arranca con las que ya esperaban al
   // cargar el inbox: esas no son una entrada nueva.

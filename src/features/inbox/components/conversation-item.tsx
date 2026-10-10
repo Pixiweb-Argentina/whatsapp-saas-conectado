@@ -5,6 +5,7 @@ import type {
 } from "@/features/inbox/types";
 import { StateBadge } from "./state-badge";
 import { contactInitials, contactLabel } from "@/features/contacts/lib/contact-display";
+import { INBOX_CHANNEL_LABELS } from "../lib/inbox-filters";
 
 interface ConversationItemProps {
   conversation: ConversationWithContact;
@@ -98,8 +99,10 @@ export function ConversationItem({
           )}
         </div>
 
-        <p className="font-mono text-[10px] text-muted-foreground">
-          {contact.phone ?? "Sin teléfono"}
+        <p className="text-[11px] text-muted-foreground truncate">
+          {INBOX_CHANNEL_LABELS[conversation.channel] ?? "Canal desconocido"}
+          {conversation.connection?.display_name && ` · ${conversation.connection.display_name}`}
+          {contact.phone && ` · ${contact.phone}`}
         </p>
       </div>
     </button>

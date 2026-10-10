@@ -38,3 +38,5 @@ La simulación de keyword es una demostración local exacta, no la especificaci�
 Conectar proyecto de la cuenta Supabase nueva de Yani; no usar las bases antiguas. Validar login y recuperación reales, workspace switcher, roles, envío WA, handoff, ficha/observabilidad y todas las pantallas privadas (agentes, KB, herramientas, templates, settings, dashboard, análisis y agencia). Revisar filtros/scroll tras navegación autenticada y todos los estados de cada vista.
 
 El sistema base está implementado; los flujos privados reciben tokens y shell pero no se consideran probados por el showcase. F1 y F2 conservan pendientes explícitos; ninguna fase se declara íntegramente cerrada. Sin compras, cambios Cloud, push/merge ni despliegue.
+
+Actualización F3 incremento 4: Supabase nuevo conectado a la app local, 72 migraciones aplicadas. Login real, workspace desde agencia, inbox autenticado, filtros, móvil, Realtime y toma humana comprobados con fixtures. Se conserva un laboratorio sintético para revisión. El resto de pantallas privadas, acceso definitivo y contratos/proveedores siguen pendientes. Ver [continuidad F3](F3-MOTOR-omnichannel.md).

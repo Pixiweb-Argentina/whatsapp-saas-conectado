@@ -45,6 +45,7 @@ interface ChatThreadProps {
   initialMessages: MessageRow[];
   currentUserId: string;
   role?: WorkspaceRole;
+  backHref?: string;
 }
 
 export function ChatThread({
@@ -52,6 +53,7 @@ export function ChatThread({
   initialMessages,
   currentUserId,
   role = "agent",
+  backHref = "/inbox",
 }: ChatThreadProps) {
   const messages = useRealtimeMessages(conversation.id, initialMessages);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -211,7 +213,7 @@ export function ChatThread({
         >
           <div className="flex min-w-0 items-center gap-2">
             <Button asChild variant="ghost" size="icon" className="md:hidden">
-              <Link href="/inbox" aria-label="Volver a conversaciones"><ArrowLeft aria-hidden="true" /></Link>
+              <Link href={backHref} aria-label="Volver a conversaciones"><ArrowLeft aria-hidden="true" /></Link>
             </Button>
             <div className="space-y-0.5 min-w-0">
             <h2 className="font-display text-sm font-semibold text-foreground truncate">

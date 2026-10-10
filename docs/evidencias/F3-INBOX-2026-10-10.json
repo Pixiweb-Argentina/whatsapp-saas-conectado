@@ -1,0 +1,123 @@
+{
+  "recordedAt": "2026-10-10",
+  "project": "bzanbpyzujlogipxvkfn",
+  "branch": "codex/omnichannel-f3-inbox",
+  "migrations": {
+    "count": 72,
+    "last": "20261010170516_omnichannel_inbox_read"
+  },
+  "validation": {
+    "unit": {
+      "passed": 1725,
+      "failed": 0
+    },
+    "database": {
+      "passed": 40,
+      "failed": 0
+    },
+    "publicDesignBrowser": {
+      "passed": 20,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "targetedLint": "passed",
+    "productionBuild": "passed with fictitious API configuration"
+  },
+  "authenticatedBrowser": {
+    "auth": "real GoTrue password login using a synthetic QA account",
+    "workspaceCreation": "through agency UI",
+    "filters": [
+      "channel",
+      "account",
+      "empty search",
+      "search recovery"
+    ],
+    "threadNavigation": "preserves filters on mobile return",
+    "mobileWidth": 390,
+    "horizontalOverflow": false,
+    "realtime": "synthetic Cloud insert appeared in the thread without reload",
+    "humanTakeover": {
+      "state": "human_active",
+      "aiEnabled": false,
+      "stateRevision": 2,
+      "jobState": "cancelled",
+      "jobReason": "conversation_changed"
+    },
+    "screenshots": [
+      "test-results/f3-inbox-browser/mobile-list.png"
+    ],
+    "hydration": {
+      "issue": "Notification.permission initialized different markup on server and client",
+      "fix": "useSyncExternalStore with stable server snapshot",
+      "cleanReloadNewErrors": 0,
+      "permissionButtonAfterHydration": true
+    }
+  },
+  "cloudApi": {
+    "memberPreviews": 2,
+    "outsiderRows": 0,
+    "anonymousRpcDenied": true,
+    "browserQueueDenied": true,
+    "temporaryOutsiderUserRemoved": true
+  },
+  "remainingTestData": {
+    "workspaceId": "52aa2172-9791-48cc-82ca-6fb21cfca773",
+    "workspaces": 1,
+    "authQaUsers": 1,
+    "connections": 2,
+    "connectionStatus": "connecting",
+    "conversations": 2,
+    "messages": 3,
+    "jobs": 1,
+    "outbox": 0,
+    "activeCron": 0
+  },
+  "securityAdvisors": [
+    {
+      "name": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 11,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    },
+    {
+      "name": "extension_in_public",
+      "level": "WARN",
+      "count": 3,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public"
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "level": "WARN",
+      "count": 3,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable"
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "level": "WARN",
+      "count": 3,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable"
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "level": "WARN",
+      "count": 1,
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection"
+    }
+  ],
+  "externalEffects": {
+    "providerCalls": 0,
+    "emailMessages": 0,
+    "purchases": 0,
+    "appDeployments": 0,
+    "pushes": 0,
+    "merges": 0
+  },
+  "limitations": [
+    "Synthetic WhatsApp data, no real transport tested",
+    "New transport creation guard remains active",
+    "Worker context/producers/composer and comment reservations remain pending",
+    "Final human administrator access not created",
+    "No complete acceptance of F1/F2/F3"
+  ],
+  "evidenceRetention": "First Playwright run cleared prior ignored logs/captures. Counts above came from successful tool outputs. Cloud fixture IDs reconciled from the same workspace without duplicate rows. Playwright outputDir now isolates future cleanup."
+}

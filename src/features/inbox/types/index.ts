@@ -76,6 +76,7 @@ export interface MessageRow {
 
 export interface ConversationWithContact extends ConversationRow {
   contact: ContactRow;
+  connection?: { id: string; channel: string; display_name: string | null } | null;
   last_message: Pick<MessageRow, "body" | "direction" | "created_at"> | null;
 }
 

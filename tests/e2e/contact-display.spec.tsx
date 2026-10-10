@@ -15,7 +15,7 @@ test("phone-less conversation renders readable labels with app styles", async ({
   await page.setContent(`<!doctype html><html class="dark"><head>${styles}</head>
     <body><main style="max-width:320px;margin:24px auto">${component}</main></body></html>`);
   await expect(page.getByRole("button", { name: /Contacto sin nombre/ })).toBeVisible();
-  await expect(page.getByText("Sin teléfono", { exact: true })).toBeVisible();
+  await expect(page.getByText("Instagram", { exact: true })).toBeVisible();
   await expect(page.getByText("Consulta de prueba")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("phone-less-contact.png") });

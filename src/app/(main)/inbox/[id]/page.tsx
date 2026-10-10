@@ -10,11 +10,15 @@ import type {
 } from "@/features/inbox/types";
 import type { WorkspaceRole } from "@/features/inbox/hooks/use-role";
 
+import { readInboxPage } from "@/features/inbox/services/inbox-query";
+import { inboxQuery, parseInboxFilters, type InboxSearchParams } from "@/features/inbox/lib/inbox-filters";
+
 interface PageProps {
+  searchParams: Promise<InboxSearchParams>;
   params: Promise<{ id: string }>;
 }
 
-export default async function InboxDetailPage({ params }: PageProps) {
+export default async function InboxDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
@@ -64,6 +68,7 @@ export default async function InboxDetailPage({ params }: PageProps) {
     .from("messages")
     .select("*, sender:users!sender_user_id(full_name, avatar_url)")
     .eq("conversation_id", id)
+    .eq("workspace_id", convWithContact.workspace_id)
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -71,56 +76,8 @@ export default async function InboxDetailPage({ params }: PageProps) {
 
   // 5. Fetch sidebar conversations (the conversation's workspace, for InboxLayout)
   const workspaceId = convWithContact.workspace_id;
-  let sidebarConversations: ConversationWithContact[] = [];
-
-  if (workspaceId) {
-    const { data: conversations } = await supabase
-      .from("conversations")
-      .select("*, contact:contacts(*)")
-      .eq("workspace_id", workspaceId)
-      .order("last_message_at", { ascending: false, nullsFirst: false })
-      .limit(50);
-
-    const rows = (conversations ?? []) as (ConversationRow & {
-      contact: ContactRow;
-    })[];
-
-    const convIds = rows.map((c) => c.id);
-    const lastMessageMap = new Map<
-      string,
-      Pick<MessageRow, "body" | "direction" | "created_at">
-    >();
-
-    if (convIds.length > 0) {
-      // Misma limitación conocida que en `inbox/page.tsx`: trae todos
-      // los mensajes de hasta 50 conversaciones para quedarse con el último de
-      // cada una, y pasado el tope de filas de PostgREST algunas quedan sin
-      // preview en silencio. No arreglar con `.limit(N)`; ver el comentario
-      // largo en el otro archivo.
-      const { data: recentMessages } = await supabase
-        .from("messages")
-        .select("conversation_id, body, direction, created_at")
-        .in("conversation_id", convIds)
-        .order("created_at", { ascending: false });
-
-      if (recentMessages) {
-        for (const msg of recentMessages) {
-          if (!lastMessageMap.has(msg.conversation_id)) {
-            lastMessageMap.set(msg.conversation_id, {
-              body: msg.body,
-              direction: msg.direction,
-              created_at: msg.created_at,
-            });
-          }
-        }
-      }
-    }
-
-    sidebarConversations = rows.map((conv) => ({
-      ...conv,
-      last_message: lastMessageMap.get(conv.id) ?? null,
-    }));
-  }
+  const filters = parseInboxFilters(await searchParams);
+  const page = await readInboxPage(supabase, workspaceId, filters);
 
   const conversation: ConversationWithContact = {
     ...convWithContact,
@@ -136,10 +93,13 @@ export default async function InboxDetailPage({ params }: PageProps) {
 
   return (
     <InboxLayout
-      conversations={sidebarConversations}
+      key={filters.q}
+      conversations={page.conversations}
+      filters={filters} accounts={page.accounts} nextPage={page.next} loadError={page.error}
       workspaceId={workspaceId ?? null}
     >
       <ChatThread
+        backHref={`/inbox${inboxQuery(filters)}`}
         conversation={conversation}
         initialMessages={messages}
         currentUserId={user.id}

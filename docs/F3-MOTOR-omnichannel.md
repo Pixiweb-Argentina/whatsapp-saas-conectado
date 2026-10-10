@@ -76,6 +76,34 @@ El asesor de seguridad no devolvió ERROR; conserva WARN heredados por extension
 
 Referencias técnicas consultadas: [bloqueos PostgreSQL 17](https://www.postgresql.org/docs/17/explicit-locking.html), [pg_cron](https://github.com/citusdata/pg_cron) y [cambios de PostgreSQL 17.11 en Supabase](https://supabase.com/changelog/postgres-15-19-17-11-breaking-changes). No se requirió migrar cifrados legacy en esta base inicialmente vacía.
 
+## Incremento 4: Supabase Auth e inbox real
+
+La app local quedó conectada a `bzanbpyzujlogipxvkfn`. Se reutilizaron la clave publicable y la clave secreta existentes del proyecto, sin crear/rotar claves. `.env.local` y `.env.qa.local` están ignorados por Git; no pegar su contenido en chat. El nombre heredado `SUPABASE_SERVICE_ROLE_KEY` contiene la clave secreta moderna, solo servidor. No se configuraron proveedores, LLM ni Resend.
+
+Se creó un usuario Auth sintético y su perfil de super admin; luego, desde el navegador, se inició sesión y se creó **Laboratorio F3 · prueba** mediante el panel de agencia. Esto generó membresía, prompts, agentes y datos del negocio por el flujo real. No es el administrador definitivo de Yani ni una cuenta de cliente.
+
+El listado usa `read_inbox_page`, SECURITY INVOKER, con la sesión del usuario y RLS en todos los joins. Retorna hasta 51 filas: 50 visibles y una señal de siguiente página. Cursor por actividad e ID, filtros de canal/cuenta/estado y búsqueda literal de nombre/teléfono/email aplicados en SQL antes del límite. Un lateral join toma solo el último mensaje de cada conversación; ya no depende del límite global de mensajes de PostgREST. Un error de carga se muestra como error con reintento, no como una bandeja vacía.
+
+La UI identifica canal y cuenta, conserva filtros al abrir el hilo y al volver en móvil, muestra carga durante la navegación y permite recorrer páginas. Las conexiones preparadas/revocadas permanecen visibles para consultar historial; figurar en el filtro no habilita envíos. Se conserva el bloqueo SQL de nuevos transportes y la ruta WA compatible.
+
+La migración `20261010170516_omnichannel_inbox_read.sql` se ensayó en PGlite y se aplicó a Cloud: **72 migraciones** en total. No volver a aplicarla. No modifica filas históricas ni concede lectura de jobs/outbox al navegador.
+
+### Verificación del incremento
+
+- **1.725 unitarias** y **40 comprobaciones DB** pasan. Siete comprobaciones del nuevo archivo DB cubren 1.200 mensajes, cursor entre 55 conversaciones con fechas empatadas/nulas, filtros, miembros/viewer/ajeno, desactivación de membresía y rechazo anónimo.
+- Typecheck y lint dirigido pasan. Build de producción local aprobado con configuración API ficticia. **20/20 E2E** públicos/diseño pasan; esa suite usa credenciales ficticias y no sustituye el recorrido autenticado.
+- GoTrue real + navegador: login, creación de workspace, filtros Instagram vacío/WhatsApp/cuenta, búsqueda vacía y recuperación, apertura de hilo y regreso conservando filtros a 390px, sin overflow horizontal.
+- Realtime real: un mensaje sintético insertado en Cloud apareció en el hilo sin recargar.
+- Desde la UI: handoff y toma humana. La conversación quedó `human_active`, `ai_enabled=false`, `state_revision=2`, asignada al operador; el job de IA pendiente quedó `cancelled/conversation_changed`. Cero permisos de envío y cero llamadas a proveedores.
+- REST con sesiones GoTrue independientes: el miembro obtiene sus dos previews; un usuario ajeno obtiene cero filas; anon no ejecuta la RPC y authenticated no lee message_jobs. Usuario ajeno temporal cerrado/eliminado al terminar.
+- Captura móvil: `test-results/f3-inbox-browser/mobile-list.png`. El ledger local `test-results/f3-inbox-fixture.json` permite reutilizar los IDs sin duplicar fixtures. Si falta y hay datos, el smoke falla para exigir conciliación.
+
+Se mantienen **un usuario QA, un workspace, dos conexiones sintéticas en connecting, dos contactos/conversaciones, tres mensajes y un job cancelado**, para revisión local. No hay credenciales de WhatsApp/Meta/Brevo en esas conexiones. No usarlos como datos de cliente ni como capacidades verificadas. Purga heredada sigue inactiva.
+
+El asesor conserva los avisos heredados y ahora también informa [protección contra contraseñas filtradas desactivada](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Cero ERROR; no se cambió el plan ni se habilitó facturación. La configuración de Auth y los avisos heredados siguen en la revisión previa al lanzamiento.
+
+Fuentes consultadas: [claves de Supabase](https://supabase.com/docs/guides/getting-started/api-keys) y [creación de usuarios por servidor](https://supabase.com/docs/reference/javascript/auth-admin-createuser). Evidencia consolidada: [F3 inbox](evidencias/F3-INBOX-2026-10-10.json).
+
 ## Estado de las tareas
 
 | Tarea | Estado |
@@ -86,12 +114,12 @@ Referencias técnicas consultadas: [bloqueos PostgreSQL 17](https://www.postgres
 | F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y worker implementados; pruebas local/Cloud y concurrencia pasan; productores/cron de aplicación, cuotas y backoff pendientes |
 | F3-T2.2 invalidación durable y revalidación inmediata | Trigger y permiso transaccional probados en Cloud; integración con generación real y contexto de canales pendiente |
 | F3-T2.3 receipts/unknown/conciliación | Unknown durable sin reenvío probado; consumidores de ecos/receipts y conciliación pendientes |
-| F3-T3.1 inbox/composer omnicanal | Pendiente; F2 contiene previews de diseño, no estas conexiones |
-| F3-T3.2 pruebas integrales | Regresión local y dos carreras PostgreSQL reales pasan; autenticación/navegador y flujos con proveedores pendientes |
+| F3-T3.1 inbox/composer omnicanal | Lectura, filtros y navegación con Supabase real probados; composer con política por canal pendiente |
+| F3-T3.2 pruebas integrales | SQL/GoTrue/RLS/navegador/Realtime/toma humana pasan; cuentas y envíos de proveedores pendientes |
 
 ## Próximo paso y límites
 
-Conectar la app local al proyecto nuevo y verificar GoTrue/login con un workspace de desarrollo; las pruebas SQL de roles no sustituyen ese flujo. Después integrar productores/contexto/worker al pipeline y al inbox, con permisos por cuenta y reserva por comentario antes de habilitar los nuevos transportes. No se creó usuario de acceso ni se configuraron credenciales de la app en este incremento.
+Integrar contexto confiable de identidad/capacidades, productores y worker al pipeline y composer, con reserva por comentario y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
 
 La base Cloud ya está inicializada; la app todavía no está desplegada ni enviando mensajes nuevos. No se usaron bases anteriores. Sin compras, push o merge. F1/F2/F3 continúan sin aceptación integral.
 
@@ -103,3 +131,8 @@ La base Cloud ya está inicializada; la app todavía no está desplegada ni envi
 - Filtrar herramientas solo en el prompt es insuficiente: el registry debe repetir la comprobación antes de ejecutar, incluso para herramientas dinámicas. Un canal nuevo no hereda herramientas WA por omisión.
 - Dos llamadas simultáneas al conector MCP se ejecutaron en serie y no demostraron concurrencia. Se reemplazaron por workers SQL temporales y se comprobaron PIDs/tiempos solapados; no confundir paralelismo del cliente con transacciones concurrentes.
 - No cancelar un outbox `sending` por toma humana ni devolverlo a pending: el proveedor puede haber aceptado. Conservar el resultado o unknown para conciliación.
+
+- La limpieza de Playwright borraba todo test-results, incluidos ledgers y capturas manuales. outputDir ahora apunta a test-results/playwright; logs/ledgers Cloud quedan fuera. Se recuperaron los IDs por consultas al workspace exacto, sin crear filas duplicadas.
+- El cierre por defecto de Supabase Auth revoca todas las sesiones del usuario. El smoke usa signOut con scope local para no cerrar la sesión independiente del navegador.
+
+- La primera carga autenticada detectó un mismatch SSR por leer Notification.permission en el inicializador de useState. Se reemplazó por useSyncExternalStore con snapshot de servidor estable. Recarga real sin errores/avisos nuevos y botón de permiso visible después de hidratar; no se solicitó permiso automáticamente. Regresión unitaria de SSR incluida.

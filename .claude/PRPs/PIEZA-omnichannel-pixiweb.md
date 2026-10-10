@@ -185,7 +185,9 @@ Segundo incremento: runtime de configuración separado del buffer y herramientas
 
 Tercer incremento: eventos/jobs/outbox y worker con lease/fencing, invalidación durable por cambio de control y permiso antes del POST. 1.722 unitarias y 33 DB locales pasan; typecheck/lint/build aprobados. Acceso al Supabase nuevo resuelto: 71 migraciones aplicadas, historial remoto verificado, smoke SQL con rollback y dos carreras con procesos PostgreSQL distintos. Fixtures retirados; cron heredado inactivo; sin envíos externos.
 
-Pendientes vigentes: configurar app/login con el proyecto nuevo, conectar productores/contexto/worker al inbox, reservas por comentario, backoff/cuotas y receipts/conciliación. No confundir soporte de código con capacidades verificadas en una cuenta externa. Continuidad y evidencia detalladas en [F3](../../docs/F3-MOTOR-omnichannel.md).
+Cuarto incremento: app configurada al proyecto nuevo, login GoTrue, workspace desde UI, inbox con filtros/cursores y previews por conversación. 1.725 unitarias, 40 DB y 20 E2E públicos/diseño pasan; UI autenticada, aislamiento REST, Realtime y toma humana con cancelación durable probados. 72 migraciones Cloud aplicadas. Se conserva laboratorio sintético para revisar; credenciales solo en archivos locales ignorados.
+
+Pendientes vigentes: conectar productores/contexto/worker y composer al inbox, reservas por comentario, backoff/cuotas y receipts/conciliación. Acceso definitivo de Yani pendiente; QA no es una cuenta operativa. No confundir soporte de código con capacidades verificadas en una cuenta externa. Continuidad y evidencia detalladas en [F3](../../docs/F3-MOTOR-omnichannel.md).
 
 | Fecha | Acción | Evidencia |
 |---|---|---|
@@ -194,3 +196,5 @@ Pendientes vigentes: configurar app/login con el proyecto nuevo, conectar produc
 | 2026-10-10 | Rama por fase importante | Mensaje de Yani; preparación creada desde main 28a1530 |
 | 2026-10-10 | Pieza generada desde template base | Solo documentación; modo pendiente; sin código ni migraciones modificados |
 | 2026-10-10 | Lista Roja confirmada; F1 local ampliada | 1.666 unitarias, 14 DB, 10 navegador y build pasan; Cloud pendiente |
+
+Auto-Blindaje F3: Playwright limpia outputDir al iniciar; usar test-results/playwright para no borrar ledgers Cloud/capturas manuales. Los cierres Auth del smoke deben usar scope local para preservar el navegador de QA.
