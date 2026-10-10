@@ -1,0 +1,67 @@
+{
+  "date": "2026-10-10",
+  "phase": "F3",
+  "increment": 10,
+  "branch": "codex/omnichannel-f3-inbox",
+  "scope": "Server-only immutable AI batch preparation and atomic text enqueue; not wired to legacy buffer",
+  "unit": {
+    "passed": 1793,
+    "failed": 0
+  },
+  "database_local": {
+    "passed": 83,
+    "failed": 0,
+    "after_test_extraction_targeted_passed": 62
+  },
+  "typecheck": "passed",
+  "targeted_lint": "passed",
+  "production_build": "not repeated; increment 9 evidence retained",
+  "browser": "not repeated; no UI change or buffer activation",
+  "cloud": {
+    "serviceRpc": true,
+    "scopeDenied": true,
+    "publicDenied": true,
+    "queuePinned": true,
+    "staleResumeBlocked": true,
+    "textRecovered": true,
+    "duplicate": true,
+    "conflict": true,
+    "noOutbox": true
+  },
+  "migration": {
+    "version": "20261010194247",
+    "name": "omnichannel_ai_reply_preparation",
+    "applied_total": 78,
+    "local_history_matches": true
+  },
+  "security_advisor": {
+    "errors": 0,
+    "warnings": 10,
+    "info": 12,
+    "new_warnings": 0,
+    "new_info": "RLS without policies on private service-only ai_reply_preparations; intentional deny for public roles"
+  },
+  "cleanup": {
+    "temporary_fixture_removed": true,
+    "preparations": 0,
+    "retained_workspaces": 1,
+    "retained_messages": 5,
+    "outbox": 0,
+    "active_cron": 0
+  },
+  "rollout": {
+    "ai": "off by default, max three workspaces",
+    "requires": [
+      "ai",
+      "ingress",
+      "worker"
+    ],
+    "legacy_buffer_switched": false
+  },
+  "limits": [
+    "No model or provider was invoked.",
+    "prepare/enqueue are infrastructure only; batch closure, handoff, legacy ACK, n8n and Setter still need integration.",
+    "No build/browser rerun; previous increment checks are not new evidence.",
+    "F3 integral acceptance and Meta/widget/Brevo remain pending."
+  ]
+}

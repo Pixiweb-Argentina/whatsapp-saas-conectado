@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; 74 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto y mensajes de jobs transaccionales; incertidumbre y atribución visibles. Falta conectar escritores/worker bajo flags, otros tipos de evidencia y conciliación. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 78 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto, mensajes de jobs y productor humano transaccionales; captura/worker bajo flags apagados. Cola persistente y contrato de preparación/enqueue IA probados. Falta conectar buffer IA/herramientas, otros tipos de evidencia y conciliación. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -210,3 +210,10 @@ Octavo incremento: envío humano del composer a cola con UUID estable por intent
 Noveno incremento: vista persistente y acotada de cola para miembros activos, sin conceder lectura de tablas internas. Estado antes del permiso separado de mensajes; transición sin duplicados, actualización mientras hay pendientes y recarga comprobadas en desktop/móvil. 1.785 unitarias y 75 DB pasan; GoTrue/RPC real y revocación de membresía probados; 77 migraciones Cloud. Fixture retirado, flags apagados y ningún transporte invocado. Evidencia: [F3 cola](../../docs/evidencias/F3-COLA-2026-10-10.json).
 
 **Próximo paso vigente:** productor IA desde batch con modo fijado, revisión y evidencia anteriores al modelo; checkpoint/idempotencia y handoff sin despacho legacy doble. Vista de pendientes ya implementada. Restan verificación de cuentas y conciliación/reservas/cuotas; F3 sin aceptación integral.
+
+
+Décimo incremento: contrato IA privado y transaccional preparado; batch fija modo/cuenta/identidad/revisión/evento antes del modelo, y conserva texto/operación en enqueue/reintentos. Control humano invalidado incluso tras resume; acceso sólo servicio. 1.793 unitarias, 83 DB y nueve controles GoTrue/RPC real pasan. Migración 78 aplicada; fixture 993 limpiado. [Evidencia](../../docs/evidencias/F3-IA-PREPARACION-2026-10-10.json).
+
+**Próximo paso vigente:** conectar el productor al buffer antes de decide/Jev/modelo; recuperar texto/estado sin regenerar o despachar legacy. Cubrir handoff/ack, herramientas n8n y Setter antes del rollout. La preparación es infraestructura interna, no generación real conectada. Flags apagados, cero outbox/cron; sin compras/envíos/push/merge/deploy. F3 sin aceptación integral.
+
+Auto-Blindaje: los fixtures también cumplen las invariantes del esquema. Revocar una conexión requiere revoked_at; para ensayar ausencia de evidencia en batch quitar batch_id, no cambiar wamid de una identidad ya vinculada (el trigger lo rechaza). El test DB se separó para conservar archivos menores de 500 líneas.

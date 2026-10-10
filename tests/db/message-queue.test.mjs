@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { runAiReplyDatabaseChecks } from "./ai-reply-checks.mjs";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { createLegacyDatabase, applyOmnichannelMigrations, restoreDatabase } from "./database-harness.mjs";
@@ -74,6 +75,7 @@ test("F3 durable message queue on PostgreSQL", async (t) => {
     const args = { workspace: id(1), conversation: id(31), sender: id(101), operation: id(91), body: "Respuesta humana", ...overrides };
     return scalar(db, "select public.enqueue_human_channel_text($1,$2,$3,$4,$5) result", Object.values(args));
   }
+  await runAiReplyDatabaseChecks({db,id,scalar,persist,claim,begin,finish,reject,isolated});
   async function queueAs(user = 101, workspace = 1, conversation = 31) {
     await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id(user)]);
     await db.exec("SET ROLE authenticated");

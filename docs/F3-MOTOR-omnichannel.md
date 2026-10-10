@@ -209,6 +209,21 @@ La consulta retorna los 51 más recientes; UI muestra 50 en orden cronológico y
 
 Reproducción en el proyecto nuevo exclusivamente: tests/db/cloud-queue-read.mjs expone setup/transición SQL/addPending/cleanup. tests/cloud/queue-read-smoke.mjs requiere setup y las credenciales QA ignoradas; cierra sólo su sesión local. La transición SQL simula resultado unknown sin llamar a transporte: no acredita integración del proveedor. Capturas en test-results/f3-queue-browser. [Evidencia](evidencias/F3-COLA-2026-10-10.json).
 
+## Incremento 10 — preparación transaccional de respuestas IA
+
+Se preparó un contrato de servicio; no se modificó processNextBatch ni se invocó ningún modelo. La preparación privada fija modo y contexto bajo el lock de la conversación y el batch. Un batch nuevo de cola queda aislado de entradas adicionales. El evento debe estar vinculado por wamid a una entrada del propio batch, con cuenta/identidad/grant y ventana verificables; eventos históricos, reacciones y eventos ajenos al batch no sirven. Intentos legacy con checkpoint/retry no migran de modo. El registro privado conserva la revisión incluso cuando meta se modifica.
+
+Enqueue fija el texto y usa batch_id como UUID de operación, con clave ai-batch:UUID. Recupera un job previo antes de revalidar contexto: unknown permanece unknown, sin otra operación/permiso. Cambiar texto con el mismo batch falla. Si cambia control, identidad, grant, supresión, ventana o estado del batch, conserva el texto sin crear job. Una toma humana y resume no autoriza el resultado de una generación anterior. No se cierra el batch aquí; el buffer todavía debe coordinar su checkpoint y handoff.
+
+- Migración 20261010194247_omnichannel_ai_reply_preparation.sql aplicada una vez, total 78 y nombres locales idénticos. Tabla privada con RLS, sin acceso anon/authenticated; RPCs SECURITY INVOKER sólo service_role.
+- Servicio TS valida scope/texto/proyección, no recibe destinatario/revisión/evidencia del consumidor y redacta errores internos. CHANNEL_AI_WORKSPACES limitado a tres workspaces; enqueue requiere también ingress y worker. Modo queue persistido no se convierte a legacy al apagar flags.
+- 1.793 unitarias y 83 DB completas; después de separar el módulo de pruebas DB, 62/62 dirigidas. Typecheck/lint pasan. No hay cambios visuales ni conexión ejecutable al modelo/buffer: build y navegador previos del incremento 9 se conservan como evidencia anterior y no se declaran repetidos.
+- GoTrue/RPC real: servicio, aislamiento, acceso público denegado, modo fijo, bloqueo tras toma/resume, checkpoint de texto, dedup/conflicto y cero outbox. Fixtures setup/cleanup en tests/db/cloud-ai-reply.mjs y smoke en tests/cloud/ai-reply-smoke.mjs; no llaman a modelo/transporte.
+- Asesor: cero ERROR y mismos diez WARN. Doce INFO: el nuevo es RLS sin políticas de la tabla privada service-only, intencional. No añadir permisos públicos para ocultarlo.
+- Fixture 993 eliminado con guarda de slug/id; cero preparaciones, un workspace QA con cinco mensajes previos, cero outbox/cron. Sin compras, push, merge, deploy o envíos. [Evidencia](evidencias/F3-IA-PREPARACION-2026-10-10.json).
+
+El próximo paso conecta prepare antes de decide/Jev/modelo/tools, recupera reply/state y evita fallback. El handoff heredado puede enviar ACK y cancelar un job pendiente; Setter puede despachar templates; herramientas n8n pueden tener efectos externos. Hay que cubrir estos caminos antes de activar la cola IA. El contrato todavía no prueba generación integral ni proveedores reales.
+
 ## Estado de las tareas
 
 | Tarea | Estado |
@@ -216,7 +231,7 @@ Reproducción en el proyecto nuevo exclusivamente: tests/db/cloud-queue-read.mjs
 | F3-T1.1 contratos/adaptador/política | Base local implementada y probada; validación por cuenta externa pendiente |
 | F3-T1.2 resolución/dispatch | Lector de identidad/capacidades y resolver por conexión preparados; WA compatible permanece; adaptadores Meta/web pendientes |
 | F3-T1.3 buffer/agente independiente de settings WA | Runtime extraído y herramientas limitadas por canal; rutinas de transportes nuevos pendientes de su pipeline durable |
-| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y captura autenticada + worker HTTP bajo flags probados local/Cloud; productor humano conectado bajo flag; generación IA, scheduler, cuotas y backoff pendientes |
+| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y captura autenticada + worker HTTP bajo flags probados local/Cloud; productor humano conectado bajo flag; contrato IA preparado; conexión al buffer, scheduler, cuotas y backoff pendientes |
 | F3-T2.2 invalidación durable y revalidación inmediata | Permiso WA transaccional con grant/identidad/supresión/evento/membresía probado local/Cloud; falta integrar generación real |
 | F3-T2.3 receipts/unknown/conciliación | Job → mensaje visible, resultados y recuperación unknown probados; consumidores de ecos/receipts y conciliación pendientes |
 | F3-T3.1 inbox/composer omnicanal | Lectura/filtros, disponibilidad y enqueue humano probados en UI/API/Cloud; vista permanente de pendientes probada; consumo/envío externo pendiente |
@@ -224,7 +239,7 @@ Reproducción en el proyecto nuevo exclusivamente: tests/db/cloud-queue-read.mjs
 
 ## Próximo paso y límites
 
-Conectar la generación IA a la cola sin doble productor/envío. El productor humano ya está conectado y probado bajo flag, con toma humana, auditoría e idempotencia transaccionales. La vista persistente de pendientes ya está implementada y probada; no habilita el transporte. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
+Conectar el contrato IA preparado al buffer antes de sus modelos/herramientas, sin doble productor/envío ni ACK legacy paralelo. El productor humano ya está conectado y probado bajo flag, con toma humana, auditoría e idempotencia transaccionales. La vista persistente de pendientes ya está implementada y probada; no habilita el transporte. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
 
 La base Cloud ya está inicializada; la app todavía no está desplegada ni enviando mensajes nuevos. No se usaron bases anteriores. Sin compras, push o merge. F1/F2/F3 continúan sin aceptación integral.
 
