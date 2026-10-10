@@ -89,3 +89,9 @@ Yani autorizó avanzar diseño mientras se prepara Supabase: «dale avanza y as�
 Implementado: sistema Pixiweb claro/oscuro, Manrope/Instrument Serif, componentes compartidos, navegación negra app/agencia, login editorial, inbox móvil y panel de detalle accesible. Cinco vistas de desarrollo con ejemplos ficticios; no habilitan Meta/Brevo/widget.
 
 Verificación y capturas en [F2 diseño](F2-DISENO-omnichannel.md). Próximo paso: revisión visual de Yani y conexión al proyecto de su cuenta nueva para probar pantallas privadas, aislamiento, roles, migraciones y flujos reales. No se tocó ninguna cuenta anterior.
+
+## Acceso al proyecto nuevo — 2026-10-10
+
+Yani informó que creó el proyecto y conectó la nueva cuenta. Se encontró abierto en Chrome el dashboard de `bzanbpyzujlogipxvkfn`. Sin embargo, el conector Supabase disponible en este chat todavía lista únicamente proyectos de la organización anterior; consultar el proyecto nuevo devuelve «You do not have permission to perform this action».
+
+Pendiente: actualizar la autorización del conector con la nueva cuenta/organización y volver a verificar acceso al proyecto. No pedir claves ni contraseñas por chat. No se aplicaron migraciones ni se alteró ninguna base. Una vez disponible, inspeccionar esquema e historial antes de inicializar el entorno nuevo; no tratarlo como una copia de producción ni ejecutar backfill por suposición.
