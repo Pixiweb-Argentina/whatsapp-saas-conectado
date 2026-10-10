@@ -1,3 +1,4 @@
+import { captureBusinessAppEcho } from "@/features/channels/services/business-app-echo";
 import { captureWhatsAppDelivery } from "@/features/channels/services/whatsapp-event-ingress";
 import { captureWhatsAppReceipt } from "@/features/channels/services/delivery-receipt-store";
 import { type NextRequest, NextResponse, after } from "next/server";
@@ -160,6 +161,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // not a status update — it's a human answering from the WhatsApp Business
     // App on their phone. Record it and hand the conversation to them, before
     // the status branch swallows it as an unknown wamid.
+    const durableEcho = await captureBusinessAppEcho(supabase, { workspaceId: ws.workspace_id,
+      integrationId: ws.id, provider: "kapso", configuredAccountId: ws.config.phone_number_id,
+      payload: body, kapsoEventName: eventName });
+    if (durableEcho.status === "persisted" || durableEcho.status === "ignored") {
+      return NextResponse.json({ received: true, echo: true,
+        recorded: durableEcho.status === "persisted" && durableEcho.inserted,
+        aiDisabled: durableEcho.status === "persisted" && durableEcho.aiDisabled });
+    }
     const echo = parseOutboundEcho(body, eventName);
     if (echo) {
       const result = await processOutboundEcho(ws.workspace_id, echo);

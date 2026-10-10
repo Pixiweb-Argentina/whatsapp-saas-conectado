@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-10",
+  "phase": "F3",
+  "increment": 13,
+  "branch": "codex/omnichannel-f3-inbox",
+  "scope": "Atomic Kapso Business App human echoes with durable dedup and control timestamp",
+  "unit": {
+    "passed": 1836,
+    "failed": 0,
+    "directed_final": 25
+  },
+  "database_local": {
+    "passed": 105,
+    "failed": 0,
+    "directed_final": 10
+  },
+  "typecheck": "passed",
+  "targeted_lint": "passed",
+  "production_build": "passed with compilation-only placeholders",
+  "cloud": {
+    "actualNextHandler": true,
+    "invalidSignatureDenied": true,
+    "wrongAccountDenied": true,
+    "humanTakeoverAtomic": true,
+    "leasedAiCancelled": true,
+    "duplicateNoOp": true,
+    "conflictDenied": true,
+    "invalidTimestampIgnoredWithoutFallback": true,
+    "resumeSurvivesReplayAndOldUnseenEcho": true,
+    "windowAndAssignmentUnchanged": true,
+    "optInNotGranted": true,
+    "oneAuditNoBatchesOrOutbox": true,
+    "publicRpcDenied": true,
+    "noTransportCalled": true
+  },
+  "cloud_before_cleanup": {
+    "echoes_planned": 2,
+    "old_echo_reason": "older_than_control",
+    "messages_distinct_wamids": 2,
+    "job": "cancelled",
+    "conversation_after_explicit_resume": "ai_active",
+    "audit_count": 1,
+    "batches": 0,
+    "outbox": 0
+  },
+  "browser": {
+    "authenticated": true,
+    "author_label": "WhatsApp Business",
+    "distinct_event_message_count": 2,
+    "cancelled_job_visible": true,
+    "resume_remained_active": true,
+    "errors": 0,
+    "warnings": 0,
+    "workspace_restored": true,
+    "capture": "test-results/f3-business-app-browser/echo-author-and-cancelled-job.png"
+  },
+  "migration": {
+    "version": "20261010211209",
+    "name": "omnichannel_business_app_echo",
+    "applied_total": 81,
+    "local_history_matches": true
+  },
+  "security_advisor": {
+    "errors": 0,
+    "warnings": 10,
+    "info": 14,
+    "new_finding": "INFO private.business_app_echoes RLS with no browser policies, intentional"
+  },
+  "cleanup": {
+    "temporary_fixture_removed": true,
+    "retained_workspaces": 1,
+    "retained_messages": 5,
+    "echoes": 0,
+    "receipts": 0,
+    "preparations": 0,
+    "outbox": 0,
+    "active_cron": 0
+  },
+  "rollout": {
+    "ingress": "off",
+    "worker": "off",
+    "human": "off",
+    "ai": "off",
+    "scheduler_created": false,
+    "local_server_restored_without_test_flags": true
+  },
+  "limits": [
+    "Signed synthetic events prove handler/DB behavior, not a real provider account.",
+    "Only Kapso Business App echoes with an exact verified phone identity are supported; BSUID-only or absent phone is excluded.",
+    "Control timestamp begins with this migration; older control history is not reconstructed.",
+    "Device operator is not assigned an invented SaaS user; existing assignment is preserved.",
+    "Quota/backoff, pending types/policies, comment reservation, real accounts/grants and integral acceptance remain pending.",
+    "No provider/LLM calls, real messages, purchases, push, merge or deploy."
+  ]
+}

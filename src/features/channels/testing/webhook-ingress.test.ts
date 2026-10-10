@@ -33,10 +33,10 @@ const fakeSvc = {
     return q;
   },
   async rpc(name: string, args: Record<string, unknown>) {
-    assert.ok(["persist_channel_event","persist_channel_receipt"].includes(name));
-    trace.push(name === "persist_channel_event" ? "persist-event" : "persist-receipt");
-    envelopes.push((args.p_event ?? args.p_receipt) as Record<string, unknown>);
-    return { data: id(4), error: storageFails ? { message: "private details" } : null };
+    assert.ok(["persist_channel_event","persist_channel_receipt","persist_business_app_echo"].includes(name));
+    trace.push(name === "persist_channel_event" ? "persist-event" : name === "persist_business_app_echo" ? "persist-echo" : "persist-receipt");
+    envelopes.push((args.p_event ?? args.p_receipt ?? args.p_echo) as Record<string, unknown>);
+    return { data: name === "persist_business_app_echo" ? {conversationId:id(31),inserted:true,aiDisabled:true} : id(4), error: storageFails ? { message: "private details" } : null };
   },
 };
 mock.module("@supabase/supabase-js", { exports: { createClient: () => fakeSvc } });
@@ -134,3 +134,22 @@ for (const channel of ["ycloud","kapso"] as const) {
     assert.deepEqual(trace,["resolve-connection","persist-receipt"]);
   });
 }
+
+function businessAppPayload() {
+  return {phone_number_id:"synthetic-phone-id",message:{id:"wamid.app",to:"15555550101",type:"text",
+    text:{body:"Respuesta humana"},timestamp:String(Math.floor(Date.now()/1000)-10),kapso:{origin:"business_app"}}};
+}
+test("Kapso: verified Business App echo uses atomic capture without the legacy writer or AI",async()=>{
+  provider="kapso";const response=await send(businessAppPayload(),"fixture-signature-secret","whatsapp.message.sent");
+  assert.equal(response.status,200);assert.equal((await response.json()).aiDisabled,true);
+  assert.deepEqual(trace,["resolve-connection","persist-echo"]);
+});
+test("Kapso: failed Business App transaction returns 500 without legacy fallback",async()=>{
+  provider="kapso";storageFails=true;assert.equal((await send(businessAppPayload(),"fixture-signature-secret","whatsapp.message.sent")).status,500);
+  assert.deepEqual(trace,["resolve-connection","persist-echo"]);
+});
+test("Kapso: invalid echo timestamp cannot trigger a legacy takeover",async()=>{
+  provider="kapso";const value=businessAppPayload();value.message.timestamp="invalid";
+  const response=await send(value,"fixture-signature-secret","whatsapp.message.sent");assert.equal(response.status,200);
+  assert.equal((await response.json()).recorded,false);assert.deepEqual(trace,["resolve-connection"]);
+});

@@ -10,6 +10,9 @@ interface ChatMessageProps {
 
 /** Author chip for outbound messages: "IA" badge or the operator's name. */
 function OutboundAuthor({ message }: { message: MessageRow }) {
+  if (message.meta?.origin === "business_app") {
+    return <span className="text-[10px] text-muted-foreground">WhatsApp Business</span>;
+  }
   if (message.meta?.channel_actor === "automation") {
     return <span className="text-[10px] text-muted-foreground">Automatización</span>;
   }

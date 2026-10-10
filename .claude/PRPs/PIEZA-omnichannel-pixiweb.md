@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; 80 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto, mensajes de jobs y productor humano transaccionales; captura/worker bajo flags apagados. Cola persistente y productor IA de texto conectado al buffer con checkpoint privado/handoff interno. Comprobantes firmados WA y conciliación exacta probados local/Cloud/UI. Faltan ecos humanos durables, herramientas, cuentas reales, otros tipos de evidencia y cuotas/backoff. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 81 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto, mensajes de jobs y productor humano transaccionales; captura/worker bajo flags apagados. Cola persistente y productor IA de texto conectado al buffer con checkpoint privado/handoff interno. Comprobantes firmados WA y conciliación exacta probados local/Cloud/UI. Ecos humanos Kapso integrados con pausa y auditoría atómicas. Faltan herramientas, cuentas reales, otros tipos de evidencia y cuotas/backoff. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -229,3 +229,9 @@ Duodécimo incremento: comprobantes YCloud/Kapso firmados y privados, correlaci�
 **Próximo paso vigente:** ecos humanos de WhatsApp Business durables, cuentas/identidades/grants reales, cuotas/backoff y reservas por comentario. Unknown sin IDs/referencia continúa incierto; no hay polling remoto. Flags apagados, cero receipts/preparaciones/outbox/cron y cinco mensajes QA anteriores; sin compras/envíos/push/merge/deploy. F3 sin aceptación integral; Meta/widget/Brevo pendientes.
 
 Auto-Blindaje: fixtures respetan una integración WA activa por workspace, alternando proveedores antes del permiso. Recuperación de receipts separada de ingress para evitar ciclo job-store → receipt-store → ingress → job-store. Legacy no actualiza mensajes con channel_operation_id.
+
+Decimotercer incremento: mensajes de WhatsApp Business recibidos por Kapso guardan ledger/historial/pausa/auditoría en una transacción, dedup exacta e identidad por conexión; no extienden ventana ni opt-in. Controles con timestamp del servidor preservan resume frente a replays/eventos antiguos; sending no se cancela. UI muestra WhatsApp Business. 1.836 unitarias, 105 DB, typecheck/lint/build, catorce controles HTTP/Cloud y navegador pasan. Migración 81 aplicada, fixture 996 retirado. [Evidencia](../../docs/evidencias/F3-BUSINESS-APP-2026-10-10.json).
+
+**Próximo paso vigente:** cuotas/backoff y reintentos seguros; tipos/políticas pendientes, reserva por comentario, cuentas/grants y pruebas integrales reales. Ecos sin teléfono/BSUID y controles previos a la migración no se reconstruyen. Flags apagados, cinco mensajes QA y cero echoes/receipts/preparaciones/outbox/cron. F3 sin aceptación integral; sin compras/envíos/modelos/push/merge/deploy.
+
+Auto-Blindaje: routing de conexión inmutable; preparar otro proveedor antes del fixture/migración o crear otra conexión. Un insert legacy seguido de una pausa no transaccional puede dejar IA activa y el dedup impedir su reparación. Echo piloto usa una RPC y nunca cae al segundo escritor si falla.
