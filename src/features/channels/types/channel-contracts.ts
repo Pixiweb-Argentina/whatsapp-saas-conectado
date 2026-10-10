@@ -91,11 +91,7 @@ export type IdentityScope = z.infer<typeof identityScopeSchema>;
 export type InboundEvent = z.infer<typeof inboundEventSchema>;
 export type SourceContext = z.infer<typeof sourceContextSchema>;
 
-/** A timeout after submission is unknown, never an automatic retry instruction. */
-export type SendResult =
-  | { status: "accepted"; externalId: string }
-  | { status: "rejected"; errorCode: string; retryable: boolean }
-  | { status: "unknown"; operationId: string };
+export type { ChannelSendResult as SendResult } from "./send-contracts";
 
 /** Phone/email are optional attributes, not identity keys across accounts. */
 export interface ChannelContact {

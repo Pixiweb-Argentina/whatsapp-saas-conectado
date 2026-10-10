@@ -10,8 +10,8 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = "fake-service-key";
 type Row = Record<string, unknown>;
 const tables: Record<string, Row[]> = {
   conversations: [
-    { id: "conv_a", workspace_id: "ws_a", contact_id: "ct_a", window_expires_at: null },
-    { id: "conv_b", workspace_id: "ws_b", contact_id: "ct_b", window_expires_at: null },
+    { id: "conv_a", channel: "whatsapp", workspace_id: "ws_a", contact_id: "ct_a", window_expires_at: null },
+    { id: "conv_b", channel: "whatsapp", workspace_id: "ws_b", contact_id: "ct_b", window_expires_at: null },
   ],
   contacts: [
     { id: "ct_a", workspace_id: "ws_a", phone: "+15550000001", opt_in: true },
@@ -283,7 +283,7 @@ test("an opted-out contact still gets replies in the open window, never a templa
 
 test("a workspace without an active WhatsApp provider fails loudly", async () => {
   reset();
-  tables.conversations.push({ id: "conv_c", workspace_id: "ws_c", contact_id: "ct_c", window_expires_at: null });
+  tables.conversations.push({ id: "conv_c", channel: "whatsapp", workspace_id: "ws_c", contact_id: "ct_c", window_expires_at: null });
   tables.contacts.push({ id: "ct_c", workspace_id: "ws_c", phone: "+15550000003", opt_in: true });
   await assert.rejects(
     () => dispatchText({ workspaceId: "ws_c", conversationId: "conv_c", body: "hola" }),
@@ -382,8 +382,53 @@ test("a network error may have delivered the message, so it is never retryable",
   ycloudFailure = { status: 503, body: null };
   const res = await dispatchText({ workspaceId: "ws_a", conversationId: "conv_a", body: "hola" });
   assert.equal(res.retryable, false);
+  assert.equal(res.outcome, "unknown");
   assert.equal(msgs().length, 1);
+  assert.equal((msgs()[0].meta as Row).send_outcome, "unknown");
+  assert.equal((msgs()[0].meta as Row).operation_id, msgs()[0].id);
   assert.match(String(msgs()[0].error_message), /es posible que el mensaje sí haya llegado/);
+});
+
+test("a non-WhatsApp chat never falls back to its contact's phone", async () => {
+  reset();
+  const conversation = tables.conversations[0];
+  for (const channel of ["instagram", "messenger", "web", null]) {
+    conversation.channel = channel;
+    try {
+      const text = await dispatchText({ workspaceId: "ws_a", conversationId: "conv_a", body: "hola" });
+      const template = await dispatchTemplate({ workspaceId: "ws_a", conversationId: "conv_a", templateName: "welcome" });
+      assert.equal(text.errorCode, "NOT_FOUND");
+      assert.equal(template.errorCode, "NOT_FOUND");
+      assert.equal(sends.length, 0);
+      assert.equal(msgs().length, 0);
+    } finally { conversation.channel = "whatsapp"; }
+  }
+});
+
+test("a malformed cross-tenant contact link is refused before sending", async () => {
+  reset();
+  tables.conversations[0].contact_id = "ct_b";
+  try {
+    const result = await dispatchText({ workspaceId: "ws_a", conversationId: "conv_a", body: "hola" });
+    assert.equal(result.errorCode, "NOT_FOUND");
+    assert.equal(sends.length, 0);
+    assert.equal(msgs().length, 0);
+  } finally { tables.conversations[0].contact_id = "ct_a"; }
+});
+
+test("a recorded provider acceptance stays successful when status persistence fails", async () => {
+  reset();
+  const original = console.error;
+  console.error = () => {};
+  failUpdates = 2;
+  try {
+    const result = await dispatchText({ workspaceId: "ws_a", conversationId: "conv_a", body: "hola" });
+    assert.equal(result.ok, true);
+    assert.equal(result.outcome, "accepted");
+    assert.equal(sends.length, 1);
+    assert.equal(msgs().length, 1);
+    assert.equal(tables.events[0].type, "outbound_status_not_recorded");
+  } finally { console.error = original; failUpdates = 0; }
 });
 
 test("the row is queued before the send, so a failure after it still has a row", async () => {

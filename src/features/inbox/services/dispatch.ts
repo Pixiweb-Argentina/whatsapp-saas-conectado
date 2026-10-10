@@ -24,24 +24,23 @@ import {
 } from "./whatsapp-provider";
 import {
   whatsappSender,
-  WhatsAppConfigError,
-  type SendResult,
   type TemplateComponents,
   type WhatsAppSender,
 } from "./whatsapp-sender";
-import { YCloudError } from "./ycloud-client";
-import { KapsoError } from "./kapso-client";
+import {
+  whatsappChannelAdapter, type WhatsAppChannelResult,
+} from "@/features/channels/services/whatsapp-channel-adapter";
+import { loadLegacyWhatsAppRecipient as loadConversationAndPhone } from "@/features/channels/services/legacy-whatsapp-recipient";
+import { legacyWhatsAppTextAllowed } from "@/features/channels/services/send-policy";
 import {
   parseWhatsAppError,
   formatErrorForLog,
   recordMessageError,
-  wasNotAccepted,
   GENERIC_SEND_ERROR,
   UNCONFIRMED_SEND_ERROR,
   RETRY_PENDING_SEND_ERROR,
   WINDOW_EXPIRED_MESSAGE,
   OPT_OUT_MESSAGE,
-  type WhatsAppError,
 } from "./whatsapp-errors";
 
 function svc() {
@@ -96,6 +95,8 @@ export interface DispatchTemplateParams {
 
 export interface DispatchResult {
   ok: boolean;
+  /** Transport outcome; unknown must never trigger an automatic resend. */
+  outcome?: "accepted" | "rejected" | "unknown";
   wamid?: string;
   /** Spanish text for the team. Never provider detail. */
   error?: string;
@@ -119,47 +120,9 @@ export interface DispatchResult {
   providerCode?: number;
 }
 
-/**
- * Translates a failed send. Provider errors carry the whole response body
- * (Meta's code sits inside it); a missing setting already names itself in
- * Spanish; anything else is a network-level failure (or our own timeout)
- * where the message may or may not have left.
- */
-function toWhatsAppError(sendErr: unknown): WhatsAppError {
-  if (sendErr instanceof YCloudError || sendErr instanceof KapsoError) {
-    return parseWhatsAppError(sendErr.body, sendErr.status);
-  }
-  if (sendErr instanceof WhatsAppConfigError) {
-    return {
-      code: null,
-      message: sendErr.message,
-      retryable: false,
-      detail: null,
-      source: "unknown",
-      httpStatus: null,
-      fbtraceId: null,
-    };
-  }
-  return {
-    ...parseWhatsAppError(null),
-    message: UNCONFIRMED_SEND_ERROR,
-    detail: sendErr instanceof Error ? sendErr.message : String(sendErr),
-  };
-}
-
 // ──────────────────────────────────────────────────────────────────────────────
 // Internal helpers
 // ──────────────────────────────────────────────────────────────────────────────
-
-interface ContactPhoneRow {
-  phone: string | null;
-  opt_in: boolean | null;
-}
-
-interface ConversationWindowRow {
-  window_expires_at: string | null;
-  contact_id: string;
-}
 
 /**
  * The sender for the workspace's active WhatsApp provider (YCloud or Kapso).
@@ -172,58 +135,6 @@ async function loadSender(workspaceId: string, supabase: Db): Promise<WhatsAppSe
   }
   const credentials = await decryptWhatsAppCredentials(row, workspaceId);
   return whatsappSender(row.provider, credentials, row.config);
-}
-
-/**
- * Loads the conversation window and the contact's phone/opt-in, scoped to
- * `workspaceId`. This runs with the service role (no RLS), so the tenant
- * filter must live here: without it a conversationId from another workspace
- * would load and its contact would receive the message with this workspace's
- * credentials. Returns null when the conversation or contact is not in the
- * workspace; throws only on a database error.
- */
-async function loadConversationAndPhone(
-  conversationId: string,
-  workspaceId: string,
-  supabase: Db,
-): Promise<{
-  window_expires_at: string | null;
-  toPhone: string;
-  optIn: boolean;
-} | null> {
-  const { data: conv, error: convError } = await supabase
-    .from("conversations")
-    .select("window_expires_at, contact_id")
-    .eq("id", conversationId)
-    .eq("workspace_id", workspaceId)
-    .maybeSingle();
-
-  if (convError) {
-    throw new Error(`[dispatch] conversation lookup failed: ${convError.message}`);
-  }
-  if (!conv) return null;
-
-  const convRow = conv as ConversationWindowRow;
-
-  const { data: contact, error: contactError } = await supabase
-    .from("contacts")
-    .select("phone, opt_in")
-    .eq("id", convRow.contact_id)
-    .eq("workspace_id", workspaceId)
-    .maybeSingle();
-
-  if (contactError) {
-    throw new Error(`[dispatch] contact lookup failed: ${contactError.message}`);
-  }
-  if (!contact) return null;
-
-  const contactRow = contact as ContactPhoneRow;
-  if (!contactRow.phone?.trim()) return null;
-  return {
-    window_expires_at: convRow.window_expires_at,
-    toPhone: contactRow.phone,
-    optIn: contactRow.opt_in !== false,
-  };
 }
 
 const NOT_FOUND: DispatchResult = {
@@ -301,19 +212,18 @@ async function sendQueuedRow(opts: {
   workspaceId: string;
   rowId: string;
   rowMeta: Record<string, unknown>;
-  send: () => Promise<SendResult>;
+  send: () => Promise<WhatsAppChannelResult>;
   what: string;
   /** False: a not-accepted failure is marked as such; the caller re-sends. */
   recordRetryableFailure: boolean;
 }): Promise<DispatchResult> {
   const { supabase, sender, workspaceId, rowId, rowMeta } = opts;
 
-  let sent: SendResult;
-  try {
-    sent = await opts.send();
-  } catch (sendErr) {
-    const waError = toWhatsAppError(sendErr);
-    const retryable = wasNotAccepted(waError);
+  const sent = await opts.send();
+  if (sent.status !== "accepted") {
+    const waError = sent.diagnostic ?? { ...parseWhatsAppError(null),
+      message: sent.status === "unknown" ? UNCONFIRMED_SEND_ERROR : GENERIC_SEND_ERROR };
+    const retryable = sent.status === "rejected" && sent.retryable;
     // Technical detail: ONLY here, never in a response or the browser.
     console.error(
       `[dispatch] ${sender.label} ${opts.what} error:`,
@@ -333,7 +243,7 @@ async function sendQueuedRow(opts: {
           .update({
             status: "failed",
             error_message: RETRY_PENDING_SEND_ERROR,
-            meta: { ...rowMeta, not_accepted: true },
+            meta: { ...rowMeta, not_accepted: true, send_outcome: "rejected" },
           })
           .eq("id", rowId)
           .eq("workspace_id", workspaceId);
@@ -352,7 +262,8 @@ async function sendQueuedRow(opts: {
     } else {
       const { error: failError } = await supabase
         .from("messages")
-        .update({ status: "failed", error_message: waError.message })
+        .update({ status: "failed", error_message: waError.message,
+          meta: { ...rowMeta, send_outcome: sent.status, operation_id: rowId } })
         .eq("id", rowId)
         .eq("workspace_id", workspaceId);
       if (failError) {
@@ -363,6 +274,7 @@ async function sendQueuedRow(opts: {
 
     return {
       ok: false,
+      outcome: sent.status,
       error: waError.message,
       errorCode: "SEND_FAILED",
       retryable,
@@ -377,6 +289,7 @@ async function sendQueuedRow(opts: {
     wamid: sent.wamid ?? null,
     meta: {
       ...rowMeta,
+      send_outcome: "accepted",
       // YCloud's own message id, kept to reconcile its status webhooks.
       ycloud_id: sender.provider === "ycloud" ? sent.providerMessageId : undefined,
     },
@@ -387,7 +300,7 @@ async function sendQueuedRow(opts: {
       .update(patch)
       .eq("id", rowId)
       .eq("workspace_id", workspaceId);
-    if (!error) return { ok: true, wamid: sent.wamid };
+    if (!error) return { ok: true, wamid: sent.wamid, outcome: "accepted" };
     if (attempt === 1) {
       console.error("[dispatch] sent-status update error:", error.message);
       await supabase
@@ -404,7 +317,7 @@ async function sendQueuedRow(opts: {
         );
     }
   }
-  return { ok: true, wamid: sent.wamid };
+  return { ok: true, wamid: sent.wamid, outcome: "accepted" };
 }
 
 /** Inserts the outbound row as 'queued'. Throws only on an unexpected error. */
@@ -470,11 +383,7 @@ export async function dispatchText(
   // still applies.
 
   // 2. App-level 24h window guard (DB trigger is the final enforcer)
-  if (
-    window_expires_at !== null &&
-    new Date() > new Date(window_expires_at) &&
-    !overrideAdmin
-  ) {
+  if (!legacyWhatsAppTextAllowed(window_expires_at, overrideAdmin, Date.now())) {
     if (noteWhenBlocked) {
       await noteBlockedSend(
         supabase,
@@ -542,7 +451,8 @@ export async function dispatchText(
     workspaceId,
     rowId: queued.id,
     rowMeta,
-    send: () => sender.sendText(toPhone, body),
+    send: () => whatsappChannelAdapter(sender).send({ action: "text", channel: "whatsapp",
+      operationId: queued.id, recipient: toPhone, body }),
     what: "sendText",
     recordRetryableFailure,
   });
@@ -765,8 +675,9 @@ export async function sendPreparedTemplate(
     rowId: queued.id,
     rowMeta,
     send: () =>
-      sender.sendTemplate({
-        to: toPhone,
+      whatsappChannelAdapter(sender).send({
+        action: "template", channel: "whatsapp", operationId: queued.id,
+        recipient: toPhone,
         templateName,
         language: templateLanguage,
         components,

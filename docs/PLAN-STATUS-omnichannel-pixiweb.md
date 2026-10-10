@@ -6,7 +6,7 @@ Actualizado: 2026-10-10. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb
 
 Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F1 preparada localmente; F2 visual en ejecución por autorización expresa mientras se configura una cuenta Supabase nueva. Fases con aceptación integral: 0/9.
 
-**Continuar en:** C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, ahora en rama codex/omnichannel-f2-pixiweb desde 5753e34. Se reutiliza el worktree; no crear otra F2 por su nombre heredado.
+**Continuar en:** C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, ahora en rama codex/omnichannel-f3-inbox desde 2fea741. Se reutiliza el worktree; su nombre heredado no indica la fase activa.
 
 ## Decisiones de Yani incorporadas
 
@@ -95,3 +95,11 @@ Verificación y capturas en [F2 diseño](F2-DISENO-omnichannel.md). Próximo pas
 Yani informó que creó el proyecto y conectó la nueva cuenta. Se encontró abierto en Chrome el dashboard de `bzanbpyzujlogipxvkfn`. Sin embargo, el conector Supabase disponible en este chat todavía lista únicamente proyectos de la organización anterior; consultar el proyecto nuevo devuelve «You do not have permission to perform this action».
 
 Pendiente: actualizar la autorización del conector con la nueva cuenta/organización y volver a verificar acceso al proyecto. No pedir claves ni contraseñas por chat. No se aplicaron migraciones ni se alteró ninguna base. Una vez disponible, inspeccionar esquema e historial antes de inicializar el entorno nuevo; no tratarlo como una copia de producción ni ejecutar backfill por suposición.
+
+## F3 en ejecución — 2026-10-10
+
+Yani ordenó continuar el build. La comprobación de acceso al proyecto nuevo sigue devolviendo falta de permisos, por lo que se continúa trabajo local independiente, sin declarar aceptadas F1/F2. F2 quedó en 2fea741 y se abrió `codex/omnichannel-f3-inbox` desde ese commit; main no se modificó.
+
+Primer incremento: contratos de envío, política por canal/cuenta, adaptador WA YCloud/Kapso integrado al dispatch, extracción del destinatario con verificación del canal, clasificación explícita de envíos ambiguos sin retry automático. Suite completa: 1.696 unitarias pasan. [Alcance, evidencias y tareas pendientes F3](F3-MOTOR-omnichannel.md).
+
+Próximo paso local: desacoplar buffer/agente de settings WA, seguido de persistencia durable de eventos/jobs/outbox y revalidación transaccional. La política pura de permisos/revisión no reemplaza esa persistencia. Instagram, Messenger y widget siguen deshabilitados. No hubo cambios Cloud, envíos externos, push/merge ni despliegue.

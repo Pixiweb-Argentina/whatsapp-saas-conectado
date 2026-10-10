@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** PENDIENTE. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; primer incremento local de transporte/política, sin habilitar canales nuevos. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -174,6 +174,14 @@ Auto-Blindaje F2: los tokens deben seguir siendo triplets OKLCH, no hex dentro d
 Auto-Blindaje de este incremento: un cambio del proveedor WA no debe etiquetar mensajes nuevos con la conexión histórica. El trigger conserva esos mensajes sin mapear y el backfill rechaza historial ambiguo. Playwright transforma imports TSX como componentes de prueba: para revisar el componente real se renderiza en un proceso Node separado y se carga con los estilos de la app; esto no acredita un inbox autenticado.
 
 ## Registro de ejecución
+
+### Avance F3 — 2026-10-10
+
+Yani pidió continuar el build. Se registró el bloqueo de acceso al Supabase nuevo en F2 (2fea741) y se creó `codex/omnichannel-f3-inbox` desde ese commit. Se conserva la falta de aceptación Cloud de F1/F2.
+
+Implementados contratos/adaptador de envío, política pura por cuenta y la integración del adaptador WA en dispatch. Comprobar canal evita que una conversación de Instagram con teléfono termine en WhatsApp. Timeouts/5xx/408/respuesta sin IDs quedan unknown, nunca retry automático; persiste la fila antes del POST. Regresión completa: 1.696 unitarias pasan. [Reporte F3](../../docs/F3-MOTOR-omnichannel.md).
+
+Pendientes: buffer/agente, eventos/jobs/outbox, revalidación transaccional, recibos/conciliación e inbox omnicanal. La evaluación pura de revisión/reserva aún no cancela jobs reales. No confundir soporte de código con capacidades verificadas en una cuenta externa.
 
 | Fecha | Acción | Evidencia |
 |---|---|---|
