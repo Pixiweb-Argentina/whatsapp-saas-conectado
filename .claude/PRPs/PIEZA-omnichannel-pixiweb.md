@@ -124,7 +124,7 @@ Los controles de F9 se aplican durante todas las fases y antes de publicar R1, a
 
 ## Invariantes para Lista Roja
 
-Confirmar antes de editar auth, middleware, API routes, webhooks, migraciones o archivos con service_role:
+Confirmados por Yani el 2026-10-10: «confirmo, continuar». Aplican a auth, middleware, API routes, webhooks, migraciones y archivos con service_role:
 
 1. Aislamiento por workspace y roles actuales intactos.
 2. WhatsApp, proveedor activo, plantillas, opt-out y atención humana conservados.
@@ -152,12 +152,15 @@ Next dev regenera next-env.d.ts apuntando a .next/dev/types/routes.d.ts. Tras el
 - F1-T1.1: baseline local completado, 66 migraciones inventariadas, suite inicial 1.638/1.638; [reporte](../../docs/F1-BASELINE-omnichannel.md).
 - F1-T1.2: fixtures sintéticos de ambos proveedores y 24 pruebas de contratos/preflight. Regresión completa final: 1.662/1.662. Capturas de cuenta real todavía pendientes.
 - Harness Playwright: ocho pruebas públicas desktop/móvil pasan; no prueba de login autenticado.
-- Contratos de conexión/evento/identidad y preflight de backfill implementados sin conectarlos a webhooks activos. Teléfono opcional todavía no habilitado en DB/ContactRow.
+- Contratos de conexión/evento/identidad y preflight implementados. Expansión SQL aditiva y teléfono opcional en ContactRow/UI preparados y probados localmente; no aplicados a Cloud.
 - F1-T1.3/T1.4: cuentas y contratos reales Meta/Brevo pendientes.
-- F1-T2.1–T2.4: pendientes de confirmación Lista Roja y entorno de copia; preflight puro preparado, sin migración ni backfill ejecutados.
+- F1-T2.1–T2.4: tres migraciones, RLS, identidades por cuenta y backfill acotado/reanudable implementados. Ensayo local: 65 migraciones heredadas, fixtures de dos tenants, copia/restauración y 14 comprobaciones DB. Validación sobre copia de la base real y concurrencia pendiente.
+- Verificación actual: 1.666 unitarias, 14 pruebas DB, 10 pruebas de navegador; typecheck, lint dirigido y build pasan. Límites y procedimiento en [reporte F1](../../docs/F1-BASELINE-omnichannel.md).
 - No se habilitaron canales, no se hicieron compras, push/merge ni despliegues.
 
-Próximo paso: resolver la confirmación ya solicitada y preparar un entorno DB aislado antes de crear/aplicar la expansión aditiva. No declarar completa F1 ni comenzar F2 como si estuvieran probados datos y proveedores.
+Próximo paso: identificar la base del fork (pregunta enviada: db-whatsapp activa o db-chatfuel pausada) y preparar una copia aislada para validar en Supabase/PostgreSQL 17. No se modificó ningún proyecto remoto ni se habilitó facturación. F1 sigue incompleta hasta probar datos y contratos externos.
+
+Auto-Blindaje de este incremento: un cambio del proveedor WA no debe etiquetar mensajes nuevos con la conexión histórica. El trigger conserva esos mensajes sin mapear y el backfill rechaza historial ambiguo. Playwright transforma imports TSX como componentes de prueba: para revisar el componente real se renderiza en un proceso Node separado y se carga con los estilos de la app; esto no acredita un inbox autenticado.
 
 ## Registro de ejecución
 
@@ -167,3 +170,4 @@ Próximo paso: resolver la confirmación ya solicitada y preparar un entorno DB 
 | 2026-10-10 | Autonomía de ordenador/navegador y prohibición de compras | Mensaje de Yani |
 | 2026-10-10 | Rama por fase importante | Mensaje de Yani; preparación creada desde main 28a1530 |
 | 2026-10-10 | Pieza generada desde template base | Solo documentación; modo pendiente; sin código ni migraciones modificados |
+| 2026-10-10 | Lista Roja confirmada; F1 local ampliada | 1.666 unitarias, 14 DB, 10 navegador y build pasan; Cloud pendiente |

@@ -51,8 +51,8 @@ Skills/instrucciones leídos: AGENTS.md, .claude/commands/plan.md, .claude/skill
 ## Pendientes y próximos pasos
 
 1. Ejecutar F1 en Build Manual, elegido por Yani. Blueprint ya aprobado; no repetir su aprobación.
-2. La Pieza ya generada; confirmar invariantes de Lista Roja antes de editar rutas/auth/webhooks/migraciones.
-3. Ejecutar F1: baseline, copia/backfill, E2E inicial (script/dependencia presentes, suite/config no encontrados), cuentas de prueba y spikes.
+2. La Pieza ya generada; invariantes de Lista Roja confirmados por Yani: «confirmo, continuar».
+3. Completar F1: baseline, migraciones/backfill y E2E locales preparados; falta copia Supabase, flujo autenticado y cuentas reales de prueba.
 4. Obtener/configurar app Meta y activos de prueba, versión/scopes/App Review; credenciales por canales seguros.
 5. Verificar en cuenta Brevo el alta de webhooks Sales/cuotas; usar conciliación eventual donde falte evento.
 6. Construir por fases con flags. Solo fuentes probadas pasan a disponibles.
@@ -74,8 +74,8 @@ Se leyeron AGENTS.md, el comando build, el template pieza-base y la referencia d
 
 Continuar en C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, rama codex/omnichannel-f1-base. Rama de preparación conserva el plan; main no se modificó. AGENTS.md se copió al worktree como instrucción local sin incorporarlo a los commits.
 
-Implementado: contratos Zod de canales/identidades/eventos, normalización WA de compatibilidad con parsers existentes y preflight de backfill sin escrituras. No conectado aún a rutas activas. Fixtures sintéticos, 24 pruebas nuevas y suite Playwright pública inicial.
+Implementado: contratos Zod, normalización WA y preflight; tres migraciones aditivas con RLS, credenciales privadas, identidades por conexión y backfill acotado/reanudable. ContactRow, búsqueda, presentación y envío toleran teléfono ausente; WhatsApp sigue exigiéndolo. Nuevos canales permanecen deshabilitados. No hay cambios aplicados a Cloud.
 
-Verificado: 1.662 unitarias pasan, typecheck/lint pasan, 8 E2E desktop/móvil pasan. Reporte: [F1 baseline](F1-BASELINE-omnichannel.md). Logs/reportes HTML en carpetas ignoradas. No build de producción ni login real; no prueba Cloud.
+Verificado: 1.666 unitarias, 14 comprobaciones DB y 10 pruebas de navegador desktop/móvil; typecheck, lint dirigido y build pasan. Ensayo DB local con PGlite/PostgreSQL 18.3, 65 de 66 migraciones heredadas, fixtures sintéticos y restauración de copia; no sustituye Supabase/PostgreSQL 17 ni login real. Reporte y procedimiento: [F1 baseline](F1-BASELINE-omnichannel.md). Logs/reportes HTML en carpetas ignoradas.
 
-F1 incompleta: falta confirmar invariantes solicitados por Lista Roja, disponer de copia DB, implementar/ensayar migraciones e integrar teléfono opcional; también probar cuentas Meta/Brevo. No comprar ni habilitar facturación para resolverlo. La pregunta de invariantes sigue pendiente; no repetir aprobación de blueprint ni elección Manual.
+F1 incompleta: validar una copia de la base real, autenticación, concurrencia y cuentas Meta/Brevo. Lista Roja ya confirmada. Pregunta pendiente de identificación: db-whatsapp activa o db-chatfuel pausada. Se listaron proyectos de forma read-only; no se consultaron datos operativos ni se modificaron bases. No comprar ni habilitar facturación. No repetir aprobación de blueprint, Manual ni invariantes. main sigue en 28a1530; sin push/merge/deploy.

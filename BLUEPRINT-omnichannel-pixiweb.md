@@ -1710,9 +1710,9 @@ No realizado: instalación de dependencias, tests del producto, app conectada, m
 
 **Falta para lanzamiento:** contratos probados con activos/cuentas reales; App Review/Advanced Access y verificaciones que requiera Meta; presupuesto/volumen/retención definidos; QA de implementación; autorización explícita de despliegue. No son obstáculos para entregar este blueprint.
 
-Antes de tocar la Lista Roja durante /build, confirmar estos invariantes propuestos: tenant y roles intactos; WhatsApp/proveedor activo/plantillas/opt-out conservados; no borrar historial; secretos solo servidor; política de canal ineludible; migraciones con copia/backfill/rollback; sin envíos fuera de pruebas autorizadas.
+Invariantes confirmados por Yani el 2026-10-10 («confirmo, continuar»): tenant y roles intactos; WhatsApp/proveedor activo/plantillas/opt-out conservados; no borrar historial; secretos solo servidor; política de canal ineludible; migraciones con copia/backfill/rollback; sin envíos fuera de pruebas autorizadas.
 
-Próximo paso: confirmar invariantes antes de editar Lista Roja y ejecutar F1 en su rama. `/crisol` es opcional; no se ejecutó ni se fabricó un veredicto comercial.
+F1 se ejecuta en codex/omnichannel-f1-base. Expansión y backfill probados localmente; falta validar copia Supabase y cuentas externas. Continuidad en docs/PLAN-STATUS-omnichannel-pixiweb.md. `/crisol` es opcional; no se ejecutó ni se fabricó un veredicto comercial.
 
 Índice de documentos de trabajo:
 - [Viabilidad](VIABILITY-omnichannel-pixiweb.md), [BMC](BMC-omnichannel-pixiweb.md), [VPC](VPC-omnichannel-pixiweb.md), [PDR](PDR-omnichannel-pixiweb.md).

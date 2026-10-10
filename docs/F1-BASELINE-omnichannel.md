@@ -60,10 +60,62 @@ Para reproducir navegador: npx --no-install playwright install chromium y npm ru
 
 ## Pendientes externos y límites de integración
 
-1. Confirmación de invariantes de Lista Roja solicitada en este chat antes de modificar migraciones/auth/rutas/webhooks.
-2. Entorno Supabase de prueba y copia consistente con backup restaurable. No hay migración SQL creada/aplicada ni prueba DB ejecutada.
+1. Invariantes de Lista Roja confirmados el 2026-10-10: «confirmo, continuar».
+2. Entorno Supabase de prueba y copia consistente con backup restaurable. El ensayo local del siguiente incremento no sustituye una copia de datos reales.
 3. App Meta y activos de prueba, versión Graph y scopes verificables; no se inventó una versión ni se enviaron mensajes.
 4. Cuenta Brevo de prueba, cuotas, pipeline/etapas y mecanismo de Sales webhooks; no se crearon contactos u oportunidades externos.
 5. Integrar los contratos, ejecutar backfill y verificar flujo autenticado antes de dar F1 por completa.
 
 F1 sigue EN_PROGRESO. Ninguna prueba local de contrato se presenta como habilitación productiva.
+
+## Segundo incremento — expansión y compatibilidad local
+
+Los resultados anteriores describen los puntos previos de la fase. Estado actualizado al 2026-10-10:
+
+| Comprobación | Resultado |
+|---|---|
+| Unitarias completas | 1.666 pasan, 0 fallos/omitidas |
+| DB local | 14 pasan, incluyendo restauración de copia, RLS entre dos tenants, permisos privados, colisiones y reanudación |
+| Navegador | 10 pasan: ocho recorridos públicos y dos pruebas del componente real de contacto sin teléfono, desktop/móvil |
+| Typecheck / eslint dirigido / diff whitespace | Exit 0 |
+| Build de producción local | npm run build: exit 0; URL/key públicas ficticias, sin conexión Cloud |
+| Orden de migraciones contra main | 3 nuevas, todas posteriores a 20261003000017; exit 0 |
+
+Cambios: tablas channel_connections/contact_identities y private.channel_credentials; claves compuestas por tenant; nuevos campos de conversación/mensaje sin reemplazar los IDs heredados; contactos sin teléfono y guardas para conservar WhatsApp. Las conversaciones de canales nuevos se rechazan hasta implementar F3. Las credenciales existentes no se copian. Conexiones e identidades tienen lectura por tenant y escritura solo de servidor; credenciales/backfill privados no accesibles por anon/authenticated.
+
+El inbox presenta y busca contactos sin teléfono. Dispatch devuelve NOT_FOUND y no envía ni persiste mensajes si falta el número. La prueba del componente usa render del código real con estilos de la app, pero no representa una sesión autenticada ni el rediseño Pixiweb de F2.
+
+### Alcance exacto del ensayo DB
+
+Dependencias de desarrollo fijadas: @electric-sql/pglite 0.5.8 y @electric-sql/pglite-pgvector 0.0.9, verificadas en npm e instaladas sin scripts. El producto sigue usando Supabase; PGlite se usa únicamente en tests. Motor local PostgreSQL 18.3; proyectos Cloud inventariados usan PostgreSQL 17.
+
+tests/db/database-harness.mjs aplica literalmente 65 de 66 migraciones heredadas. Excluye explícitamente 20260615000003_enable_pg_cron_pg_net.sql. El sustrato de prueba emula roles, auth.uid, tablas mínimas auth/storage, publicación y registro de cron.schedule. No ejecuta cron/red, GoTrue, Storage ni Realtime reales. PGlite tiene una conexión: no acredita carreras/concurrencia.
+
+Se cargan dos workspaces sintéticos antes de la expansión, se guarda/restaura un dump local y se comparan campos históricos e IDs. Después se aplican las tres migraciones nuevas y se prueba backfill en lotes de una fila, reintento sin duplicados, rechazo de identidad conflictiva con rollback del lote, escrituras/receipts heredados, cambio de proveedor, aislamiento y bloqueo de nuevos canales. No son datos extraídos de producción.
+
+Reproducir:
+
+```powershell
+npm run test:db:local
+npm run test:unit
+npm run typecheck
+npm run test:e2e
+```
+
+### Procedimiento de adopción pendiente en copia Supabase
+
+1. Identificar el proyecto del fork y una copia aislada autorizada. La pregunta por db-whatsapp/db-chatfuel sigue pendiente. No crear proyectos pagos, restaurar el proyecto pausado ni aplicar cambios remotos por inferencia.
+2. Obtener un snapshot consistente, respaldarlo y probar restauración en el motor destino. Registrar conteos e IDs por tenant sin exportar secretos a Git. Verificar permisos reales, volumen, locks y duración.
+3. Publicar lectores compatibles con teléfono nullable antes de permitir contactos sin teléfono. Ensayar primero sobre copia; la entrega local no autoriza despliegue.
+4. Aplicar en orden, cada migración en su transacción: 20261010152038_omnichannel_channel_enum.sql, 20261010152041_omnichannel_expand.sql y 20261010152044_omnichannel_backfill.sql. El enum se confirma antes de usar sus valores. Aplicar las migraciones no ejecuta backfill.
+5. Ejecutar el preflight con snapshot completo. Un operador verifica cuenta/proveedor/integración de cada workspace y registra su conexión sin copiar credenciales. No inferir la cuenta externa del nombre ni usar IDs de fixtures. Historial con múltiples proveedores requiere conciliación explícita y queda bloqueado para este backfill.
+6. Invocar private.backfill_whatsapp_workspace desde sesión SQL de servidor autorizada, con workspace y conexión comprobados; límite entre 1 y 1.000 (500 por defecto). No exponer el esquema private como RPC. Cada llamada es atómica: repetir hasta remaining_conversations y remaining_messages iguales a cero. Registrar contadores sin contenido de mensajes. Ante colisión/proveedor ambiguo detener y conciliar; no saltar filas a ciegas.
+7. Comparar IDs/conteos y campos históricos por tenant, RLS/roles, login, UI autenticada, recepción/envío WA, plantillas, opt-out y handoff en cuentas de prueba autorizadas. Probar concurrencia y rollback en la copia. Mantener los otros canales cerrados hasta sus fases.
+
+### Recuperación y límites
+
+Un lote fallido revierte sus cambios y puede reintentarse tras resolver la causa. Parar el backfill deja las conversaciones heredadas operables. Deshabilitar las capacidades nuevas conserva datos; no borrar columnas/identidades ni revertir a lectores que asuman phone no nulo. La restauración del respaldo completo se ensaya en copia: en producción requiere reconciliar escrituras posteriores para no perder historial.
+
+Revocar una conexión preparada no desconecta por sí solo al proveedor WhatsApp heredado; la integración actual sigue controlando ese transporte hasta F3. Un cambio de proveedor conserva mensajes nuevos sin mapear en lugar de asignarlos a una conexión anterior. El backfill rechaza ese historial ambiguo. La unicidad heredada de conversación por contacto/canal se conserva hasta el cutover de F3.
+
+Pendiente de aceptación F1: copia real en Supabase/PostgreSQL 17, concurrencia, flujos autenticados y contratos Meta/Brevo con cuentas de prueba. No hubo compras, mensajes reales, cambios Cloud, push/merge ni despliegue.
