@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-10",
+  "type": "document_consistency_only",
+  "markdownFiles": 21,
+  "phaseCount": 9,
+  "storyDefinitions": 27,
+  "duplicateStories": [],
+  "unmappedStories": [],
+  "taskCount": 72,
+  "uniqueTasks": 72,
+  "screenTemplates": 18,
+  "uniqueScreens": 18,
+  "captureSources": 14,
+  "sourceIds": [
+    "IG-01",
+    "IG-02",
+    "IG-03",
+    "IG-04",
+    "IG-05",
+    "IG-06",
+    "FB-01",
+    "FB-02",
+    "FB-03",
+    "FB-04",
+    "WA-01",
+    "WA-02",
+    "WA-03",
+    "WEB-01"
+  ],
+  "topLevelTitles": 1,
+  "brokenLocalLinks": [],
+  "unbalancedFences": [],
+  "trackedFilesChanged": [],
+  "newRuntimeFiles": [],
+  "productTestsRun": false,
+  "productionConnectionsTested": false,
+  "deployPerformed": false,
+  "estimatedPersonDays": [
+    45,
+    69
+  ],
+  "passed": true
+}
