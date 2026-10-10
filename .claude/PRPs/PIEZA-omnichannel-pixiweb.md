@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F2:** codex/omnichannel-f2-pixiweb, desde F1 5753e34. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-inbox, desde F2 2fea741. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; primer incremento local de transporte/política, sin habilitar canales nuevos. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; transporte/política/runtime y cola durable probados localmente; 71 migraciones y pruebas SQL/concurrencia aplicadas al Supabase nuevo. Productores, contexto real e inbox pendientes; canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -183,7 +183,9 @@ Implementados contratos/adaptador de envío, política pura por cuenta y la inte
 
 Segundo incremento: runtime de configuración separado del buffer y herramientas restringidas por canal/capacidad tanto al preparar el modelo como al ejecutar el registry. Se conserva KB/costos/historial/reintentos. El buffer legado no procesa canales nuevos; las lecturas y derivación del decision engine ahora llevan filtro de workspace. 121 pruebas dirigidas y 1.707 unitarias completas pasan, al igual que typecheck y lint.
 
-Pendientes: eventos/jobs/outbox, revalidación transaccional, recibos/conciliación, rutinas de nuevos transportes e inbox omnicanal. La evaluación pura de revisión/reserva aún no cancela jobs reales. No confundir soporte de código con capacidades verificadas en una cuenta externa.
+Tercer incremento: eventos/jobs/outbox y worker con lease/fencing, invalidación durable por cambio de control y permiso antes del POST. 1.722 unitarias y 33 DB locales pasan; typecheck/lint/build aprobados. Acceso al Supabase nuevo resuelto: 71 migraciones aplicadas, historial remoto verificado, smoke SQL con rollback y dos carreras con procesos PostgreSQL distintos. Fixtures retirados; cron heredado inactivo; sin envíos externos.
+
+Pendientes vigentes: configurar app/login con el proyecto nuevo, conectar productores/contexto/worker al inbox, reservas por comentario, backoff/cuotas y receipts/conciliación. No confundir soporte de código con capacidades verificadas en una cuenta externa. Continuidad y evidencia detalladas en [F3](../../docs/F3-MOTOR-omnichannel.md).
 
 | Fecha | Acción | Evidencia |
 |---|---|---|

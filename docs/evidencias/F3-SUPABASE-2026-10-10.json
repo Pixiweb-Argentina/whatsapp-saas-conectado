@@ -1,0 +1,377 @@
+{
+  "projectId": "bzanbpyzujlogipxvkfn",
+  "account": "Cuenta de saas whatsapp omni",
+  "postgres": "17.11",
+  "date": "2026-10-10",
+  "migrations": [
+    {
+      "version": "20260608000000",
+      "name": "foundation"
+    },
+    {
+      "version": "20260608000002",
+      "name": "buffer_rpc"
+    },
+    {
+      "version": "20260608000003",
+      "name": "24h_guard"
+    },
+    {
+      "version": "20260608000004",
+      "name": "crm_indexes"
+    },
+    {
+      "version": "20260608000006",
+      "name": "tools_sensitivity"
+    },
+    {
+      "version": "20260608000007",
+      "name": "media_storage"
+    },
+    {
+      "version": "20260608000008",
+      "name": "sec02_function_hardening"
+    },
+    {
+      "version": "20260609000001",
+      "name": "super_admin"
+    },
+    {
+      "version": "20260609000002",
+      "name": "automation_rules"
+    },
+    {
+      "version": "20260609000003",
+      "name": "agents"
+    },
+    {
+      "version": "20260609000004",
+      "name": "conversation_summary"
+    },
+    {
+      "version": "20260609000005",
+      "name": "messages_wamid_unique"
+    },
+    {
+      "version": "20260615000000",
+      "name": "kb_match_function"
+    },
+    {
+      "version": "20260615000001",
+      "name": "templates_rich_and_library"
+    },
+    {
+      "version": "20260615000002",
+      "name": "match_kb_search_path"
+    },
+    {
+      "version": "20260615000003",
+      "name": "enable_pg_cron_pg_net"
+    },
+    {
+      "version": "20260617000000",
+      "name": "harden_rls_helper_search_path"
+    },
+    {
+      "version": "20260617000001",
+      "name": "seed_check_availability_tool"
+    },
+    {
+      "version": "20260617000002",
+      "name": "add_processing_to_batch_status"
+    },
+    {
+      "version": "20260926000000",
+      "name": "harden_users_self_update"
+    },
+    {
+      "version": "20260926000001",
+      "name": "revoke_public_batch_rpcs"
+    },
+    {
+      "version": "20260926000002",
+      "name": "tenant_consistent_foreign_keys"
+    },
+    {
+      "version": "20260926000003",
+      "name": "restrict_users_select"
+    },
+    {
+      "version": "20260927000000",
+      "name": "integration_provider_add_kapso"
+    },
+    {
+      "version": "20260927000001",
+      "name": "whatsapp_provider_per_workspace"
+    },
+    {
+      "version": "20260927000002",
+      "name": "save_whatsapp_integration_rpc"
+    },
+    {
+      "version": "20260928000000",
+      "name": "llm_turn_reservation"
+    },
+    {
+      "version": "20260928000001",
+      "name": "sum_daily_llm_tokens"
+    },
+    {
+      "version": "20260928000002",
+      "name": "workspace_llm_call_reservation"
+    },
+    {
+      "version": "20260928000003",
+      "name": "restrict_budget_event_inserts"
+    },
+    {
+      "version": "20260929000000",
+      "name": "message_errors"
+    },
+    {
+      "version": "20260929000001",
+      "name": "atomic_batches_and_serialized_claim"
+    },
+    {
+      "version": "20260929000002",
+      "name": "contacts_hl_unique_index"
+    },
+    {
+      "version": "20260930000000",
+      "name": "seed_highlevel_cancel_reschedule_tools"
+    },
+    {
+      "version": "20260930000001",
+      "name": "n8n_tools"
+    },
+    {
+      "version": "20260930000002",
+      "name": "seed_handoff_human_tool"
+    },
+    {
+      "version": "20260930000003",
+      "name": "restrict_server_event_inserts"
+    },
+    {
+      "version": "20260930000004",
+      "name": "member_password_resets"
+    },
+    {
+      "version": "20260930000005",
+      "name": "appointments_hl_unique_index"
+    },
+    {
+      "version": "20260930000006",
+      "name": "check_availability_catalog_schema"
+    },
+    {
+      "version": "20260930000007",
+      "name": "retire_custom_webhook"
+    },
+    {
+      "version": "20261001000000",
+      "name": "automation_engine"
+    },
+    {
+      "version": "20261002000000",
+      "name": "insight_topics"
+    },
+    {
+      "version": "20261002000001",
+      "name": "classify_topics_rpcs"
+    },
+    {
+      "version": "20261002000002",
+      "name": "get_insights"
+    },
+    {
+      "version": "20261002000003",
+      "name": "client_test_chat"
+    },
+    {
+      "version": "20261002000004",
+      "name": "revoke_anon_table_grants"
+    },
+    {
+      "version": "20261002000005",
+      "name": "automation_history_purge"
+    },
+    {
+      "version": "20261003000000",
+      "name": "add_calcom_booking_uid_to_appointments"
+    },
+    {
+      "version": "20261003000001",
+      "name": "seed_calcom_tools"
+    },
+    {
+      "version": "20261003000002",
+      "name": "add_calcom_slot_claim_guard"
+    },
+    {
+      "version": "20261003000003",
+      "name": "calcom_booking_cache"
+    },
+    {
+      "version": "20261003000004",
+      "name": "integration_provider_add_hubspot"
+    },
+    {
+      "version": "20261003000005",
+      "name": "contacts_hs_contact_id"
+    },
+    {
+      "version": "20261003000006",
+      "name": "integrations_single_active_crm"
+    },
+    {
+      "version": "20261003000007",
+      "name": "hubspot_conversation_logs"
+    },
+    {
+      "version": "20261003000008",
+      "name": "mark_hubspot_ready"
+    },
+    {
+      "version": "20261003000009",
+      "name": "read_hubspot_link"
+    },
+    {
+      "version": "20261003000010",
+      "name": "hubspot_hardening"
+    },
+    {
+      "version": "20261003000011",
+      "name": "calcom_slot_index_contacts"
+    },
+    {
+      "version": "20261003000012",
+      "name": "hubspot_parked_logs"
+    },
+    {
+      "version": "20261003000013",
+      "name": "hubspot_log_claim_created_at"
+    },
+    {
+      "version": "20261003000014",
+      "name": "hubspot_log_on_state_change"
+    },
+    {
+      "version": "20261003000015",
+      "name": "validate_hs_contact_id_numeric"
+    },
+    {
+      "version": "20261003000016",
+      "name": "calcom_reminder_dedup"
+    },
+    {
+      "version": "20261003000017",
+      "name": "stale_calcom_claims"
+    },
+    {
+      "version": "20261010152038",
+      "name": "omnichannel_channel_enum"
+    },
+    {
+      "version": "20261010152041",
+      "name": "omnichannel_expand"
+    },
+    {
+      "version": "20261010152044",
+      "name": "omnichannel_backfill"
+    },
+    {
+      "version": "20261010162930",
+      "name": "omnichannel_durable_queue"
+    },
+    {
+      "version": "20261010162932",
+      "name": "omnichannel_queue_operations"
+    }
+  ],
+  "queueSmoke": [
+    {
+      "queue_smoke": "passed_and_rolled_back"
+    }
+  ],
+  "concurrency": {
+    "claimCompetitor": [
+      {
+        "pid": 33583,
+        "started_at": "2026-10-10 16:51:03.234894+00",
+        "claimed": 0,
+        "completed_at": "2026-10-10 16:51:03.238474+00"
+      }
+    ],
+    "takeoverCompetitor": [
+      {
+        "pid": 33606,
+        "started_at": "2026-10-10 16:51:55.62813+00",
+        "permitted": false,
+        "completed_at": "2026-10-10 16:52:08.509371+00"
+      }
+    ],
+    "holders": [
+      {
+        "jobid": 2,
+        "job_pid": 33581,
+        "status": "succeeded",
+        "start_time": "2026-10-10 16:50:59.401524+00",
+        "end_time": "2026-10-10 16:51:14.426373+00"
+      },
+      {
+        "jobid": 3,
+        "job_pid": 33604,
+        "status": "succeeded",
+        "start_time": "2026-10-10 16:51:53.493948+00",
+        "end_time": "2026-10-10 16:52:08.508865+00"
+      }
+    ],
+    "finalState": [
+      {
+        "state": "cancelled",
+        "fence": 2,
+        "state_revision": 1,
+        "send_permits": 0
+      }
+    ]
+  },
+  "cleanup": [
+    {
+      "workspaces": 0,
+      "auth_users": 0,
+      "message_jobs": 0
+    }
+  ],
+  "securityAdvisors": [
+    {
+      "name": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 11,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    },
+    {
+      "name": "extension_in_public",
+      "level": "WARN",
+      "count": 3,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public"
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "level": "WARN",
+      "count": 3,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable"
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "level": "WARN",
+      "count": 3,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable"
+    }
+  ],
+  "limits": [
+    "No GoTrue login, browser session, provider API send or production app deployment tested.",
+    "MCP parallel calls were serialized; successful concurrency probes used temporary pg_cron workers.",
+    "All test cron jobs self-unscheduled; inherited automation-history-purge remains inactive."
+  ]
+}

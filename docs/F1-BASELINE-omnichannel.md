@@ -104,7 +104,7 @@ npm run test:e2e
 
 ### Procedimiento de adopción pendiente en copia Supabase
 
-1. Identificar el proyecto del fork y una copia aislada autorizada. La pregunta por db-whatsapp/db-chatfuel sigue pendiente. No crear proyectos pagos, restaurar el proyecto pausado ni aplicar cambios remotos por inferencia.
+1. Yani eligió una cuenta nueva; no usar db-whatsapp/db-chatfuel. El proyecto bzanbpyzujlogipxvkfn quedó inicializado durante F3 con 71 migraciones, sobre una base vacía verificada. Para cualquier importación de datos operativos futura, identificar y autorizar por separado su origen/copia; no inferir que forman parte de este entorno nuevo.
 2. Obtener un snapshot consistente, respaldarlo y probar restauración en el motor destino. Registrar conteos e IDs por tenant sin exportar secretos a Git. Verificar permisos reales, volumen, locks y duración.
 3. Publicar lectores compatibles con teléfono nullable antes de permitir contactos sin teléfono. Ensayar primero sobre copia; la entrega local no autoriza despliegue.
 4. Aplicar en orden, cada migración en su transacción: 20261010152038_omnichannel_channel_enum.sql, 20261010152041_omnichannel_expand.sql y 20261010152044_omnichannel_backfill.sql. El enum se confirma antes de usar sus valores. Aplicar las migraciones no ejecuta backfill.
@@ -118,4 +118,4 @@ Un lote fallido revierte sus cambios y puede reintentarse tras resolver la causa
 
 Revocar una conexión preparada no desconecta por sí solo al proveedor WhatsApp heredado; la integración actual sigue controlando ese transporte hasta F3. Un cambio de proveedor conserva mensajes nuevos sin mapear en lugar de asignarlos a una conexión anterior. El backfill rechaza ese historial ambiguo. La unicidad heredada de conversación por contacto/canal se conserva hasta el cutover de F3.
 
-Pendiente de aceptación F1: copia real en Supabase/PostgreSQL 17, concurrencia, flujos autenticados y contratos Meta/Brevo con cuentas de prueba. No hubo compras, mensajes reales, cambios Cloud, push/merge ni despliegue.
+Actualización durante F3: se aplicaron las 71 migraciones al Supabase nuevo y se validaron allí esquema, fixtures/backfill, RLS y concurrencia de la cola en PostgreSQL 17.11. No volver a aplicar esas migraciones. [Evidencia Cloud y límites](F3-MOTOR-omnichannel.md). No se importó historial de producción: los datos de prueba fueron sintéticos y se retiraron. Continúan pendientes flujos autenticados y contratos Meta/Brevo con cuentas de prueba. No hubo compras, mensajes reales, push/merge ni despliegue de la app.

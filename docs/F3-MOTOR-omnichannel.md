@@ -38,6 +38,44 @@ Regresión completa posterior: **1.707 unitarias pasan**, 0 fallos/omitidas. Son
 
 Build de producción local posterior también aprobado (`test-results/f3-build-final.log`), con configuración pública ficticia y sin despliegue. No hubo cambios visuales que requirieran repetir las capturas de F2.
 
+## Incremento 3: cola durable y primera validación Cloud
+
+Se agregaron `inbound_events`, `message_jobs` y `message_outbox`, con claves compuestas por workspace/conexión, deduplicación y acceso exclusivo del servidor. Las sesiones anon/authenticated no pueden leer payloads ni llamar RPC de la cola. Los eventos históricos, ecos y receipts se conservan como ignorados para automatización; su conciliación aún requiere un consumidor específico.
+
+Las RPC guardan el evento antes del ACK que deberá devolver el futuro webhook, encolan sin reemplazar una operación existente, toman un trabajo con `FOR UPDATE SKIP LOCKED` y reservan 90 segundos con un contador de fencing. Recuperación acotada a 100 registros, máximo cinco adquisiciones y 24 horas de antigüedad. Un worker vencido no puede autorizar ni cerrar el intento de otro.
+
+El outbox registra el permiso antes de llamar al proveedor. Caída antes del permiso: se puede recuperar el trabajo. Caída después del permiso: queda `unknown`, aunque el proceso pudiera haber fallado antes de hacer POST; se prefiere conciliación a duplicar el envío. Los rechazos confirmados también quedan terminales en este incremento: backoff, cuotas y reprogramación segura siguen pendientes.
+
+Un trigger incrementa `state_revision` ante cambios de estado, pausa IA o asignación; invalida trabajos IA/automatización pendientes o reservados en esa misma transacción. El worker vuelve a cargar política, identidad y capacidades, y la RPC comprueba revisión/conexión/lease antes del permiso. Se mantiene el orden de bloqueos conversación → trabajo → outbox.
+
+**Límite de la garantía:** el permiso confirmado marca un envío en curso. Una toma humana posterior no puede retirar un POST ya autorizado; el resultado se conserva para conciliación. No se promete exactly-once. Todavía no se conectaron el productor de IA, los webhooks ni un cron permanente a esta cola; WhatsApp continúa por su circuito compatible. Faltan resolución real de contexto/capacidades, reserva por comentario, receipts e inbox.
+
+### Evidencia local
+
+- 1.722 unitarias pasan (15 nuevas en este incremento). Regresión: `test-results/f3-queue-unit-full.log`.
+- 33 comprobaciones DB pasan: 14 anteriores + 19 de cola, incluida restauración de snapshot. `test-results/f3-queue-db.log`.
+- 15 dirigidas vuelven a pasar después de ordenar los helpers; typecheck y lint dirigido pasan.
+- Build de producción local pasa con configuración pública ficticia: `test-results/f3-queue-build.log`. No se modificó UI en este incremento.
+
+### Supabase nuevo
+
+El acceso quedó resuelto mediante **Cuenta de saas whatsapp omni**. Proyecto `bzanbpyzujlogipxvkfn`, PostgreSQL **17.11**, activo. La inspección inicial comprobó cero tablas públicas, usuarios y migraciones. Se aplicaron las **71 migraciones** del repositorio en orden, sin copiar datos de otras cuentas. El historial remoto se alineó con los identificadores originales y se comparó completo con los archivos locales: 71/71 coinciden. No volver a aplicarlas.
+
+Se verificaron en Cloud: permisos de cola, deduplicación, backfill de fixtures, aislamiento entre tenants, lease/fencing, unknown y toma humana. El smoke transaccional hizo rollback de todos sus datos. También hubo dos pruebas de concurrencia con procesos PostgreSQL distintos:
+
+| Prueba | Proceso que mantiene el bloqueo | Competidor | Resultado |
+|---|---|---|---|
+| Reserva de job | PID 33581, 16:50:59.401–16:51:14.426 UTC | PID 33583, 16:51:03.235–16:51:03.238 UTC | Cero trabajos tomados; no espera al bloqueo |
+| Toma humana vs permiso de envío | PID 33604, 16:51:53.494–16:52:08.509 UTC | PID 33606, 16:51:55.628–16:52:08.509 UTC | Espera el commit humano y devuelve `permitted=false` |
+
+Estado final de la segunda prueba: job cancelado, fence 2, revisión 1, cero permisos de envío. Se limpiaron exclusivamente las filas sintéticas creadas para la prueba y los cron temporales se desprogramaron. Recuento final: cero workspaces, usuarios Auth y jobs; solo queda el cron heredado `automation-history-purge`, **inactivo**. No hubo envíos HTTP a proveedores.
+
+Evidencia estructurada: [F3 Supabase](evidencias/F3-SUPABASE-2026-10-10.json). Fuentes reproducibles: `tests/db/cloud-queue-assertions.sql` con el fixture existente dentro de BEGIN/ROLLBACK, y `tests/db/cloud-queue-concurrency.mjs`. No usar `platform-fixture.sql` en Cloud: simula objetos de Supabase solo para PGlite.
+
+El asesor de seguridad no devolvió ERROR; conserva WARN heredados por extensiones en public y tres helpers SECURITY DEFINER accesibles a anon/authenticated. Los helpers autenticados participan de RLS; no se revocan a ciegas. INFO de tablas servidor sin políticas es intencional, con grants de clientes revocados en la cola. Revisar antes del lanzamiento: [extensiones](https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public), [helpers anon](https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable) y [helpers autenticados](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
+
+Referencias técnicas consultadas: [bloqueos PostgreSQL 17](https://www.postgresql.org/docs/17/explicit-locking.html), [pg_cron](https://github.com/citusdata/pg_cron) y [cambios de PostgreSQL 17.11 en Supabase](https://supabase.com/changelog/postgres-15-19-17-11-breaking-changes). No se requirió migrar cifrados legacy en esta base inicialmente vacía.
+
 ## Estado de las tareas
 
 | Tarea | Estado |
@@ -45,17 +83,17 @@ Build de producción local posterior también aprobado (`test-results/f3-build-f
 | F3-T1.1 contratos/adaptador/política | Base local implementada y probada; validación por cuenta externa pendiente |
 | F3-T1.2 resolución/dispatch | Ruta WA integrada y protegida; resolución de identidades/cuentas de los nuevos transportes pendiente |
 | F3-T1.3 buffer/agente independiente de settings WA | Runtime extraído y herramientas limitadas por canal; rutinas de transportes nuevos pendientes de su pipeline durable |
-| F3-T2.1 eventos/jobs/outbox y lease/fencing | Pendiente |
-| F3-T2.2 invalidación durable y revalidación inmediata | Política pura preparada; integración durable pendiente |
-| F3-T2.3 receipts/unknown/conciliación | Unknown en transporte WA preparado; ecos/receipts y conciliación durable pendientes |
+| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y worker implementados; pruebas local/Cloud y concurrencia pasan; productores/cron de aplicación, cuotas y backoff pendientes |
+| F3-T2.2 invalidación durable y revalidación inmediata | Trigger y permiso transaccional probados en Cloud; integración con generación real y contexto de canales pendiente |
+| F3-T2.3 receipts/unknown/conciliación | Unknown durable sin reenvío probado; consumidores de ecos/receipts y conciliación pendientes |
 | F3-T3.1 inbox/composer omnicanal | Pendiente; F2 contiene previews de diseño, no estas conexiones |
-| F3-T3.2 pruebas integrales | Regresión local parcial; concurrencia y flujos reales pendientes |
+| F3-T3.2 pruebas integrales | Regresión local y dos carreras PostgreSQL reales pasan; autenticación/navegador y flujos con proveedores pendientes |
 
 ## Próximo paso y límites
 
-Implementar eventos/jobs/outbox con restricciones SQL, leases y revisión de conversación antes de habilitar transportes nuevos. Conectar la política y el runtime a ese pipeline. No usar la política pura como sustituto de una reserva transaccional.
+Conectar la app local al proyecto nuevo y verificar GoTrue/login con un workspace de desarrollo; las pruebas SQL de roles no sustituyen ese flujo. Después integrar productores/contexto/worker al pipeline y al inbox, con permisos por cuenta y reserva por comentario antes de habilitar los nuevos transportes. No se creó usuario de acceso ni se configuraron credenciales de la app en este incremento.
 
-El proyecto nuevo identificado es `bzanbpyzujlogipxvkfn`. La última consulta del conector volvió a devolver falta de permisos; sigue autorizada la cuenta anterior. No se usaron bases anteriores, no se aplicaron migraciones remotas ni se enviaron mensajes reales. Sin compras, push, merge o despliegue.
+La base Cloud ya está inicializada; la app todavía no está desplegada ni enviando mensajes nuevos. No se usaron bases anteriores. Sin compras, push o merge. F1/F2/F3 continúan sin aceptación integral.
 
 ## Auto-Blindaje
 
@@ -63,3 +101,5 @@ El proyecto nuevo identificado es `bzanbpyzujlogipxvkfn`. La última consulta de
 - Un código de rate limit dentro de HTTP 5xx/408 no convierte una respuesta ambigua en un rechazo seguro. El estado y el texto mostrado deben indicar incertidumbre; nunca sugerir retry automático por ese código aislado.
 - Soporte de un método no equivale a permiso concedido o integración probada. El pipeline nuevo exige evidencia por cuenta y continúa deshabilitado hasta validar la integración.
 - Filtrar herramientas solo en el prompt es insuficiente: el registry debe repetir la comprobación antes de ejecutar, incluso para herramientas dinámicas. Un canal nuevo no hereda herramientas WA por omisión.
+- Dos llamadas simultáneas al conector MCP se ejecutaron en serie y no demostraron concurrencia. Se reemplazaron por workers SQL temporales y se comprobaron PIDs/tiempos solapados; no confundir paralelismo del cliente con transacciones concurrentes.
+- No cancelar un outbox `sending` por toma humana ni devolverlo a pending: el proveedor puede haber aceptado. Conservar el resultado o unknown para conciliación.

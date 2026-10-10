@@ -4,7 +4,7 @@ Actualizado: 2026-10-10. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb
 
 ## Resultado
 
-Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F1/F2 preparadas localmente con aceptación Cloud pendiente; F3 en ejecución local por orden de Yani. Fases con aceptación integral: 0/9.
+Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F3 en ejecución; Supabase nuevo inicializado con 71 migraciones y pruebas SQL/colas en Cloud. Login real, UI autenticada y proveedores siguen pendientes. Fases con aceptación integral: 0/9.
 
 **Continuar en:** C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, ahora en rama codex/omnichannel-f3-inbox desde 2fea741. Se reutiliza el worktree; su nombre heredado no indica la fase activa.
 
@@ -105,3 +105,13 @@ Primer incremento: contratos de envío, política por canal/cuenta, adaptador WA
 Segundo incremento: buffer conectado a runtime neutral de configuración, guardas contra procesamiento de canales no soportados y herramientas restringidas por canal/capacidad tanto en el modelo como en el registry. Se conserva KB, presupuesto, memoria y reintentos. Lecturas/derivación inicial del decision engine filtradas por workspace. 121 pruebas dirigidas y 1.707 unitarias completas pasan; typecheck y lint pasan.
 
 Build de producción local del segundo incremento aprobado. Próximo paso local: persistencia durable de eventos/jobs/outbox y revalidación transaccional. La política pura de permisos/revisión no reemplaza esa persistencia. Instagram, Messenger y widget siguen deshabilitados. No hubo cambios Cloud, envíos externos, push/merge ni despliegue.
+
+## Continuidad vigente — cola durable y Supabase habilitado, 2026-10-10
+
+El bloqueo de acceso anterior quedó **resuelto**. Usar exclusivamente la conexión **Cuenta de saas whatsapp omni**, proyecto **bzanbpyzujlogipxvkfn** (PostgreSQL 17.11). Estaba vacío; ahora tiene las **71 migraciones aplicadas**, 42 tablas públicas y el historial idéntico al del repo. No repetir migraciones ni usar proyectos de la cuenta anterior.
+
+F3 incremento 3: eventos/jobs/outbox, RPC de reserva con lease/fencing, recuperación segura y trigger de revisión/invalidez tras toma humana. Worker con revalidación de política y permiso durable previo al POST. No se conectó todavía el productor IA ni el cron de aplicación a este pipeline; WA mantiene su ruta compatible.
+
+Verificado: 1.722 unitarias, 33 DB locales, typecheck/lint/build; smoke SQL sobre Cloud con rollback y dos carreras en procesos PostgreSQL distintos. Fixtures retirados: cero workspaces/usuarios/jobs; cron temporales eliminados y purga heredada inactiva. [Reporte F3 y evidencia](F3-MOTOR-omnichannel.md). Los avisos de seguridad heredados están clasificados allí; no equivalen a una auditoría integral terminada.
+
+**Próximo paso:** configurar la app local para el proyecto nuevo y probar login/GoTrue + workspace de desarrollo, después conectar contexto/productores/worker/inbox. No hay usuario de acceso creado, credenciales de la app configuradas ni transportes nuevos activos. Mantener la rama `codex/omnichannel-f3-inbox`; main sigue intacta. No pedir otra aprobación de blueprint, Manual o Lista Roja. Sin compras, push, merge ni despliegue de la aplicación.
