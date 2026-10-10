@@ -21,7 +21,7 @@ export type NormalizeWhatsAppResult =
   | { status: "rejected"; reason: "invalid_context" | "account_mismatch" | "invalid_event" };
 
 /**
- * Compatibility boundary for F1 contract tests, not connected to live webhooks yet.
+ * Shared normalization boundary for signed webhook capture and contract tests.
  * Media download URLs/transcripts remain in the legacy pipeline; only stable media IDs
  * belong to this durable envelope. No sends, DB writes, opt-in changes or inference of ads.
  */

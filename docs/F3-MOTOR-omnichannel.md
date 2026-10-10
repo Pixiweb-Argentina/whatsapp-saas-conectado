@@ -151,6 +151,28 @@ Migraciones nuevas aplicadas al proyecto bzanbpyzujlogipxvkfn: `20261010180354_o
 
 Evidencia: [F3 transacción](evidencias/F3-TRANSACCION-2026-10-10.json). Reproducción: `tests/db/message-queue.test.mjs`, `tests/db/cloud-atomic-send.mjs` y `tests/db/cloud-atomic-assertions.sql`. Los probes Cloud exigen el fixture sintético; nunca ejecutar platform-fixture.sql allí. Las 20 E2E públicas/diseño previas se reutilizan, no se repitieron en este incremento.
 
+## Incremento 7: recepción autenticada y worker bajo flags
+
+Los webhooks YCloud/Kapso capturan el evento normalizado después de verificar firma y destino, usando el ID de la integración autenticada para resolver la conexión exacta. La escritura ocurre antes del dedup legacy: un reintento puede recuperar el evento aunque el mensaje anterior ya exista. La RPC conserva el primer envelope y deduplica por workspace/conexión/ID del proveedor. No se guardan URLs temporales ni credenciales del payload. Reacciones, ecos, receipts y timestamps inválidos/futuros no generan evidencia accionable en esta captura.
+
+Captura en paralelo al flujo heredado: no crea identidades verificadas, grants, jobs ni mensajes salientes. Una conexión ausente/ambigua o error de almacenamiento devuelve 500 antes de procesar el mensaje legacy, para permitir reentrega. Eventos no normalizables se omiten en captura sin cambiar su tratamiento legacy. La recepción no prueba permiso para enviar. Los envíos del operador y la generación IA todavía usan el circuito heredado; no hay doble productor.
+
+`GET /api/cron/channel-jobs` exige el helper común CRON_SECRET y toma los tenants únicamente del entorno del servidor. Máximo tres workspaces, un job por workspace/tick, propietarios de lease distintos y margen de 90 segundos antes del límite de ejecución. Informa fallos parciales sin ocultarlos ni reintentar unknown. Un workspace que falla no bloquea el siguiente. No se creó ningún scheduler.
+
+### Flags y activación futura
+
+- `CHANNEL_INGRESS_WORKSPACES`: UUIDs separados por coma, hasta 100; vacío/ausente desactiva captura sin consultas adicionales. Requiere conexión existente vinculada a la integración y mismo identificador de cuenta.
+- `CHANNEL_WORKER_WORKSPACES`: lista independiente de hasta tres UUIDs. Vacío/ausente desactiva el worker antes de crear el cliente de servicio. Habilita el consumo de jobs de todo ese workspace, no de una sola conexión. No acepta wildcard ni parámetros HTTP para ampliar el scope.
+- Una lista mal formada falla cerrada con código genérico; no habilita parcialmente los UUIDs válidos. Las listas viven solo en servidor, nunca NEXT_PUBLIC.
+- Ambos flags permanecen ausentes/desactivados en la app local. El smoke los define solamente en su propio proceso para un workspace temporal. No modificar flags productivos sin la validación de identidades/grants, cuentas de prueba y autorización de activación.
+- Desactivar el worker impide nuevas ejecuciones; no retira un POST ya autorizado/en curso ni cancela jobs almacenados. Antes de activarlo revisar la cola del workspace. Capturar eventos no instala planificación ni política de retención; ambas siguen pendientes.
+
+### Evidencia del incremento 7
+
+**1.772/1.772 unitarias** (28 nuevas), typecheck, lint dirigido y build de producción pasan. Pruebas de firmas calculadas sobre payloads sintéticos en ambos handlers; scope resuelto por integración, reentregas previas al dedup, fallos de almacenamiento, destino incorrecto y flags desactivados. Cloud: capture con service role guarda una sola fila tras dos llamadas, conserva occurredAt, rechaza otra integración y no genera identidades/mensajes/jobs/outbox. Worker autenticado recupera/consulta una cola vacía sin transporte. El fixture temporal fue retirado; no se tocaron las conversaciones QA. Sin migraciones nuevas: siguen 74.
+
+Smoke HTTP sobre Next local: sin autorización devuelve 401; autorizado devuelve enabled=false y processed=0. No cambia la UI; se reutiliza la revisión visual anterior. Reporte verificable y resultados finales: [F3 recepción](evidencias/F3-INGRESS-2026-10-10.json). Reproducción Cloud: `node --env-file=.env.local --import ./scripts/register-alias-hook.mjs tests/db/cloud-ingress-smoke.mjs`; aborta si el proyecto no es bzanbpyzujlogipxvkfn o el fixture ya existe. Bloquea cualquier acceso de red fuera de ese Supabase y limpia solo su workspace sintético.
+
 ## Estado de las tareas
 
 | Tarea | Estado |
@@ -158,7 +180,7 @@ Evidencia: [F3 transacción](evidencias/F3-TRANSACCION-2026-10-10.json). Reprodu
 | F3-T1.1 contratos/adaptador/política | Base local implementada y probada; validación por cuenta externa pendiente |
 | F3-T1.2 resolución/dispatch | Lector de identidad/capacidades y resolver por conexión preparados; WA compatible permanece; adaptadores Meta/web pendientes |
 | F3-T1.3 buffer/agente independiente de settings WA | Runtime extraído y herramientas limitadas por canal; rutinas de transportes nuevos pendientes de su pipeline durable |
-| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL, productor interno y worker compuestos; pruebas local/Cloud y concurrencia pasan; conectar escritores/cron, cuotas y backoff pendiente |
+| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y captura autenticada + worker HTTP bajo flags probados local/Cloud; conectar generación/composer, scheduler, cuotas y backoff pendiente |
 | F3-T2.2 invalidación durable y revalidación inmediata | Permiso WA transaccional con grant/identidad/supresión/evento/membresía probado local/Cloud; falta integrar generación real |
 | F3-T2.3 receipts/unknown/conciliación | Job → mensaje visible, resultados y recuperación unknown probados; consumidores de ecos/receipts y conciliación pendientes |
 | F3-T3.1 inbox/composer omnicanal | Lectura/filtros, disponibilidad real y bloqueo servidor de texto/plantillas probados; entrega por pipeline nuevo pendiente |
@@ -166,7 +188,7 @@ Evidencia: [F3 transacción](evidencias/F3-TRANSACCION-2026-10-10.json). Reprodu
 
 ## Próximo paso y límites
 
-Conectar productores autenticados y worker bajo flags, con verificación real de identidades/grants y evidencia de inbound WA persistida. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
+Conectar el productor humano autenticado/composer y la generación IA a la cola, con idempotencia del intento, toma humana antes del enqueue y transición sin doble envío. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
 
 La base Cloud ya está inicializada; la app todavía no está desplegada ni enviando mensajes nuevos. No se usaron bases anteriores. Sin compras, push o merge. F1/F2/F3 continúan sin aceptación integral.
 
@@ -193,3 +215,5 @@ La base Cloud ya está inicializada; la app todavía no está desplegada ni envi
 - Un reset de fixture no puede borrar una supresión todavía no confirmada: esperar el advisory lock antes de DELETE. El intento bloqueado fue correcto; la primera limpieza corrió antes del commit del escritor.
 - Cambiar solo la cookie y ejecutar router.refresh() conserva la URL del chat anterior. El selector de workspace debe descartar ruta/filtros/estado cliente y abrir /inbox del nuevo workspace.
 - En Windows, las ediciones Python de documentación UTF-8 deben indicar encoding="utf-8" al leer y escribir; el locale por defecto produjo mojibake detectado y corregido antes del commit.
+
+- La captura durable debe ejecutarse antes del retorno legacy por duplicado: de lo contrario una caída entre las dos escrituras impide recuperar el evento al reentregar. No crear jobs desde ambos caminos.

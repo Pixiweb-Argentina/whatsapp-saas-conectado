@@ -4,7 +4,7 @@ Actualizado: 2026-10-10. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb
 
 ## Resultado
 
-Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F3 en ejecución; Supabase nuevo tiene 74 migraciones. Permiso WA transaccional y mensajes de jobs implementados; inbox muestra incertidumbre y atribución humana/automatización. Productor/worker internos todavía sin conectar a webhook/buffer/cron. Pipeline completo y proveedores pendientes. Fases con aceptación integral: 0/9.
+Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F3 en ejecución; Supabase nuevo tiene 74 migraciones. Permiso WA transaccional y mensajes de jobs implementados; inbox muestra incertidumbre y atribución humana/automatización. Captura firmada YCloud/Kapso y worker HTTP conectados bajo flags desactivados; generación IA y composer todavía en circuito heredado. Pipeline completo y proveedores pendientes. Fases con aceptación integral: 0/9.
 
 **Continuar en:** C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, ahora en rama codex/omnichannel-f3-inbox desde 2fea741. Se reutiliza el worktree; su nombre heredado no indica la fase activa.
 
@@ -142,3 +142,9 @@ Permiso WA texto revalida datos vigentes dentro de la transacción; protege tamb
 Dos migraciones aplicadas, total **74**, sin reenviar las anteriores. 64 DB pasan; 1.743 unitarias de suite completa más la nueva atribución (archivo final 6/6); typecheck/lint/build pasan. Cuatro carreras Cloud y controles service_role/rollback, más inbox real desktop/móvil. Evidencia: [F3 transacción](evidencias/F3-TRANSACCION-2026-10-10.json). Fixtures transaccionales y cron temporales retirados; se preservan las cinco entradas QA previas. No hubo envíos, push, merge ni deploy. Cero ERROR del asesor, avisos heredados pendientes de lanzamiento.
 
 **Siguiente bloque vigente:** conectar productores autenticados/worker bajo flags, con identidades/grants/evidencia reales; completar conciliación, reserva por comentario y cuotas/backoff. Permiso inicial solo WA texto; no habilitar Meta/widget/Brevo ni asumir que templates o comentarios ya tienen evidencia transaccional. F3 sigue en codex/omnichannel-f3-inbox; 0/9 fases con aceptación integral. No repetir aprobaciones ni regenerar credenciales/fixtures.
+
+## Continuación 2026-10-10 — F3, incremento 7
+
+Captura durable de webhooks autenticados YCloud/Kapso antes del dedup legacy y worker HTTP con autenticación CRON_SECRET, allowlist de workspaces y ejecución acotada. Ambos flags apagados por defecto; no se creó scheduler ni se cambió la generación IA/envío humano. Firma, cuenta, reentrega y fallo de persistencia probados en handlers. Persistencia/dedup y worker vacío probados contra el Supabase nuevo con service role y fixture retirado. Endpoint Next local devuelve 401 sin secreto y disabled autenticado. Evidencia: [F3 recepción](evidencias/F3-INGRESS-2026-10-10.json).
+
+**Siguiente bloque vigente:** productor humano/composer con idempotencia y toma humana antes de enqueue; después generación IA sin doble envío, verificación de identidades/grants y receipts/conciliación. Reservas por comentario y cuotas/backoff siguen pendientes. No habilitar los flags por asumir que recepción significa permisos de envío. Sin migraciones nuevas (74), sin mensajes reales, scheduler, push, merge ni despliegue. F3 sigue en codex/omnichannel-f3-inbox; main intacta. No repetir aprobaciones.

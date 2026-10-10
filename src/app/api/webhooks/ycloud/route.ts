@@ -1,3 +1,4 @@
+import { captureWhatsAppDelivery } from "@/features/channels/services/whatsapp-event-ingress";
 import { type NextRequest, NextResponse, after } from "next/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import {
@@ -91,6 +92,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const supabase = svc();
 
     type IntegrationRow = {
+      id: string;
       workspace_id: string;
       credentials: Record<string, unknown>;
       config: Record<string, unknown>;
@@ -103,7 +105,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // Status updates always take this path (they have no inbound `to`).
       const { data } = await supabase
         .from("integrations")
-        .select("workspace_id, credentials, config")
+        .select("id, workspace_id, credentials, config")
         .eq("workspace_id", wsidParam)
         .eq("provider", "ycloud")
         .eq("enabled", true)
@@ -113,7 +115,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // Fallback: phone-based lookup across all enabled integrations (inbound)
       const { data: integrations } = await supabase
         .from("integrations")
-        .select("workspace_id, credentials, config")
+        .select("id, workspace_id, credentials, config")
         .eq("provider", "ycloud")
         .eq("enabled", true)
         .limit(10);
@@ -222,6 +224,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const workspaceId = ws.workspace_id as string;
+    // Signed, destination-checked delivery; persist before legacy duplicate handling.
+    await captureWhatsAppDelivery(supabase, {
+      workspaceId, integrationId: ws.id, provider: "ycloud",
+      configuredAccountId: ws.config.phone_number,
+      payload: body,
+    });
     const { contact, conversation, message } = await processInbound(
       workspaceId,
       normalized,

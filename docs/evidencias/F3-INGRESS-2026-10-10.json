@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-10",
+  "phase": "F3",
+  "increment": 7,
+  "branch": "codex/omnichannel-f3-inbox",
+  "scope": "Captura firmada WA y worker HTTP bajo flags; productores de envios permanecen legacy",
+  "validation": {
+    "unit": {
+      "passed": 1772,
+      "failed": 0,
+      "newTests": 28,
+      "log": "test-results/f3-ingress-unit.log"
+    },
+    "lint": "passed on changed TypeScript files",
+    "productionBuild": "passed with fictitious Supabase URL and keys",
+    "httpLocal": {
+      "unauthenticatedStatus": 401,
+      "authenticatedStatus": 200,
+      "body": {
+        "enabled": false,
+        "processed": 0
+      }
+    },
+    "cloud": {
+      "checkedAt": "2026-10-10T18:35:01.978Z",
+      "project": "bzanbpyzujlogipxvkfn",
+      "fixtureWorkspace": "00000000-0000-4000-8000-000000991001",
+      "synthetic": true,
+      "externalRequests": 0,
+      "assertions": [
+        "service-role capture persisted one event and deduplicated redelivery",
+        "different integration cannot write through the connection",
+        "capture creates no identities, messages, jobs or outbox entries",
+        "authenticated worker recovered/claimed empty synthetic workspace without a transport"
+      ],
+      "cleanup": "verified"
+    },
+    "typecheck": "passed"
+  },
+  "cleanupObserved": {
+    "workspaces": 1,
+    "conversations": 2,
+    "messages": 5,
+    "message_jobs": 1,
+    "message_outbox": 0,
+    "integrations": 0
+  },
+  "activation": {
+    "localCaptureEnabled": false,
+    "localWorkerEnabled": false,
+    "schedulerCreated": false,
+    "realProviderMessagesSent": false,
+    "appDeployed": false,
+    "push": false,
+    "merge": false
+  },
+  "migrations": {
+    "added": 0,
+    "previouslyApplied": 74
+  },
+  "limits": [
+    "Cloud payloads synthetic, not received from a real provider",
+    "Cloud worker exercised an empty queue; no send permission or transport execution",
+    "Human/AI producers, identity/grant verification, receipts, reconciliation, quotas and backoff remain pending",
+    "UI unchanged; previous browser evidence reused, not rerun"
+  ],
+  "next": "Conectar productor humano/composer con idempotencia y toma humana antes de enqueue; luego IA sin doble envio"
+}

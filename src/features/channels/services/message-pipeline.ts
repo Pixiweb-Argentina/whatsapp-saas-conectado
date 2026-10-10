@@ -24,7 +24,8 @@ export interface MessagePipeline {
 
 /** Internal producer/worker composition, not an HTTP authorization boundary.
  * Caller must authenticate the webhook/operator and own workspace/actor/IDs.
- * No webhook, cron or legacy buffer is switched to this pipeline yet.
+ * Cron uses drain behind a server workspace allowlist; enqueue is still internal.
+ * Legacy buffer/operator sends are not switched to this pipeline yet.
  */
 export function createMessagePipeline(db: SupabaseClient, now: () => number = Date.now): MessagePipeline {
   const store = createMessageJobStore(db);

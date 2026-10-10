@@ -198,3 +198,7 @@ Pendientes vigentes: conectar productores/contexto/worker y composer al inbox, r
 | 2026-10-10 | Lista Roja confirmada; F1 local ampliada | 1.666 unitarias, 14 DB, 10 navegador y build pasan; Cloud pendiente |
 
 Auto-Blindaje F3: Playwright limpia outputDir al iniciar; usar test-results/playwright para no borrar ledgers Cloud/capturas manuales. Los cierres Auth del smoke deben usar scope local para preservar el navegador de QA.
+
+Séptimo incremento: recepción firmada YCloud/Kapso conectada al registro durable y worker HTTP autenticado bajo flags independientes, desactivados por defecto. No hay scheduler ni productor doble; generación IA y envío humano siguen legacy. Fixture Cloud sintético de captura/dedup y worker vacío retirado sin envíos. Evidencia y validaciones: [F3 recepción](../../docs/evidencias/F3-INGRESS-2026-10-10.json).
+
+**Próximo paso vigente (reemplaza los anteriores):** integrar productor humano/composer y luego IA con idempotencia, toma humana y flags, verificar identidades/grants y completar conciliación/reservas/cuotas. App, login QA y Supabase ya funcionan; no recrear accesos ni pedir aprobación de blueprint/Manual/Lista Roja. No activar transportes ni scheduler hasta validar una cuenta de prueba. F3 continúa sin aceptación integral.

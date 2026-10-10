@@ -1,3 +1,4 @@
+import { captureWhatsAppDelivery } from "@/features/channels/services/whatsapp-event-ingress";
 import { type NextRequest, NextResponse, after } from "next/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import {
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const supabase = svc();
 
     type IntegrationRow = {
+      id: string;
       workspace_id: string;
       credentials: Record<string, unknown>;
       config: Record<string, unknown>;
@@ -111,7 +113,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // Status updates always take this path.
       const { data } = await supabase
         .from("integrations")
-        .select("workspace_id, credentials, config")
+        .select("id, workspace_id, credentials, config")
         .eq("workspace_id", wsidParam)
         .eq("provider", "kapso")
         .eq("enabled", true)
@@ -120,7 +122,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } else if (phoneNumberIdStr) {
       const { data } = await supabase
         .from("integrations")
-        .select("workspace_id, credentials, config")
+        .select("id, workspace_id, credentials, config")
         .eq("provider", "kapso")
         .eq("enabled", true)
         .eq("config->>phone_number_id", phoneNumberIdStr)
@@ -195,6 +197,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const workspaceId = ws.workspace_id as string;
+    // Signed, destination-checked delivery; persist before legacy duplicate handling.
+    await captureWhatsAppDelivery(supabase, {
+      workspaceId, integrationId: ws.id, provider: "kapso",
+      configuredAccountId: ws.config.phone_number_id,
+      payload: body, kapsoEventName: eventName,
+    });
     const { contact, conversation, message } = await processInbound(
       workspaceId,
       normalized,
