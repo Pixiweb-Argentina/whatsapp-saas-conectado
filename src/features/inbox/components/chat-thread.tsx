@@ -1,5 +1,6 @@
 "use client";
 import { contactLabel } from "@/features/contacts/lib/contact-display";
+import type { ComposerAvailability } from "@/features/channels/types/composer-availability";
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -46,6 +47,7 @@ interface ChatThreadProps {
   currentUserId: string;
   role?: WorkspaceRole;
   backHref?: string;
+  availability?: ComposerAvailability;
 }
 
 export function ChatThread({
@@ -54,6 +56,7 @@ export function ChatThread({
   currentUserId,
   role = "agent",
   backHref = "/inbox",
+  availability,
 }: ChatThreadProps) {
   const messages = useRealtimeMessages(conversation.id, initialMessages);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -85,7 +88,7 @@ export function ChatThread({
 
   const handleSend = async () => {
     const trimmed = draft.trim();
-    if (!trimmed || sending) return;
+    if (!trimmed || sending || availability?.allowed === false || conversation.channel !== "whatsapp") return;
     setSending(true);
     try {
       const res = await fetch(
@@ -173,6 +176,7 @@ export function ChatThread({
       setNote("");
       setNoteMode(false);
       toast.success("Nota guardada");
+      router.refresh();
     } catch {
       toast.error("Error de conexión");
     } finally {
@@ -323,9 +327,9 @@ export function ChatThread({
           </div>
         </header>
 
-        <WindowBanner
+        {conversation.channel === "whatsapp" && availability?.allowed !== false && <WindowBanner
           windowExpiresAt={conversation.window_expires_at ?? null}
-        />
+        />}
 
         {/* Message list */}
         <ScrollArea className="flex-1 px-4">
@@ -361,8 +365,6 @@ export function ChatThread({
             <p className="py-2 text-center text-xs text-muted-foreground select-none">
               Solo lectura — sin permisos para enviar mensajes
             </p>
-          ) : isWindowExpired ? (
-            <TemplatePicker conversationId={conversation.id} />
           ) : noteMode ? (
             /* ── Note mode composer ───────────────────────────── */
             <div className="space-y-2">
@@ -417,6 +419,20 @@ export function ChatThread({
                 </Button>
               </div>
             </div>
+          ) : availability?.allowed === false || conversation.channel !== "whatsapp" ? (
+            <div className="space-y-2">
+              <p role="status" className="text-sm text-muted-foreground">
+                {availability?.message ?? "Los envíos de este canal todavía no están habilitados."}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => router.refresh()}>Actualizar estado</Button>
+                <Button variant="ghost" size="sm" onClick={() => setNoteMode(true)}>
+                  <StickyNote aria-hidden="true" />Agregar nota interna
+                </Button>
+              </div>
+            </div>
+          ) : isWindowExpired ? (
+            <TemplatePicker conversationId={conversation.id} />
           ) : (
             /* ── Normal message composer ──────────────────────── */
             <div className="flex items-end gap-2">

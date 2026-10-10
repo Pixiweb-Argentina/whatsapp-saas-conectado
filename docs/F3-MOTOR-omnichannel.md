@@ -104,22 +104,45 @@ El asesor conserva los avisos heredados y ahora también informa [protección co
 
 Fuentes consultadas: [claves de Supabase](https://supabase.com/docs/guides/getting-started/api-keys) y [creación de usuarios por servidor](https://supabase.com/docs/reference/javascript/auth-admin-createuser). Evidencia consolidada: [F3 inbox](evidencias/F3-INBOX-2026-10-10.json).
 
+## Incremento 5: contexto de envío y disponibilidad del composer
+
+Se agregó el lector de contexto de servidor por workspace, conexión, identidad verificada y conversación. El destinatario procede de `contact_identities`; el teléfono editable del contacto no puede sustituirlo. Las supresiones WA se consultan por el destinatario efectivo. Cada consulta conserva el filtro de workspace, valida la respuesta y oculta detalles internos de errores.
+
+Los permisos del pipeline nuevo requieren `channel_connections.capabilities` con `{version:1, grants:[...]}`. Cada grant incluye workspaceId, connectionId, capability, verifiedAt, evidenceRef y validUntil. Una bandera `text:true`, un token o un backfill no constituyen verificación. No se agregaron grants ni verificaciones ficticias a Cloud. La política limita el permiso al vencimiento más temprano entre la interacción y la capacidad.
+
+La evidencia inicial implementada es el mensaje entrante WA **referenciado por eventId**, persistido, no histórico y ligado al mismo destinatario/cuenta/proveedor. La ventana se calcula desde occurredAt, nunca desde el momento de una entrega tardía. Ecos, receipts, comentarios, fechas futuras y eventos ajenos no autorizan. Las otras evidencias (plantilla aprobada, comentario reservado, Human Agent y sesión web) siguen pendientes; no se infieren de un timestamp de conversación.
+
+`createMessagePipeline` une el productor con la política y la cola, y el worker con el lector fresco y el adaptador de la conexión exacta. El adaptador verifica legacy_integration_id, workspace, proveedor, enabled y el identificador de la cuenta antes de descifrar credenciales. No sustituye una integración histórica por la actualmente activa. **Esta composición interna aún no tiene webhook, cron ni buffer conectados y no reemplaza el dispatch WA existente.** Su activación requiere los controles transaccionales y la persistencia de mensajes detallados abajo.
+
+El composer real consulta disponibilidad con la sesión y RLS. Una cuenta en preparación, revocada o con permisos faltantes muestra el motivo y permite actualizar estado o escribir una nota interna. El POST de texto y las server actions de plantillas repiten el control antes de dispatch. Un canal nuevo no presenta plantillas WA. La ruta WA sin connection_id conserva su comportamiento previo; la disponibilidad no elimina sus controles de ventanas, roles, plantillas ni supresión.
+
+### Verificación del incremento 5
+
+- **1.743 unitarias pasan**, 18 nuevas; **97 dirigidas** pasan después del ajuste final de supresión por identidad. Typecheck, lint dirigido y build pasan. Build con claves ficticias, sin usar proveedores. Logs: `test-results/f3-context-*`.
+- GoTrue + SDK + API local contra el proyecto nuevo: una llamada directa con capacidades/estado inventados recibe **422 connection_not_ready**, sin insertar mensajes. El contexto rechaza la identidad sintética no verificada. Script reproducible: `tests/cloud/channel-context-smoke.mjs`; resultado: `test-results/f3-context-cloud.json`.
+- Navegador autenticado: motivo de bloqueo visible, sin botón de envío; dos notas internas guardadas desde el formulario. Se añadió refresh tras guardar porque una nota persistida no apareció inmediatamente en una sesión con Realtime interrumpido; segunda nota visible sin recargar manualmente. No se afirma que ese fallback pruebe Realtime.
+- Desktop y móvil 390px revisados; scrollWidth=390 y sin desborde. Capturas en `test-results/f3-context-browser/desktop.png` y `mobile.png`.
+- No cambió el esquema: siguen **72 migraciones**, no repetir. Laboratorio conserva **5 mensajes: 3 entradas sintéticas + 2 notas internas**, cero outbox y cero cron activos. Las dos conexiones siguen connecting, sin credenciales. No se enviaron mensajes a proveedores.
+- Los **40 tests DB y 20 E2E públicos/diseño del incremento 4** se conservan como evidencia previa; no se repitieron sin cambios de SQL ni de esas vistas. La UI modificada se verificó en la sesión autenticada real.
+
+Evidencia de este corte: [F3 contexto](evidencias/F3-CONTEXTO-2026-10-10.json).
+
 ## Estado de las tareas
 
 | Tarea | Estado |
 |---|---|
 | F3-T1.1 contratos/adaptador/política | Base local implementada y probada; validación por cuenta externa pendiente |
-| F3-T1.2 resolución/dispatch | Ruta WA integrada y protegida; resolución de identidades/cuentas de los nuevos transportes pendiente |
+| F3-T1.2 resolución/dispatch | Lector de identidad/capacidades y resolver por conexión preparados; WA compatible permanece; adaptadores Meta/web pendientes |
 | F3-T1.3 buffer/agente independiente de settings WA | Runtime extraído y herramientas limitadas por canal; rutinas de transportes nuevos pendientes de su pipeline durable |
-| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y worker implementados; pruebas local/Cloud y concurrencia pasan; productores/cron de aplicación, cuotas y backoff pendientes |
-| F3-T2.2 invalidación durable y revalidación inmediata | Trigger y permiso transaccional probados en Cloud; integración con generación real y contexto de canales pendiente |
+| F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL, productor interno y worker compuestos; pruebas local/Cloud y concurrencia pasan; conectar escritores/cron, cuotas y backoff pendiente |
+| F3-T2.2 invalidación durable y revalidación inmediata | Contexto fresco de servidor + revisión en permiso; falta revalidar grant/identidad/supresión dentro de la transacción e integrar generación real |
 | F3-T2.3 receipts/unknown/conciliación | Unknown durable sin reenvío probado; consumidores de ecos/receipts y conciliación pendientes |
-| F3-T3.1 inbox/composer omnicanal | Lectura, filtros y navegación con Supabase real probados; composer con política por canal pendiente |
+| F3-T3.1 inbox/composer omnicanal | Lectura/filtros, disponibilidad real y bloqueo servidor de texto/plantillas probados; entrega por pipeline nuevo pendiente |
 | F3-T3.2 pruebas integrales | SQL/GoTrue/RLS/navegador/Realtime/toma humana pasan; cuentas y envíos de proveedores pendientes |
 
 ## Próximo paso y límites
 
-Integrar contexto confiable de identidad/capacidades, productores y worker al pipeline y composer, con reserva por comentario y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
+Completar el permiso transaccional con grant/identidad/supresión frescos (cerrar la carrera entre lectura y begin), vincular job/outbox con mensaje visible y estado, y conectar productores autenticados/worker bajo flags. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
 
 La base Cloud ya está inicializada; la app todavía no está desplegada ni enviando mensajes nuevos. No se usaron bases anteriores. Sin compras, push o merge. F1/F2/F3 continúan sin aceptación integral.
 
@@ -136,3 +159,7 @@ La base Cloud ya está inicializada; la app todavía no está desplegada ni envi
 - El cierre por defecto de Supabase Auth revoca todas las sesiones del usuario. El smoke usa signOut con scope local para no cerrar la sesión independiente del navegador.
 
 - La primera carga autenticada detectó un mismatch SSR por leer Notification.permission en el inicializador de useState. Se reemplazó por useSyncExternalStore con snapshot de servidor estable. Recarga real sin errores/avisos nuevos y botón de permiso visible después de hidratar; no se solicitó permiso automáticamente. Regresión unitaria de SSR incluida.
+
+- Una nota puede quedar guardada aunque la suscripción Realtime se haya interrumpido. Refrescar el hilo al confirmar el guardado; no volver a insertar por no verla ni confundir el fallback con una prueba Realtime.
+- Los grants que carga el servidor deben tener procedencia, scope y vencimiento. Nunca habilitar permisos desde capabilities booleanas ni certificar identidades copiadas por un backfill.
+- La supresión del pipeline nuevo sigue al destinatario de la identidad, incluso si se editó el teléfono del contacto.

@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { test, mock } from "node:test";
 import { NextRequest, NextResponse } from "next/server";
+import type { ComposerAvailability } from "@/features/channels/types/composer-availability";
+
+let availability: ComposerAvailability = { allowed: true, reason: "legacy_whatsapp", message: null };
+mock.module("@/features/channels/services/composer-availability.ts", {
+  exports: { readComposerAvailability: async () => availability },
+});
 
 let currentUser: { id: string } | null = { id: "user_1" };
 let convRow = { workspace_id: "ws_1", window_expires_at: null, ai_enabled: false };
@@ -111,4 +117,17 @@ test("an agent can send, through the conversation's own workspace", async () => 
     (dispatchCalls[0] as { workspaceId?: string }).workspaceId,
     convRow.workspace_id,
   );
+});
+
+test("a revoked account rejects a direct API call before dispatch or sleeping the bot", async () => {
+  dispatchCalls.length = 0; transitions.length = 0;
+  memberResult = { ok: true, userId: "user_1", role: "agent" };
+  availability = { allowed: false, reason: "revoked", message: "Cuenta desconectada" };
+  try {
+    const response = await POST(makeReq({ body: "hola", capabilities: { text: true } }), params);
+    assert.equal(response.status, 422);
+    assert.deepEqual(await response.json(), { error: "Cuenta desconectada", code: "revoked" });
+    assert.equal(dispatchCalls.length, 0);
+    assert.equal(transitions.length, 0);
+  } finally { availability = { allowed: true, reason: "legacy_whatsapp", message: null }; }
 });

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { checkWorkspaceMember } from "@/lib/auth/workspace-access";
 import { listTemplates } from "./templates";
 import { dispatchTemplate } from "./dispatch";
+import { readComposerAvailability } from "@/features/channels/services/composer-availability";
 // NOTE: do NOT re-export types from a "use server" file — Next/Turbopack treats
 // every export of an action module as an async action, and a re-exported type
 // becomes an undefined runtime reference that crashes the whole actions chunk.
@@ -17,17 +18,24 @@ import type { TemplateRow } from "./templates";
 // caller cannot read simply does not exist. listTemplates and dispatchTemplate
 // run with the service role (RLS never fires there), so this is the lock.
 
-async function workspaceOfConversation(
+interface ConversationAccess {
+  workspaceId: string;
+  supabase: Awaited<ReturnType<typeof createClient>>;
+  conversation: unknown;
+}
+
+async function conversationAccess(
   conversationId: string,
-): Promise<string | null> {
+): Promise<ConversationAccess | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("conversations")
-    .select("workspace_id")
+    .select("workspace_id,channel,connection_id")
     .eq("id", conversationId)
     .maybeSingle();
 
-  return (data as { workspace_id: string } | null)?.workspace_id ?? null;
+  if (!data) return null;
+  return { workspaceId: data.workspace_id as string, supabase, conversation: data };
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -37,14 +45,16 @@ async function workspaceOfConversation(
 export async function getApprovedTemplates(
   conversationId: string,
 ): Promise<TemplateRow[]> {
-  const workspaceId = await workspaceOfConversation(conversationId);
-  if (!workspaceId) return [];
+  const context = await conversationAccess(conversationId);
+  if (!context) return [];
+  const { workspaceId } = context;
 
   // No minimum role: a viewer who can read the thread may see which templates
   // exist. Sending is what needs `agent`. An empty list is exactly what a
   // stranger should see — the picker only knows how to render a list.
   const access = await checkWorkspaceMember(workspaceId);
   if (!access.ok) return [];
+  if (!(await readComposerAvailability(context.supabase, context.conversation)).allowed) return [];
 
   return listTemplates(workspaceId, "approved");
 }
@@ -80,13 +90,16 @@ export async function sendTemplateAction(
 
   // The lock runs before anything is built: an unknown or foreign conversation
   // is denied without the WhatsApp provider ever hearing about it.
-  const workspaceId = await workspaceOfConversation(conversationId);
-  if (!workspaceId) return DENIED;
+  const context = await conversationAccess(conversationId);
+  if (!context) return DENIED;
+  const { workspaceId } = context;
 
   // `agent` because sending a template IS sending a WhatsApp: same bar as the
   // free-text composer.
   const access = await checkWorkspaceMember(workspaceId, { minRole: "agent" });
   if (!access.ok) return DENIED;
+  const availability = await readComposerAvailability(context.supabase, context.conversation);
+  if (!availability.allowed) return { ok: false, error: availability.message ?? "Envío no disponible" };
 
   // Only a template this workspace has approved can go out.
   const approved = await listTemplates(workspaceId, "approved");

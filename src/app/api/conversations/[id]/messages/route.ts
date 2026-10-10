@@ -7,6 +7,7 @@ import { dispatchText } from "@/features/inbox/services/dispatch";
 import { applyTransition } from "@/features/inbox/services/decision-engine";
 import { getActiveAgent } from "@/features/agents/services/active-agent";
 import { readJsonBody, requireWorkspaceMember } from "@/lib/auth/workspace-access";
+import { readComposerAvailability } from "@/features/channels/services/composer-availability";
 
 const BodySchema = z.object({
   body: z.string().min(1).max(4096),
@@ -38,7 +39,7 @@ export async function POST(
   // 3. Load conversation to get workspace_id
   const { data: conv } = await supabase
     .from("conversations")
-    .select("workspace_id, window_expires_at, ai_enabled")
+    .select("workspace_id, channel, connection_id, window_expires_at, ai_enabled")
     .eq("id", conversationId)
     .single();
 
@@ -54,6 +55,11 @@ export async function POST(
     minRole: "agent",
   });
   if (!auth.ok) return auth.response;
+
+  const availability = await readComposerAvailability(supabase, conv);
+  if (!availability.allowed) return NextResponse.json(
+    { error: availability.message, code: availability.reason }, { status: 422 },
+  );
 
   // 4. Dispatch via the single exit point
   const result = await dispatchText({

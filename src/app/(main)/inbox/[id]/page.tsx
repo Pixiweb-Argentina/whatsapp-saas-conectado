@@ -12,6 +12,7 @@ import type { WorkspaceRole } from "@/features/inbox/hooks/use-role";
 
 import { readInboxPage } from "@/features/inbox/services/inbox-query";
 import { inboxQuery, parseInboxFilters, type InboxSearchParams } from "@/features/inbox/lib/inbox-filters";
+import { readComposerAvailability } from "@/features/channels/services/composer-availability";
 
 interface PageProps {
   searchParams: Promise<InboxSearchParams>;
@@ -53,6 +54,7 @@ export default async function InboxDetailPage({ params, searchParams }: PageProp
     .maybeSingle();
 
   const role = (membership?.role ?? "viewer") as WorkspaceRole;
+  const availability = await readComposerAvailability(supabase, convWithContact);
 
   // 4. Fetch messages: los ÚLTIMOS 100, no los primeros.
   //
@@ -104,6 +106,7 @@ export default async function InboxDetailPage({ params, searchParams }: PageProp
         initialMessages={messages}
         currentUserId={user.id}
         role={role}
+        availability={availability}
       />
     </InboxLayout>
   );

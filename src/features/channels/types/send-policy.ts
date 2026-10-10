@@ -26,7 +26,7 @@ export const sendPolicyInputSchema = z.strictObject({
   capabilities: z.array(z.strictObject({
     workspaceId: z.uuid(), connectionId: z.uuid(),
     capability: z.enum(["text", "template", "private_reply", "public_reply", "media", "human_agent"]),
-    verifiedAt: timestamp, evidenceRef: sendIdSchema,
+    verifiedAt: timestamp, evidenceRef: sendIdSchema, validUntil: timestamp.optional(),
   })),
   evidence: z.discriminatedUnion("kind", [
     z.strictObject({ ...evidenceFields, kind: z.literal("inbound_message") }),

@@ -1,7 +1,7 @@
 # La Pieza: Omnichannel Pixiweb
 
 > **Estado del alcance:** APROBADO por Yani el 2026-10-10: «apruebo el blueprint comienza».
-> **Ejecución:** Build Manual; F1 con validación Cloud pendiente. Yani autorizó avanzar F2 independientemente el 2026-10-10; 0/9 fases con aceptación integral.
+> **Ejecución:** Build Manual; F3 en progreso. Supabase nuevo y recorrido autenticado probados con datos sintéticos; contratos externos/pipeline integral pendientes. 0/9 fases con aceptación integral.
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; transporte/política/runtime y cola durable probados localmente; 71 migraciones y pruebas SQL/concurrencia aplicadas al Supabase nuevo. Productores, contexto real e inbox pendientes; canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 72 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Contexto de identidad/capacidad, productor/worker internos y disponibilidad del composer preparados; falta permiso completo, persistencia de mensajes y conectar escritores/worker. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 

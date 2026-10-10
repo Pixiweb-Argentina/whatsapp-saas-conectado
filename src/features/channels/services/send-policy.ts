@@ -24,8 +24,9 @@ const MESSAGES: Record<SendPolicyReason, string> = {
 
 function decision(reasonCode: SendPolicyReason, input?: SendPolicyInput): SendPolicyDecision {
   const allowed = reasonCode === "allowed";
+  const expiry = allowed && input?.evidence ? permissionExpiry(input) : null;
   return { allowed, reasonCode, message: MESSAGES[reasonCode],
-    validUntil: allowed ? input?.evidence?.validUntil ?? null : null,
+    validUntil: expiry,
     evidenceId: input?.evidence?.id ?? null };
 }
 
@@ -44,9 +45,24 @@ function scopeMatches(input: SendPolicyInput): boolean {
 }
 
 function verified(input: SendPolicyInput, capability: string): boolean {
-  return input.capabilities.some((grant) => grant.capability === capability
+  return validGrants(input, capability).length > 0;
+}
+
+function validGrants(input: SendPolicyInput, capability: string): SendPolicyInput["capabilities"] {
+  return input.capabilities.filter((grant) => grant.capability === capability
     && grant.workspaceId === input.workspaceId && grant.connectionId === input.connection.connectionId
-    && Date.parse(grant.verifiedAt) <= input.now);
+    && Date.parse(grant.verifiedAt) <= input.now
+    && (grant.validUntil === undefined || Date.parse(grant.validUntil) > input.now));
+}
+
+function permissionExpiry(input: SendPolicyInput): string {
+  const actions = [input.request.action, ...(input.evidence?.kind === "human_agent" ? ["human_agent"] : [])];
+  const deadlines = actions.map((action) => Math.max(...validGrants(input, action).map(
+    (grant) => grant.validUntil ? Date.parse(grant.validUntil) : Infinity,
+  )));
+  const evidenceExpiry = Date.parse(input.evidence!.validUntil);
+  const deadline = Math.min(evidenceExpiry, ...deadlines);
+  return deadline === evidenceExpiry ? input.evidence!.validUntil : new Date(deadline).toISOString();
 }
 
 function checkEvidence(input: SendPolicyInput): SendPolicyReason {

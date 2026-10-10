@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
 import { test, mock } from "node:test";
+let accountReady = true;
+mock.module("@/features/channels/services/composer-availability.ts", {
+  exports: { readComposerAvailability: async () => ({ allowed: accountReady, reason: "revoked",
+    message: "Cuenta desconectada" }) },
+});
 
 // ── @/lib/supabase/server (RLS-bound client) ────────────────────────────────
 // Maps conversationId → workspace_id for the conversations the caller can
@@ -83,6 +88,7 @@ const { getApprovedTemplates, sendTemplateAction } = await import(
 );
 
 function reset() {
+  accountReady = true;
   visibleConversations = { conv_1: "ws_1" };
   conversationLookups = [];
   accessResult = { ok: true, userId: "user_1" };
@@ -91,6 +97,16 @@ function reset() {
   dispatchCalls = [];
   dispatchResult = { ok: true };
 }
+
+test("disconnected accounts cannot list or send templates even through direct server actions", async () => {
+  reset(); accountReady = false;
+  assert.deepEqual(await getApprovedTemplates("conv_1"), []);
+  assert.deepEqual(await sendTemplateAction("conv_1", "welcome", "es", []),
+    { ok: false, error: "Cuenta desconectada" });
+  assert.equal(listTemplatesCalls.length, 0);
+  assert.equal(dispatchCalls.length, 0);
+  reset();
+});
 
 // ── getApprovedTemplates ─────────────────────────────────────────────────────
 

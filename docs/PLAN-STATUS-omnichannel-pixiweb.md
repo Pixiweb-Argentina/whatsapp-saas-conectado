@@ -4,7 +4,7 @@ Actualizado: 2026-10-10. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb
 
 ## Resultado
 
-Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F3 en ejecución; Supabase nuevo tiene 72 migraciones. Login real, inbox autenticado, filtros, Realtime y toma humana probados con datos sintéticos. Pipeline completo y proveedores pendientes. Fases con aceptación integral: 0/9.
+Blueprint **APROBADO por Yani el 2026-10-10**: «apruebo el blueprint comienza». Incluye 9 fases, 27 historias, 72 tareas, 18 templates de pantalla y 14 fuentes funcionales sin TikTok. Build Manual elegido. F3 en ejecución; Supabase nuevo tiene 72 migraciones. Contexto de envío y composición productor/worker preparados; inbox autenticado con disponibilidad por cuenta y controles servidor de texto/plantillas. Pipeline completo y proveedores pendientes. Fases con aceptación integral: 0/9.
 
 **Continuar en:** C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado, ahora en rama codex/omnichannel-f3-inbox desde 2fea741. Se reutiliza el worktree; su nombre heredado no indica la fase activa.
 
@@ -123,3 +123,13 @@ App local conectada al proyecto nuevo; **72 migraciones aplicadas**. Login GoTru
 Verificación: 1.725 unitarias, 40 DB, 20 E2E públicos/diseño, typecheck/lint y recorrido autenticado en Cloud. [Reporte y evidencia](F3-MOTOR-omnichannel.md). Se conserva el laboratorio sintético: un usuario QA, un workspace, dos conversaciones y un job cancelado. .env.local/.env.qa.local son privados e ignorados; no imprimir. Ledger en test-results/f3-inbox-fixture.json. El smoke Cloud no crea duplicados si falta su ledger: conciliar primero los IDs existentes.
 
 **Próximo paso:** contexto confiable de identidad/capacidades, productores y worker/composer, reserva por comentario, backoff/cuotas y conciliación. Acceso administrador definitivo pendiente. Mantener codex/omnichannel-f3-inbox; no tocar main, puertos 3300/3301 ni cuentas Supabase antiguas. Sin compras, push/merge, despliegue de app o mensajes externos. Fases con aceptación integral: 0/9.
+
+## Continuidad vigente — incremento 5, 2026-10-10
+
+Contexto de servidor por identidad y cuenta, grants con evidencia/vencimiento, evento entrante WA referenciado y supresión por destinatario. Productor/worker compuestos internamente con adaptador de conexión exacta; **sin conectar todavía webhook, buffer o cron**. Composer, API de texto y acciones de plantillas bloquean cuentas no listas/revocadas y canales no habilitados. Notas internas siguen disponibles y refrescan el hilo al guardarse.
+
+**Verificación:** 1.743 unitarias, 97 dirigidas tras ajuste final, typecheck/lint/build. Cloud GoTrue + API: 422 para un intento con capacidades inventadas, cero mensajes creados por ese intento. Navegador desktop/móvil: bloqueo visible y notas persistidas. [Reporte F3](F3-MOTOR-omnichannel.md), [evidencia](evidencias/F3-CONTEXTO-2026-10-10.json). Se reutilizan las 40 DB y 20 E2E públicos/diseño previas; no fueron repetidas en este corte.
+
+Sin migraciones nuevas: 72 aplicadas. Laboratorio conserva 5 mensajes (3 entradas + 2 notas internas), cero outbox/cron activos. No hay credenciales de proveedores ni envíos reales. Mantener archivos .env/QA y ledger ignorados; no imprimirlos ni regenerar fixtures sin reconciliar.
+
+**Siguiente bloque:** revalidar grant/identidad/supresión en el permiso transaccional; persistir mensaje y resultado del job en el inbox; conectar productores autenticados con flags. Luego reserva por comentario, cuotas/backoff y conciliación. Continúa F3 en su rama; no tocar main ni cambiar de fase todavía. No repetir aprobaciones.

@@ -1,0 +1,53 @@
+{
+  "recordedAt": "2026-10-10",
+  "project": "bzanbpyzujlogipxvkfn",
+  "branch": "codex/omnichannel-f3-inbox",
+  "baseCommit": "3f7522f",
+  "migrations": { "count": 72, "newInThisIncrement": 0 },
+  "validation": {
+    "unit": { "passed": 1743, "failed": 0, "log": "test-results/f3-context-unit-full.log" },
+    "finalTargeted": { "passed": 97, "failed": 0, "log": "test-results/f3-context-targeted.log" },
+    "typecheck": "passed",
+    "targetedLint": "passed",
+    "productionBuild": "passed with fictitious API configuration",
+    "previousEvidenceReused": { "database": 40, "publicDesignE2E": 20, "rerunThisIncrement": false }
+  },
+  "cloudApi": {
+    "auth": "real GoTrue, synthetic QA account, signOut scope local",
+    "readiness": "connection_not_ready",
+    "unverifiedIdentityBlocked": true,
+    "directPostStatus": 422,
+    "forgedCapabilitiesIgnored": true,
+    "messageIdsUnchangedByBlockedRequest": true,
+    "script": "tests/cloud/channel-context-smoke.mjs",
+    "result": "test-results/f3-context-cloud.json"
+  },
+  "authenticatedBrowser": {
+    "blockedReasonVisible": true,
+    "sendButtonAbsent": true,
+    "notesSaved": 2,
+    "secondNoteVisibleWithoutManualReload": true,
+    "noteRefreshFallback": "router.refresh after successful save; does not prove Realtime delivery",
+    "mobileWidth": 390,
+    "mobileScrollWidth": 390,
+    "screenshots": ["test-results/f3-context-browser/desktop.png", "test-results/f3-context-browser/mobile.png"]
+  },
+  "cloudState": {
+    "workspaceId": "52aa2172-9791-48cc-82ca-6fb21cfca773",
+    "messages": 5,
+    "inboundSynthetic": 3,
+    "internalNotes": 2,
+    "noteIds": ["2c58f0fe-b508-421f-b7d2-fcdea7cc1d61", "c9a4d5cc-2f82-4521-bbde-8219d5d6048e"],
+    "outbox": 0,
+    "activeCron": 0,
+    "providerCredentials": false,
+    "providerCalls": 0
+  },
+  "limits": [
+    "Internal producer/worker composition is not wired to webhooks, cron or the legacy buffer",
+    "Atomic permission still needs grant, identity and suppression revalidation before activation",
+    "Job-to-message persistence, comment reservations, quotas, backoff and reconciliation remain pending",
+    "No Meta, widget or Brevo transport enabled; no real provider send validated",
+    "Main unchanged; no purchase, push, merge or app deployment"
+  ]
+}
