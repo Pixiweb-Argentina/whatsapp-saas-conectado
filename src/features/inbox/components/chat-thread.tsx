@@ -32,6 +32,8 @@ import {
 } from "@/features/inbox/hooks/use-role";
 import { AiToggleButton } from "./ai-toggle-button";
 import { ChatMessage } from "./chat-message";
+import { QueuedMessages } from "./queued-messages";
+import type { ConversationQueue } from "../types/queued-message";
 import { WindowBanner } from "./window-banner";
 import { TemplatePicker } from "./template-picker";
 import { CrmPanel } from "./crm-panel";
@@ -49,6 +51,7 @@ interface ChatThreadProps {
   role?: WorkspaceRole;
   backHref?: string;
   availability?: ComposerAvailability;
+  queue?: ConversationQueue;
 }
 
 export function ChatThread({
@@ -58,6 +61,7 @@ export function ChatThread({
   role = "agent",
   backHref = "/inbox",
   availability,
+  queue,
 }: ChatThreadProps) {
   const messages = useRealtimeMessages(conversation.id, initialMessages);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -317,7 +321,7 @@ export function ChatThread({
         {/* Message list */}
         <ScrollArea className="flex-1 px-4">
           <div className="py-4 space-y-2">
-            {messages.length === 0 ? (
+            {messages.length === 0 && !queue?.messages.length ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <p className="text-sm text-muted-foreground">
                   No hay mensajes aún
@@ -331,6 +335,9 @@ export function ChatThread({
                 <ChatMessage key={message.id} message={message} />
               ))
             )}
+            {queue && <QueuedMessages queue={queue} represented={messages.flatMap(
+              (message) => message.channel_operation_id ? [message.channel_operation_id] : [],
+            )} />}
             <div ref={bottomRef} aria-hidden="true" />
           </div>
         </ScrollArea>

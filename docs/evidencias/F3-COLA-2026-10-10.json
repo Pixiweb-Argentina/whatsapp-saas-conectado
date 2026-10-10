@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-10",
+  "phase": "F3",
+  "increment": 9,
+  "branch": "codex/omnichannel-f3-inbox",
+  "scope": "Persistent pre-permit queue projection in the inbox; no provider transport",
+  "unit": {
+    "passed": 1785,
+    "failed": 0
+  },
+  "database_local": {
+    "passed": 75,
+    "failed": 0
+  },
+  "typecheck": "passed",
+  "targeted_lint": "passed",
+  "production_build": "passed with placeholder build keys",
+  "cloud": {
+    "projection": true,
+    "anonDenied": true,
+    "directTableDenied": true,
+    "foreignScopeEmpty": true,
+    "revokedMembershipEmpty": true,
+    "noOutbox": true
+  },
+  "migration": {
+    "version": "20261010191128",
+    "name": "omnichannel_queue_read",
+    "applied_total": 77
+  },
+  "browser": {
+    "authenticated": true,
+    "reload_retains_pending": true,
+    "manual_refresh": true,
+    "pending_to_unknown_message_once": true,
+    "desktop": true,
+    "mobile_viewport": [
+      390,
+      844
+    ],
+    "mobile_scroll_width": 390,
+    "new_console_errors": 0,
+    "new_console_warnings": 0,
+    "screenshots": [
+      "test-results/f3-queue-browser/persisted.png",
+      "test-results/f3-queue-browser/mobile.png"
+    ]
+  },
+  "security_advisor": {
+    "errors": 0,
+    "warnings": 10,
+    "info": 11,
+    "new_findings": 0
+  },
+  "cleanup": {
+    "temporary_fixture_removed": true,
+    "retained_workspaces": 1,
+    "retained_messages": 5,
+    "outbox": 0,
+    "active_cron": 0
+  },
+  "limits": [
+    "No provider POST was invoked; unknown was simulated in SQL.",
+    "Queue view shows at most 50 newest operations and a truncation notice.",
+    "Refresh every 10 seconds only while pending/leased rows are loaded and tab is visible.",
+    "New jobs created elsewhere require reopening/manual refresh if no pending rows were loaded.",
+    "Queue and messages are displayed in separate sections; delivery is not inferred from enqueue.",
+    "F3 integral acceptance, real accounts, AI producer, receipts and reconciliation remain pending."
+  ],
+  "rollout": {
+    "ingress": "disabled",
+    "worker": "disabled",
+    "human": "disabled",
+    "scheduler_created": false
+  },
+  "external_actions": {
+    "provider_messages": 0,
+    "purchases": 0,
+    "push": false,
+    "merge": false,
+    "application_deploy": false
+  }
+}

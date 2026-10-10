@@ -195,6 +195,20 @@ Migraciones aplicadas: `20261010185104_omnichannel_human_enqueue.sql` y `2026101
 
 Reproducción: `tests/db/cloud-human-enqueue.mjs` prepara/asserta/limpia SQL; `tests/cloud/human-enqueue-smoke.mjs` requiere el intento sintético previo y flags del servidor. No ejecutar contra otra cuenta ni recrear fixture si ya existe. [Funciones de base de datos, documentación consultada](https://supabase.com/docs/guides/database/functions).
 
+## Incremento 9 — cola persistente del inbox
+
+La RPC pública SECURITY INVOKER delega a una función privada con proyección mínima y comprobación explícita de auth.uid + membresía activa + workspace/conversación exactos. Los jobs siguen con RLS y sin SELECT para navegador. Sólo devuelve UUID de operación, actor, texto, fecha y estado anterior al permiso; no devuelve destinatario, request, errores técnicos ni credenciales. Incluye miembros viewer para la lectura, sin permisos de escritura.
+
+La consulta retorna los 51 más recientes; UI muestra 50 en orden cronológico y aviso de límite. Pending/leased/cancelled/dead_letter tienen estados visibles y no se presentan como entrega. Operaciones con mensaje persistente se excluyen en SQL; además se filtra por channel_operation_id de los mensajes Realtime para evitar duplicación mientras llega el refresh. Cada diez segundos se refresca si hay pendientes y la pestaña está visible; al no haberlos se detiene. Nuevos pendientes de otro operador requieren abrir/actualizar el hilo si no había pendientes visibles; no se concedió Realtime a jobs. La cola falla con aviso genérico ante errores; no se interpreta como vacía ni se ofrece reenviar.
+
+- 1.785 unitarias y 75 DB locales pasan, con tres nuevas en cada suite. Typecheck, lint dirigido y build con claves de compilación ficticias pasan.
+- Supabase real/GoTrue: proyección, anon denegado, SELECT jobs denegado, scope cruzado vacío y membresía inactiva vacía.
+- Desktop/móvil: recarga conserva un pendiente, el job pasa a mensaje Sin confirmar sin duplicado y el botón refresca. No desborde horizontal a 390×844; sin errores/warnings del navegador. Fecha de cola con zona Argentina y formato 24h explícitos para mantener SSR/hidratación estables.
+- Migración 20261010191128_omnichannel_queue_read.sql aplicada, total 77; no repetir. Asesor: cero ERROR, mismos 10 WARN y 11 INFO heredados. La función privilegiada nueva no está en esquema expuesto. [Remediación de funciones públicas heredadas](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
+- Fixture sintético temporal retirado, workspace habitual restaurado. Permanecen cinco mensajes QA, cero outbox y cero cron activos. No hubo POST a proveedores, compras, push, merge o deploy; flags apagados.
+
+Reproducción en el proyecto nuevo exclusivamente: tests/db/cloud-queue-read.mjs expone setup/transición SQL/addPending/cleanup. tests/cloud/queue-read-smoke.mjs requiere setup y las credenciales QA ignoradas; cierra sólo su sesión local. La transición SQL simula resultado unknown sin llamar a transporte: no acredita integración del proveedor. Capturas en test-results/f3-queue-browser. [Evidencia](evidencias/F3-COLA-2026-10-10.json).
+
 ## Estado de las tareas
 
 | Tarea | Estado |
@@ -205,12 +219,12 @@ Reproducción: `tests/db/cloud-human-enqueue.mjs` prepara/asserta/limpia SQL; `t
 | F3-T2.1 eventos/jobs/outbox y lease/fencing | SQL y captura autenticada + worker HTTP bajo flags probados local/Cloud; productor humano conectado bajo flag; generación IA, scheduler, cuotas y backoff pendientes |
 | F3-T2.2 invalidación durable y revalidación inmediata | Permiso WA transaccional con grant/identidad/supresión/evento/membresía probado local/Cloud; falta integrar generación real |
 | F3-T2.3 receipts/unknown/conciliación | Job → mensaje visible, resultados y recuperación unknown probados; consumidores de ecos/receipts y conciliación pendientes |
-| F3-T3.1 inbox/composer omnicanal | Lectura/filtros, disponibilidad y enqueue humano probados en UI/API/Cloud; consumo/envío externo y vista permanente de pendientes por completar |
+| F3-T3.1 inbox/composer omnicanal | Lectura/filtros, disponibilidad y enqueue humano probados en UI/API/Cloud; vista permanente de pendientes probada; consumo/envío externo pendiente |
 | F3-T3.2 pruebas integrales | SQL/GoTrue/RLS/navegador/Realtime/toma humana pasan; cuentas y envíos de proveedores pendientes |
 
 ## Próximo paso y límites
 
-Conectar la generación IA a la cola sin doble productor/envío. El productor humano ya está conectado y probado bajo flag, con toma humana, auditoría e idempotencia transaccionales. Completar la vista persistente de operaciones pendientes antes de habilitar uso operativo. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
+Conectar la generación IA a la cola sin doble productor/envío. El productor humano ya está conectado y probado bajo flag, con toma humana, auditoría e idempotencia transaccionales. La vista persistente de pendientes ya está implementada y probada; no habilita el transporte. La captura inbound firmada y el worker HTTP ya están conectados bajo flags desactivados; falta verificar identidades/grants reales y programar el consumo al activar una cuenta de prueba. El permiso y el mensaje transaccionales ya están implementados para WA texto; templates, comentarios, Human Agent y widget siguen fallando cerrado. Luego reserva por comentario, backoff/cuotas y conciliación antes de habilitar transportes nuevos. La app local y el usuario QA ya funcionan; resta definir el acceso administrador definitivo de Yani antes de uso operativo.
 
 La base Cloud ya está inicializada; la app todavía no está desplegada ni enviando mensajes nuevos. No se usaron bases anteriores. Sin compras, push o merge. F1/F2/F3 continúan sin aceptación integral.
 
@@ -241,3 +255,5 @@ La base Cloud ya está inicializada; la app todavía no está desplegada ni envi
 - La captura durable debe ejecutarse antes del retorno legacy por duplicado: de lo contrario una caída entre las dos escrituras impide recuperar el evento al reentregar. No crear jobs desde ambos caminos.
 
 - El interruptor de IA conservaba el inicializador de useState tras router.refresh. La key por conversación y ai_enabled lo remonta cuando el servidor cambia el control, sin un efecto que copie props a estado. Verificar siempre el control visible junto con el valor persistido.
+
+- Las fechas de cola usan zona Argentina y hour12=false explícitos: el locale es-AR del runtime podía mostrar las 16 como 04 sin indicar PM. No depender de la zona o ciclo horario de Windows para SSR.

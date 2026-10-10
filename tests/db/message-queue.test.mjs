@@ -74,6 +74,46 @@ test("F3 durable message queue on PostgreSQL", async (t) => {
     const args = { workspace: id(1), conversation: id(31), sender: id(101), operation: id(91), body: "Respuesta humana", ...overrides };
     return scalar(db, "select public.enqueue_human_channel_text($1,$2,$3,$4,$5) result", Object.values(args));
   }
+  async function queueAs(user = 101, workspace = 1, conversation = 31) {
+    await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id(user)]);
+    await db.exec("SET ROLE authenticated");
+    try { return (await db.query("select * from public.read_conversation_queue($1,$2)",
+      [id(workspace),id(conversation)])).rows.map((row) => row.read_conversation_queue); }
+    finally { await db.exec("RESET ROLE"); }
+  }
+  await isolated("queue projection exposes only text/status for current members, including viewers", async () => {
+    await enqueue(db);
+    for (const user of [101,102]) {
+      const rows = await queueAs(user);
+      assert.equal(rows.length,1); assert.equal(rows[0].body,"Synthetic queue fixture");
+      assert.deepEqual(Object.keys(rows[0]).sort(),["actor","body","createdAt","operationId","state"]);
+    }
+    assert.equal((await queueAs(103)).length,0);
+    assert.equal((await queueAs(101,2,31)).length,0);
+    assert.equal((await queueAs(101,1,32)).length,0);
+    await db.exec(`update public.memberships set is_active=false where user_id='${id(101)}'`);
+    assert.equal((await queueAs()).length,0);
+    await db.exec("SET ROLE anon");
+    await reject(db,()=>db.query("select * from public.read_conversation_queue($1,$2)",[id(1),id(31)]),"42501");
+  });
+  await isolated("queue projects cancelled/dead jobs but switches to message on permit", async () => {
+    await enqueue(db); const job = await claim(db);
+    assert.equal((await queueAs())[0].state,"leased");
+    await db.exec("SET ROLE service_role");
+    assert.equal(await begin(db,job),true);
+    await db.exec("RESET ROLE");
+    assert.equal((await queueAs()).length,0);
+    await enqueue(db,{key:"dead",request:request(62)});
+    await enqueue(db,{key:"cancelled",request:request(63)});
+    await db.exec(`update public.message_jobs set state='dead_letter' where operation_id='${id(62)}';
+      update public.message_jobs set state='cancelled' where operation_id='${id(63)}'`);
+    assert.deepEqual((await queueAs()).map(row=>row.state).sort(),["cancelled","dead_letter"]);
+  });
+  await isolated("queue pagination is bounded to 51 newest operations", async () => {
+    const eventId=await persist(db);
+    for(let n=200;n<252;n++) await enqueue(db,{event:eventId,key:`page-${n}`,request:request(n)});
+    assert.equal((await queueAs()).length,51);
+  });
   await isolated("human takeover and job enqueue are atomic and cancel pending AI", async () => {
     await enqueue(db);
     await db.exec("SET ROLE service_role");

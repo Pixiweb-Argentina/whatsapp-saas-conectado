@@ -13,6 +13,7 @@ import type { WorkspaceRole } from "@/features/inbox/hooks/use-role";
 import { readInboxPage } from "@/features/inbox/services/inbox-query";
 import { inboxQuery, parseInboxFilters, type InboxSearchParams } from "@/features/inbox/lib/inbox-filters";
 import { readComposerAvailability } from "@/features/channels/services/composer-availability";
+import { readConversationQueue } from "@/features/inbox/services/conversation-queue";
 
 interface PageProps {
   searchParams: Promise<InboxSearchParams>;
@@ -66,13 +67,15 @@ export default async function InboxDetailPage({ params, searchParams }: PageProp
   //
   // Se piden descendentes (los 100 más nuevos) y se invierten acá, porque
   // ChatThread los renderiza en orden cronológico.
-  const { data: messagesData } = await supabase
+  const [{ data: messagesData }, queue] = await Promise.all([supabase
     .from("messages")
     .select("*, sender:users!sender_user_id(full_name, avatar_url)")
     .eq("conversation_id", id)
     .eq("workspace_id", convWithContact.workspace_id)
     .order("created_at", { ascending: false })
-    .limit(100);
+    .limit(100),
+    readConversationQueue(supabase, convWithContact.workspace_id, id),
+  ]);
 
   const messages = ((messagesData ?? []) as MessageRow[]).reverse();
 
@@ -107,6 +110,7 @@ export default async function InboxDetailPage({ params, searchParams }: PageProp
         currentUserId={user.id}
         role={role}
         availability={availability}
+        queue={queue}
       />
     </InboxLayout>
   );

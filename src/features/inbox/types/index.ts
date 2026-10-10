@@ -57,6 +57,7 @@ export interface MessageSender {
 
 export interface MessageRow {
   id: string;
+  channel_operation_id?: string | null;
   workspace_id: string;
   conversation_id: string;
   direction: MessageDirection;
