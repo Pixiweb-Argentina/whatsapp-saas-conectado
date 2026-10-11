@@ -6,6 +6,7 @@ import { policyConnectionSchema, policyConversationSchema, policyIdentitySchema,
   policySubjectSchema, verifiedCapabilitiesSchema, type PolicySubject, type PolicyConnection } from "../types/policy-context";
 import type { SendPolicyInput } from "../types/send-policy";
 import type { JobPolicyContext } from "./message-job-worker";
+import { readCommentPolicyEvidence } from "./comment-policy-context";
 
 const CONTEXT_ERROR = "CHANNEL_POLICY_CONTEXT_UNAVAILABLE";
 const contactSchema = z.object({ id: z.uuid(), workspace_id: z.uuid(), opt_in: z.boolean().nullable() });
@@ -74,8 +75,8 @@ async function readOptOut(db: SupabaseClient, subject: PolicySubject, contactId:
 
 async function readEvidence(db: SupabaseClient, subject: PolicySubject, provider: string, now: number)
   : Promise<SendPolicyInput["evidence"]> {
-  // Only WA's standard inbound window is implemented here. Meta comments,
-  // templates, Human Agent and visitor sessions need their own verified records.
+  if (provider === "meta") return readCommentPolicyEvidence(db, subject);
+  // Templates, Human Agent and visitor sessions need their own verified records.
   if (subject.channel !== "whatsapp" || !subject.conversationId || !subject.eventId) return null;
   const { data, error } = await db.from("inbound_events").select("id,workspace_id,connection_id,historical,kind,envelope")
     .eq("workspace_id", subject.workspaceId).eq("connection_id", subject.connectionId)

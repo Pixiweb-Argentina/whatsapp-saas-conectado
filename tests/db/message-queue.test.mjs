@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { runCommentReservationChecks } from "./comment-reservation-checks.mjs";
 import { runSendLimitsChecks } from "./send-limits-checks.mjs";
 import { runReceiptDatabaseChecks } from "./receipt-checks.mjs";
 import { runAiReplyDatabaseChecks } from "./ai-reply-checks.mjs";
@@ -78,6 +79,7 @@ test("F3 durable message queue on PostgreSQL", async (t) => {
     return scalar(db, "select public.enqueue_human_channel_text($1,$2,$3,$4,$5) result", Object.values(args));
   }
   await runSendLimitsChecks({db,id,scalar,enqueue,claim,begin,finish,isolated,reject});
+  await runCommentReservationChecks({db,id,scalar,enqueue,claim,begin,isolated,reject});
   await runAiReplyDatabaseChecks({db,id,scalar,persist,claim,begin,finish,reject,isolated});
   await runReceiptDatabaseChecks({db,id,scalar,enqueue,claim,begin,finish,reject,isolated});
   async function queueAs(user = 101, workspace = 1, conversation = 31) {

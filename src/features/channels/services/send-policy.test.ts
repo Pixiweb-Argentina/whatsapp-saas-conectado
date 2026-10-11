@@ -34,7 +34,7 @@ function comment(): SendPolicyInput {
   input.capabilities[0].capability = "private_reply";
   input.conversation = null;
   input.evidence = { workspaceId, connectionId, externalActorId: "actor-1", id: "comment-1",
-    kind: "comment", occurredAt, validUntil, eligible: true, privateReply: "available",
+    kind: "comment", externalCommentId: "comment-1", occurredAt, validUntil, eligible: true, privateReply: "available",
     reservedOperationId: null };
   return input;
 }
@@ -140,7 +140,7 @@ test("comment eligibility and target are checked independently of its reservatio
   if (input.evidence?.kind !== "comment") throw new Error("fixture");
   input.evidence.eligible = false;
   assert.equal(evaluateSendPolicy(input).allowed, false);
-  input.evidence.eligible = true; input.evidence.id = "another-comment";
+  input.evidence.eligible = true; input.evidence.externalCommentId = "another-comment";
   assert.equal(evaluateSendPolicy(input).reasonCode, "ineligible_evidence");
 });
 
@@ -150,6 +150,7 @@ test("public reply is independent of a private reply already sent", () => {
   input.capabilities[0].capability = "public_reply";
   if (input.evidence?.kind !== "comment") throw new Error("fixture");
   input.evidence.privateReply = "sent";
+  input.evidence.reservedOperationId = "op-previous";
   assert.equal(evaluateSendPolicy(input).allowed, true);
 });
 
@@ -184,7 +185,7 @@ test("WA preserves free-reply opt-out semantics while templates need matching ap
   input.request = { channel: "whatsapp", action: "template", operationId: "op-1",
     recipient: "actor-1", templateName: "welcome", language: "es" };
   input.capabilities[0].capability = "template";
-  input.evidence = { ...input.evidence!, kind: "approved_template", templateName: "welcome" };
+  input.evidence = { ...input.evidence!, kind: "approved_template", templateName: "welcome", language: "es" };
   assert.equal(evaluateSendPolicy(input).reasonCode, "opted_out");
   input.optedOut = false;
   assert.equal(evaluateSendPolicy(input).allowed, true);
@@ -198,4 +199,41 @@ test("the separate legacy WA policy retains null window and existing admin behav
   assert.equal(legacyWhatsAppTextAllowed(occurredAt, true, now), true);
   assert.equal(legacyWhatsAppTextAllowed(validUntil, false, now), true);
   assert.equal(legacyWhatsAppTextAllowed("invalid", false, now), false);
+});
+
+test("comment evidence preserves an internal UUID independently from the opaque Meta ID", () => {
+  const input = comment(); input.evidence!.id = workspaceId;
+  assert.equal(evaluateSendPolicy(input).allowed, true);
+  assert.equal(evaluateSendPolicy(input).evidenceId, workspaceId);
+});
+
+test("ambiguous or in-flight private replies remain consumed even for the same operation", () => {
+  const input = comment();
+  if (input.evidence?.kind !== "comment") throw new Error("fixture");
+  input.evidence.privateReply = "consumed"; input.evidence.reservedOperationId = "op-1";
+  assert.equal(evaluateSendPolicy(input).reasonCode, "duplicate_private_reply");
+  input.request = { ...input.request, action: "public_reply", commentId: "comment-1", body: "Enviada" };
+  input.capabilities[0].capability = "public_reply";
+  assert.equal(evaluateSendPolicy(input).allowed, true);
+});
+
+test("reservation flags without ownership are invalid, and a comment cannot authorize follow-up media", () => {
+  const input = comment();
+  if (input.evidence?.kind !== "comment") throw new Error("fixture");
+  input.evidence.privateReply = "reserved";
+  assert.equal(evaluateSendPolicy(input).reasonCode, "invalid_context");
+  input.evidence.privateReply = "available";
+  input.request = { channel: "instagram", action: "media", operationId: "op-1", recipient: "actor-1", mediaRef: "stored-1" };
+  input.capabilities[0].capability = "media";
+  input.conversation = context().conversation;
+  assert.equal(evaluateSendPolicy(input).reasonCode, "ineligible_evidence");
+});
+
+test("template approval is bound to the requested language", () => {
+  const input = context();
+  input.connection = { ...input.connection, channel: "whatsapp", provider: "ycloud" };
+  input.conversation!.channel = "whatsapp"; input.capabilities[0].capability = "template";
+  input.request = { channel: "whatsapp", action: "template", operationId: "op-1", recipient: "actor-1", templateName: "welcome", language: "es_AR" };
+  input.evidence = { ...input.evidence!, kind: "approved_template", templateName: "welcome", language: "es" };
+  assert.equal(evaluateSendPolicy(input).reasonCode, "ineligible_evidence");
 });

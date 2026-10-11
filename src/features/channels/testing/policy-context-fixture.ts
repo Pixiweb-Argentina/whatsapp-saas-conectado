@@ -40,12 +40,13 @@ export function policyContextFixture() {
   const queries: QueryCall[] = [];
   const rpcCalls: RpcCall[] = [];
   const errors: Record<string, unknown> = {};
-  const db = fixtureDb(rows, queries, errors, rpcCalls, request.request.operationId);
-  return { db, rows, queries, errors, rpcCalls, request, envelope, grants };
+  const rpcResults: Record<string, unknown> = {};
+  const db = fixtureDb(rows, queries, errors, rpcCalls, request.request.operationId, rpcResults);
+  return { db, rows, queries, errors, rpcCalls, rpcResults, request, envelope, grants };
 }
 
 function fixtureDb(rows: Record<string, Row[]>, queries: QueryCall[], errors: Record<string, unknown>,
-  rpcCalls: RpcCall[], operationId: string): SupabaseClient {
+  rpcCalls: RpcCall[], operationId: string, rpcResults: Record<string, unknown>): SupabaseClient {
   return {
     from(table: string) {
       const call: QueryCall = { table, filters: [], columns: "" }; queries.push(call);
@@ -65,7 +66,7 @@ function fixtureDb(rows: Record<string, Row[]>, queries: QueryCall[], errors: Re
     },
     async rpc(name: string, args: Record<string, unknown>) {
       rpcCalls.push({ name, args });
-      return { data: operationId, error: errors.rpc ?? null };
+      return { data: Object.hasOwn(rpcResults, name) ? rpcResults[name] : operationId, error: errors.rpc ?? null };
     },
   } as unknown as SupabaseClient;
 }

@@ -33,11 +33,18 @@ export const sendPolicyInputSchema = z.strictObject({
     z.strictObject({ ...evidenceFields, kind: z.literal("human_agent") }),
     z.strictObject({ ...evidenceFields, kind: z.literal("visitor_session") }),
     z.strictObject({ ...evidenceFields, kind: z.literal("approved_template"),
-      templateName: sendIdSchema }),
+      templateName: sendIdSchema, language: z.string().min(1).max(32) }),
     z.strictObject({ ...evidenceFields, kind: z.literal("comment"), eligible: z.boolean(),
-      privateReply: z.enum(["available", "reserved", "sent"]),
+      externalCommentId: sendIdSchema,
+      privateReply: z.enum(["available", "reserved", "sent", "consumed"]),
       reservedOperationId: sendIdSchema.nullable() }),
   ]).nullable(),
+}).superRefine((input, ctx) => {
+  const evidence = input.evidence;
+  if (evidence?.kind === "comment" && ((evidence.privateReply === "available")
+    !== (evidence.reservedOperationId === null))) {
+    ctx.addIssue({ code: "custom", message: "Comment reservation must have an owner" });
+  }
 });
 
 export type SendPolicyInput = z.infer<typeof sendPolicyInputSchema>;

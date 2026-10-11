@@ -73,6 +73,7 @@ function checkEvidence(input: SendPolicyInput): SendPolicyReason {
   if (Date.parse(evidence.validUntil) <= input.now) return "expired";
   if (action === "template") return connection.channel === "whatsapp"
     && evidence.kind === "approved_template" && evidence.templateName === request.templateName
+    && evidence.language === request.language
     ? "allowed" : "ineligible_evidence";
   if (action === "private_reply" || action === "public_reply") return checkComment(input);
   if (connection.channel === "web") {
@@ -89,11 +90,11 @@ function checkComment(input: SendPolicyInput): SendPolicyReason {
   const { evidence, connection, request, phase } = input;
   if ((request.action !== "private_reply" && request.action !== "public_reply")
     || connection.provider !== "meta" || evidence?.kind !== "comment" || !evidence.eligible
-    || request.commentId !== evidence.id) {
+    || request.commentId !== evidence.externalCommentId) {
     return "ineligible_evidence";
   }
   if (request.action === "public_reply") return "allowed";
-  if (evidence.privateReply === "sent" || (evidence.privateReply === "reserved"
+  if (["sent", "consumed"].includes(evidence.privateReply) || (evidence.privateReply === "reserved"
     && evidence.reservedOperationId !== request.operationId)) return "duplicate_private_reply";
   if (phase === "send" && evidence.privateReply !== "reserved") return "reservation_required";
   return "allowed";

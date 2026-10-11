@@ -1,0 +1,52 @@
+{
+  "phase": "F3",
+  "increment": 15,
+  "date": "2026-10-10",
+  "branch": "codex/omnichannel-f3-inbox",
+  "project": "bzanbpyzujlogipxvkfn",
+  "migration": "20261011010958_omnichannel_comment_reservations.sql",
+  "migrations": 83,
+  "historyMatches": true,
+  "local": {
+    "unit": 1852,
+    "database": 137,
+    "directedDatabaseAfterHelperSplit": 106,
+    "typecheck": "passed",
+    "lint": "passed",
+    "productionBuild": "passed",
+    "covers": ["Instagram/Messenger scoped reservation", "transaction rollback", "independent public reply", "proof expiry/revocation/scope", "grant/identity/opt-out", "consumed unknown/outbox", "no DM or media follow-up from a comment", "template language binding"]
+  },
+  "cloud": {
+    "competingHttpProducers": 2,
+    "privateReplyOwners": 1,
+    "privateJobs": 1,
+    "publicJobs": 1,
+    "losingReplayCode": "23514",
+    "serverPipelineContextValidated": true,
+    "sameOperationIdempotent": true,
+    "publicReplyIndependent": true,
+    "cancelledReservationPreserved": true,
+    "anonymousDenied": true,
+    "authenticatedReaderDenied": true,
+    "metaAdapterUnavailable": true,
+    "metaPermitDenied": true,
+    "outbox": 0,
+    "providerCalls": 0,
+    "modelCalls": 0
+  },
+  "browser": {"authenticatedInboxReload": "passed", "retainedConversations": 2, "consoleErrors": 0, "consoleWarnings": 0, "visualChanges": false},
+  "cleanup": {"fixtureNamespace": 998, "guarded": true, "workspaces": 1, "messages": 5, "proofs": 0, "claims": 0, "budgets": 0, "outbox": 0, "activeCron": 0, "flags": "off"},
+  "advisors": {"ERROR": 0, "WARN": 10, "INFO": 17, "newInfo": "Two private service-only tables have RLS with no client policies", "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"},
+  "limits": [
+    "Proofs and account grants were synthetic; no real Meta verification",
+    "F4/F5 must authenticate/verify eligible comments and persist private proof with endpoint-specific expiry",
+    "No rule matcher/editor, OAuth, Meta transport or conversation materialization implemented in this increment",
+    "Any private-reply outbox attempt consumes the claim conservatively; no release or automated resend",
+    "Templates/Human Agent/visitor sessions remain typed contracts without active persisted send permits",
+    "F3 integral acceptance and real-account/provider flow remain pending"
+  ],
+  "mainUnchanged": "28a1530b0f90bdc130b3858a041d5b44a0639d8e",
+  "push": false,
+  "merge": false,
+  "deploy": false
+}
