@@ -9,7 +9,7 @@ import { reconcileChannelReceipts } from "./delivery-receipt-recovery";
 export interface MessageJobStore {
   recover(workspaceId: string): Promise<number>;
   claim(workspaceId: string, workerId: string): Promise<ClaimedJob | null>;
-  begin(job: ClaimedJob, policy: SendPolicyDecision): Promise<boolean>;
+  begin(job: ClaimedJob, policy: SendPolicyDecision): Promise<boolean | "deferred">;
   cancel(job: ClaimedJob, reason: string): Promise<boolean>;
   finish(job: ClaimedJob, result: ChannelSendResult): Promise<boolean>;
 }
@@ -73,8 +73,9 @@ export function createMessageJobStore(db: SupabaseClient): MessageJobStore & {
     },
     async begin(job, policy) {
       if (!policy.allowed || !policy.evidenceId || !policy.validUntil) return false;
-      return z.boolean().parse(await rpc("begin_channel_send", { ...leaseArgs(job),
+      const status = z.enum(["permitted", "deferred", "lost_lease"]).parse(await rpc("begin_channel_send_status", { ...leaseArgs(job),
         p_evidence_id: policy.evidenceId, p_valid_until: policy.validUntil }));
+      return status === "deferred" ? status : status === "permitted";
     },
     async cancel(job, reason) {
       return z.boolean().parse(await rpc("cancel_channel_job", { ...leaseArgs(job),

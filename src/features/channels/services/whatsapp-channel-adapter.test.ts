@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { whatsappChannelAdapter } from "./whatsapp-channel-adapter.ts";
+import { whatsappChannelAdapter, durableWhatsAppAdapter } from "./whatsapp-channel-adapter.ts";
 import { channelSendRequestSchema, channelSendResultSchema } from "../types/send-contracts.ts";
 import {
   WhatsAppConfigError, type WhatsAppSender, type SendResult,
@@ -132,4 +132,22 @@ test("schemas reject hidden request fields and ambiguous retry flags", () => {
   assert.equal(channelSendRequestSchema.safeParse({ ...textRequest, overrideAdmin: true }).success, false);
   assert.equal(channelSendResultSchema.safeParse({ status: "unknown", operationId: "op", retryable: true }).success, false);
   assert.equal(channelSendResultSchema.safeParse({ status: "accepted", externalId: "" }).success, false);
+});
+
+test("confirmed rejection carries provider Retry-After; timeout never carries retry permission",async()=>{
+  for(const ErrorType of [YCloudError,KapsoError]) {
+    const {adapter}=harness(ErrorType===YCloudError?"ycloud":"kapso",async()=>{throw new ErrorType(429,null,"fixture","120");});
+    const result=await adapter.send(textRequest);
+    assert.equal(result.status,"rejected");if(result.status==="rejected") assert.equal(result.retryAfterSeconds,120);
+    const uncertain=harness(ErrorType===YCloudError?"ycloud":"kapso",async()=>{throw new ErrorType(503,null,"fixture","120");});
+    assert.equal((await uncertain.adapter.send(textRequest)).status,"unknown");
+  }
+});
+
+test("durable WhatsApp adapter strips diagnostics before strict worker validation",async()=>{
+  const h=harness("ycloud",async()=>{throw new YCloudError(429,null,"private diagnostic","120");});
+  const result=await durableWhatsAppAdapter(h.sender).send(textRequest);
+  assert.equal(channelSendResultSchema.safeParse(result).success,true);
+  assert.deepEqual(result,{status:"rejected",errorCode:"PROVIDER_REJECTED",retryable:true,retryAfterSeconds:120});
+  assert.equal(h.calls.length,1);
 });

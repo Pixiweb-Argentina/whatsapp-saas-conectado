@@ -77,3 +77,15 @@ test("worker reconciles durable receipts before recovery and after finalization,
     lease_owner:id(71),lease_until:new Date(Date.now()+60_000).toISOString()}, {status:"unknown",operationId:id(61)});
   assert.deepEqual(names,["reconcile_channel_receipts","recover_channel_jobs","finish_channel_send","reconcile_channel_receipts"]);
 });
+
+test("permit status preserves quota deferral and rejects malformed RPC results",async()=>{
+  const job={operation_id:id(61),workspace_id:id(1),connection_id:id(51),conversation_id:id(31),event_id:null,
+    actor:"ai" as const,request:{...enqueue.request,action:"text" as const,channel:"whatsapp" as const},expected_state_revision:0,
+    state:"leased" as const,attempts:1,fence:1,lease_owner:id(71),lease_until:new Date(Date.now()+60_000).toISOString()};
+  const policy={allowed:true as const,reasonCode:"allowed" as const,message:"Permitido",evidenceId:"event",validUntil:job.lease_until};
+  for(const [value,result] of [["permitted",true],["deferred","deferred"],["lost_lease",false]] as const) {
+    const f=fixture(value);assert.equal(await f.store.begin(job,policy),result);
+    assert.equal(f.calls[0].name,"begin_channel_send_status");
+  }
+  await assert.rejects(fixture(true).store.begin(job,policy));
+});

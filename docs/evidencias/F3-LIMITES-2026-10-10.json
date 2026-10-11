@@ -1,0 +1,67 @@
+{
+  "phase": "F3",
+  "increment": 14,
+  "date": "2026-10-10",
+  "branch": "codex/omnichannel-f3-inbox",
+  "project": "bzanbpyzujlogipxvkfn",
+  "migration": "20261010212657_omnichannel_send_limits.sql",
+  "migrations": 82,
+  "historyMatches": true,
+  "local": {
+    "unit": 1842,
+    "database": 118,
+    "typecheck": "passed",
+    "targetedLint": "passed",
+    "productionBuild": "passed"
+  },
+  "cloud": {
+    "safeRejectionScheduled": true,
+    "retryAfterRespected": true,
+    "sameOperationAfterRetry": true,
+    "outboxAfterRetry": 2,
+    "messageRowsAfterRetry": 1,
+    "competingJobs": 2,
+    "permitsForQuotaOne": 1,
+    "deferredForQuotaOne": 1,
+    "anonymousDenied": true,
+    "providerCalls": 0,
+    "modelCalls": 0
+  },
+  "browser": {
+    "authenticated": true,
+    "oneRowAfterTwoAttempts": true,
+    "quotaWaitVisible": true,
+    "reloadNoDuplicate": true,
+    "consoleErrors": 0,
+    "consoleWarnings": 0,
+    "screenshot": "test-results/f3-limits-browser/quota-wait-and-one-retry.png"
+  },
+  "cleanup": {
+    "fixtureNamespace": 997,
+    "guarded": true,
+    "workspaceRestored": true,
+    "workspaces": 1,
+    "messages": 5,
+    "budgets": 0,
+    "receipts": 0,
+    "echoes": 0,
+    "preparations": 0,
+    "outbox": 0,
+    "activeCron": 0,
+    "flags": "off"
+  },
+  "advisors": {
+    "ERROR": 0,
+    "WARN": 10,
+    "INFO": 15,
+    "newInfo": "RLS enabled/no client policy on private service-only budget"
+  },
+  "limits": [
+    "Internal default caps are not verified provider limits",
+    "Flags/scheduler disabled; only pilot queue covered",
+    "No external delivery/LLM generation demonstrated",
+    "Legacy sends/campaigns/CRM not covered by new budgets",
+    "F3 integral acceptance remains pending"
+  ],
+  "next": "Shared send types/policies and comment reservation, then real account/grant/full-flow verification"
+}

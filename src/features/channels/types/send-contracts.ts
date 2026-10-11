@@ -36,7 +36,7 @@ export const channelSendResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("accepted"), externalId: sendIdSchema,
     wamid: sendIdSchema.optional(), providerMessageId: sendIdSchema.optional() }),
   z.strictObject({ status: z.literal("rejected"), errorCode: sendIdSchema,
-    retryable: z.boolean() }),
+    retryable: z.boolean(), retryAfterSeconds: z.number().int().min(0).max(2_147_483_647).optional() }),
   z.strictObject({ status: z.literal("unknown"), operationId: sendIdSchema }),
 ]);
 

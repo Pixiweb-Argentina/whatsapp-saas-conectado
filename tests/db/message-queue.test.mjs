@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { runSendLimitsChecks } from "./send-limits-checks.mjs";
 import { runReceiptDatabaseChecks } from "./receipt-checks.mjs";
 import { runAiReplyDatabaseChecks } from "./ai-reply-checks.mjs";
 import { readFile } from "node:fs/promises";
@@ -76,6 +77,7 @@ test("F3 durable message queue on PostgreSQL", async (t) => {
     const args = { workspace: id(1), conversation: id(31), sender: id(101), operation: id(91), body: "Respuesta humana", ...overrides };
     return scalar(db, "select public.enqueue_human_channel_text($1,$2,$3,$4,$5) result", Object.values(args));
   }
+  await runSendLimitsChecks({db,id,scalar,enqueue,claim,begin,finish,isolated,reject});
   await runAiReplyDatabaseChecks({db,id,scalar,persist,claim,begin,finish,reject,isolated});
   await runReceiptDatabaseChecks({db,id,scalar,enqueue,claim,begin,finish,reject,isolated});
   async function queueAs(user = 101, workspace = 1, conversation = 31) {
@@ -268,9 +270,9 @@ test("F3 durable message queue on PostgreSQL", async (t) => {
     assert.equal(await claim(db, 72), undefined);
     assert.equal(await finish(db, job), false);
   });
-  await isolated("provider unknown and rejection are terminal, with no automatic re-POST", async () => {
+  await isolated("provider unknown and permanent rejection are terminal, with no automatic re-POST", async () => {
     for (const [index, result] of [{ status: "unknown", operationId: id(61) },
-      { status: "rejected", errorCode: "rate_limited", retryable: true }].entries()) {
+      { status: "rejected", errorCode: "permanent", retryable: false }].entries()) {
       await enqueue(db, { key: "j" + index, request: request(61 + index) });
       const job = await claim(db);
       await begin(db, job);

@@ -11,16 +11,19 @@ const KAPSO_PLATFORM_BASE = "https://api.kapso.ai/platform/v1";
 export class KapsoError extends Error {
   readonly status: number;
   readonly body: unknown;
+  readonly retryAfter: string | null;
 
   constructor(
     status: number,
     body: unknown,
     message: string,
+    retryAfter: string | null = null,
   ) {
     super(message);
     this.name = "KapsoError";
     this.status = status;
     this.body = body;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -79,6 +82,7 @@ async function kapsoFetch(
       responseBody,
       extractKapsoErrorMessage(responseBody) ??
         `Kapso ${context} error ${response.status}`,
+      response.headers.get("Retry-After"),
     );
   }
 

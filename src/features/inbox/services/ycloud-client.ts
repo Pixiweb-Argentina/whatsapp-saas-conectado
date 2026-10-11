@@ -13,16 +13,19 @@ const SEND_TIMEOUT_MS = 20_000;
 export class YCloudError extends Error {
   readonly status: number;
   readonly body: unknown;
+  readonly retryAfter: string | null;
 
   constructor(
     status: number,
     body: unknown,
     message: string,
+    retryAfter: string | null = null,
   ) {
     super(message);
     this.name = "YCloudError";
     this.status = status;
     this.body = body;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -78,6 +81,7 @@ export async function sendText(
       response.status,
       responseBody,
       `YCloud API error ${response.status}`,
+      response.headers.get("Retry-After"),
     );
   }
 

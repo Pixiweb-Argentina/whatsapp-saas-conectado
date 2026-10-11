@@ -139,3 +139,9 @@ test("drain recovers first, obeys its bound and awaits every send result", async
   assert.equal(count, 2);
   await assert.rejects(drainMessageJobs(id(1), id(71), f.deps, 11));
 });
+
+test("quota deferral never calls transport or finalizes a send",async()=>{
+  const f=fixture();f.deps.store.begin=async()=>"deferred";
+  assert.equal((await processClaimedJob(f.job,f.deps)).status,"deferred");
+  assert.equal(f.calls.includes("POST"),false);assert.equal(f.calls.includes("finish"),false);
+});

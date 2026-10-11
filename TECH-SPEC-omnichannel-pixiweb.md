@@ -207,3 +207,14 @@ Revocación desconecta cuenta, cancela jobs futuros y mantiene historial conform
 
 Fuentes y límites vigentes: [relevamiento](docs/investigacion/RELEVAMIENTO-omnichannel-pixiweb.md). Fijar contratos/versiones en F1 antes de implementar contra un proveedor.
 
+
+
+### F3 incremental: cuotas operativas y backoff (incremento 14)
+
+private.channel_send_budgets conserva un registro por workspace y otro por conexión, ventana de un minuto, usados y blocked_until. Defaults internos: 60 y 30 permisos/minuto, limit_per_minute 1–10000 sólo servicio. No son cuotas externas ni un SLA. Bloqueo conversación→job→workspace→conexión; validación del permiso WA existente y reserva del cupo en una transacción. NOWAIT ante contexto/budget ocupado devuelve sin POST. Espera por cupo reprograma pending, libera lease y no consume intento; begin_channel_send_status entrega permitted/deferred/lost_lease al store sin abrir permisos al cliente.
+
+finish_channel_send conserva el intento/outbox rechazado y sólo reprograma retryable confirmado. Delay=max(30×4^(attempts−1)×(1+jitter 0..0.1),Retry-After), cooldown por conexión, cinco intentos/24 horas de vida; demora fuera de vida útil queda dead_letter. El header válido sigue [RFC 9110 Retry-After](https://www.rfc-editor.org/rfc/rfc9110.html#name-retry-after); se admiten segundos enteros 0..2147483647 y fecha HTTP IMF-fixdate. Hints inválidos se ignoran, nunca convierten timeout/5xx/unknown en retry. La clasificación segura existente permite sólo 4xx de límite confirmado/HTTP429; no reutilizar la lista general de errores transitorios del dispatch legacy.
+
+La misma fila de messages se reutiliza por channel_operation_id y los fences quedan en outbox. Cancelación/agotamiento actualiza esa fila; la proyección existente excluye jobs ya representados por mensaje. Un receipt por cuenta/external_operation_id que aparece antes del permiso de un retry contradice el rechazo: unknown, sin nueva red/outbox, revisión manual. No se promete deduplicación del proveedor ni retiro de un permiso ya confirmado. El adaptador durable descarta diagnostic antes del parse estricto; el legacy conserva sus diagnósticos. Los sends legacy/campañas/CRM todavía no usan estos budgets.
+
+Migración 20261010212657 aplicada en Supabase nuevo; total 82. Pruebas locales/Cloud sintéticas incluidas en La Pieza y evidencia. Se conserva la restricción [Supabase sobre funciones/EXECUTE](https://supabase.com/docs/guides/database/functions): invoker, search_path vacío, revocación PUBLIC/anon/authenticated y acceso sólo servicio para las RPC de escritura. Flags apagados y sin scheduler, validación externa/calibración por cuenta pendiente.

@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; 81 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto, mensajes de jobs y productor humano transaccionales; captura/worker bajo flags apagados. Cola persistente y productor IA de texto conectado al buffer con checkpoint privado/handoff interno. Comprobantes firmados WA y conciliación exacta probados local/Cloud/UI. Ecos humanos Kapso integrados con pausa y auditoría atómicas. Faltan herramientas, cuentas reales, otros tipos de evidencia y cuotas/backoff. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 82 migraciones, Auth/inbox y concurrencia probados en Supabase nuevo. Permiso WA texto, mensajes de jobs y productor humano transaccionales; captura/worker bajo flags apagados. Cola persistente y productor IA de texto conectado al buffer con checkpoint privado/handoff interno. Comprobantes firmados WA y conciliación exacta probados local/Cloud/UI. Ecos humanos Kapso integrados con pausa y auditoría atómicas. Cuotas/backoff transaccionales probados local/Cloud. Faltan herramientas, cuentas reales y otros tipos de evidencia. Canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -235,3 +235,10 @@ Decimotercer incremento: mensajes de WhatsApp Business recibidos por Kapso guard
 **Próximo paso vigente:** cuotas/backoff y reintentos seguros; tipos/políticas pendientes, reserva por comentario, cuentas/grants y pruebas integrales reales. Ecos sin teléfono/BSUID y controles previos a la migración no se reconstruyen. Flags apagados, cinco mensajes QA y cero echoes/receipts/preparaciones/outbox/cron. F3 sin aceptación integral; sin compras/envíos/modelos/push/merge/deploy.
 
 Auto-Blindaje: routing de conexión inmutable; preparar otro proveedor antes del fixture/migración o crear otra conexión. Un insert legacy seguido de una pausa no transaccional puede dejar IA activa y el dedup impedir su reparación. Echo piloto usa una RPC y nunca cae al segundo escritor si falla.
+
+
+Decimocuarto incremento: cuotas operativas por workspace/conexión, espera durable sin permiso, backoff/jitter y Retry-After para rechazos confirmados. Un solo mensaje/operación, outbox por fence; pausa humana y política se vuelven a validar. Unknown/timeout/5xx no se reenvían; comprobante contradictorio por operación suspende retry. 1.842 unitarias, 118 DB, typecheck/lint/build y concurrencia HTTP/Cloud con cupo 1 pasan. Navegador verifica una fila tras dos intentos y cola separada; sin proveedor/modelo. Migración 82 aplicada, fixture 997 retirado. [Evidencia](../../docs/evidencias/F3-LIMITES-2026-10-10.json).
+
+**Próximo paso vigente:** tipos/políticas y reserva por comentario; cuentas/grants reales y prueba integral. Los límites 60/workspace y 30/conexión por minuto son defaults internos del piloto, no cuotas certificadas del proveedor. No afectan el despacho legacy. Flags apagados, cinco mensajes QA, cero tablas privadas nuevas/outbox/cron. F3 sigue sin aceptación integral; sin compras/envíos/modelos/push/merge/deploy.
+
+Auto-Blindaje: separar diagnostic del resultado durable estricto en el resolver WA; conservar el diagnóstico del dispatch compatible. Reintento visible usa el mismo channel_operation_id y no crea otra burbuja/permiso previo. Evitar parameter properties en clases TS ejecutadas con Node strip-types y admitir ausencia de Retry-After en errores legacy/mocks.

@@ -11,6 +11,8 @@ import {
   type ChannelAdapter, type ChannelSendRequest, type ChannelSendResult,
 } from "../types/send-contracts";
 
+import { retryAfterSeconds } from "./retry-after";
+
 /** Server-only diagnostics must never be persisted in messages.meta or returned to UI. */
 export type WhatsAppChannelResult = ChannelSendResult & { diagnostic?: WhatsAppError };
 export interface WhatsAppChannelAdapter extends ChannelAdapter {
@@ -32,9 +34,11 @@ function failure(error: unknown, operationId: string): WhatsAppChannelResult {
     return { status: "unknown", operationId,
       diagnostic: { ...diagnostic, message: UNCONFIRMED_SEND_ERROR } };
   }
+  const retryDelay = retryAfterSeconds(error.retryAfter);
   return { status: "rejected", errorCode: diagnostic.code === null
     ? "PROVIDER_REJECTED" : String(diagnostic.code),
-  retryable: wasNotAccepted(diagnostic), diagnostic };
+  retryable: wasNotAccepted(diagnostic),
+  ...(retryDelay !== undefined ? { retryAfterSeconds: retryDelay } : {}), diagnostic };
 }
 
 function rejected(errorCode: string): WhatsAppChannelResult {
@@ -71,4 +75,13 @@ async function send(
 export function whatsappChannelAdapter(sender: WhatsAppSender): WhatsAppChannelAdapter {
   return { channel: "whatsapp", provider: sender.provider, live: sender.live,
     implementedActions: ["text", "template"], send: (request) => send(sender, request) };
+}
+
+/** Queue results are strict; diagnostics belong only to the legacy server dispatch. */
+export function durableWhatsAppAdapter(sender: WhatsAppSender): ChannelAdapter {
+  const adapter = whatsappChannelAdapter(sender);
+  return { ...adapter, async send(request) {
+    const { diagnostic: _diagnostic, ...result } = await adapter.send(request);
+    return channelSendResultSchema.parse(result);
+  } };
 }

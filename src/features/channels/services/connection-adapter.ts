@@ -4,7 +4,7 @@ import { decryptWhatsAppCredentials } from "@/features/inbox/services/whatsapp-p
 import { whatsappSender } from "@/features/inbox/services/whatsapp-sender";
 import type { ChannelAdapter } from "../types/send-contracts";
 import { readPolicyConnection } from "./message-policy-context";
-import { whatsappChannelAdapter } from "./whatsapp-channel-adapter";
+import { durableWhatsAppAdapter } from "./whatsapp-channel-adapter";
 
 const integrationSchema = z.object({
   id: z.uuid(), workspace_id: z.uuid(), provider: z.enum(["ycloud", "kapso"]),
@@ -29,5 +29,5 @@ export async function resolveConnectionAdapter(
   if (row.workspace_id !== workspaceId || row.id !== connection.legacy_integration_id
     || row.provider !== connection.provider || senderId !== connection.external_account_id) return null;
   const credentials = await decryptWhatsAppCredentials(row, workspaceId);
-  return whatsappChannelAdapter(whatsappSender(row.provider, credentials, row.config));
+  return durableWhatsAppAdapter(whatsappSender(row.provider, credentials, row.config));
 }

@@ -20,7 +20,7 @@ export interface MessageWorkerDependencies {
 
 export interface JobAttemptResult {
   operationId: string;
-  status: "accepted" | "rejected" | "unknown" | "cancelled" | "lost_lease" | "recovery_pending";
+  status: "accepted" | "rejected" | "unknown" | "deferred" | "cancelled" | "lost_lease" | "recovery_pending";
 }
 
 function policyInput(job: ClaimedJob, context: JobPolicyContext, now: number): SendPolicyInput | null {
@@ -62,7 +62,9 @@ export async function processClaimedJob(job: ClaimedJob, deps: MessageWorkerDepe
     // Atomic revision/lease check + durable permit. No asynchronous work is added
     // between this boundary and the provider call. A takeover cannot retract a
     // send already permitted/in flight; its eventual result must be reconciled.
-    if (!await deps.store.begin(job, policy)) return outcome("lost_lease");
+    const permit = await deps.store.begin(job, policy);
+    if (permit === "deferred") return outcome("deferred");
+    if (!permit) return outcome("lost_lease");
     const result = await callAdapter(adapter, job);
     if (!await deps.store.finish(job, result)) return outcome("recovery_pending");
     return outcome(result.status);
