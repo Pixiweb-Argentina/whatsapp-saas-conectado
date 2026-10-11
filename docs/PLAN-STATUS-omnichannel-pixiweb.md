@@ -253,3 +253,9 @@ Coverage complete significa que la inspección no fue truncada, no que F3 o el c
 **Onboarding revisado:** Kapso test lista números del proyecto; YCloud test consulta balance. Esas acciones no verifican por sí solas todos los permisos y recepción del activo elegido ni promueven channel_connections a ready. Guardar la integración legacy tampoco crea una prueba externa para el piloto. Conexión/capacidades deben resultar de verificación del servidor; no editar status/grants desde el cliente para pasar el preflight. La activación real necesita callback HTTPS alcanzable: localhost no es un callback del proveedor.
 
 Auto-Blindaje: distinguir disponibilidad de Supabase de la conexión al proveedor WhatsApp. El preflight del piloto exige opt_in=true y respeta supresión, aunque la política de free reply legacy tenga otra semántica. Credencial/grant guardados y coverage complete jamás acreditan entrega externa. No registrar payloads de proveedor ni API keys en el informe.
+
+## Decisión de continuidad — prueba diferida por Yani
+
+Yani confirma: «lo haremos mañana con otro número». El número Kapso conectado al dashboard original queda reservado a ese sistema. El piloto del fork usará otro número dedicado; su conexión a Kapso todavía debe confirmarse. La prueba se retoma cuando Yani tenga ese número disponible, sin recordatorio ni ejecución automática programados.
+
+Próximo paso: configurar el número dedicado en Ajustes, controlar los efectos del recorrido legacy y preparar/verificar callback HTTPS firmado, identidad/grants y destinos de prueba antes del recorrido real. No modificar el webhook ni las credenciales del dashboard original. Esta decisión no acredita una nueva conexión, no habilita flags ni autoriza mensajes/modelos/compras. F3 sigue con tres de cuatro bloques de cierre y sin aceptación integral.
