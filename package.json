@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint src/ middleware.ts",
     "typecheck": "tsc --noEmit",
+    "channels:preflight": "node --env-file=.env.local --import ./scripts/register-alias-hook.mjs scripts/channel-pilot-preflight.mjs",
     "test:unit": "node --experimental-test-module-mocks --import ./scripts/register-alias-hook.mjs --import ./scripts/mock-module-compat.mjs --test \"src/**/*.test.ts\"",
     "test:e2e": "playwright test",
     "test:db:local": "node --test tests/db/*.test.mjs",

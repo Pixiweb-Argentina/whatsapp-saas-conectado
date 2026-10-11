@@ -1,0 +1,43 @@
+{
+  "phase": "F3",
+  "increment": 16,
+  "date": "2026-10-10",
+  "branch": "codex/omnichannel-f3-inbox",
+  "project": "bzanbpyzujlogipxvkfn",
+  "migrations": 83,
+  "newMigrations": 0,
+  "local": {"unit": 1860, "targetedFinalUnit": 8, "typecheck": "passed", "lint": "passed", "databaseAndProductionBuild": "previous increment evidence retained; no SQL or app-route changes"},
+  "cloud": {
+    "preflightCommand": "passed",
+    "coverage": "complete",
+    "connections": 2,
+    "storedStatus": "connecting",
+    "activeWhatsAppIntegrations": 0,
+    "readyConnections": 0,
+    "verifiedIdentities": 0,
+    "currentStoredTextGrants": 0,
+    "configuredTransports": 0,
+    "sampledEligibleInbound": 0,
+    "rollout": {"ingress": false, "worker": false, "human": false, "ai": false},
+    "authenticatedApi": 422,
+    "blockedReason": "connection_not_ready",
+    "forgedCapabilitiesIgnored": true,
+    "messageIdsUnchanged": true,
+    "providerCalls": 0,
+    "modelCalls": 0
+  },
+  "retainedState": {"workspaces": 1, "messages": 5, "proofs": 0, "claims": 0, "outbox": 0, "activeCron": 0},
+  "reportPrivacy": {"credentialValues": false, "physicalAccountIds": false, "recipientIdentifiers": false, "messageContent": false, "grantEvidenceRefs": false},
+  "limits": [
+    "Read-only advisory snapshot; never send permission, provider verification or rollout approval",
+    "Credential presence/current stored grants do not prove external access or delivery",
+    "Samples at most ten conversations per connection; bounded reads report partial coverage explicitly",
+    "Preflight includes pilot opt-in/suppression requirements; sender membership and atomic permit remain mandatory at send time",
+    "Settings key tests alone do not promote a channel connection or verify incoming delivery",
+    "Real provider/account selection, verified identity/grants and authorized full flow still required; F3 remains open"
+  ],
+  "mainUnchanged": "28a1530b0f90bdc130b3858a041d5b44a0639d8e",
+  "push": false,
+  "merge": false,
+  "deploy": false
+}
