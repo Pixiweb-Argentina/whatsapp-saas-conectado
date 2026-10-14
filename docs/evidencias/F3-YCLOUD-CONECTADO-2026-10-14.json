@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-14T21:22:26.965Z",
+  "workspaceId": "ff50ed19-6330-43c1-a69d-32252c9ca756",
+  "integrationStored": true,
+  "credentialsEncrypted": true,
+  "handoffAckDisabled": true,
+  "remoteEndpointActive": true,
+  "secretMatches": true,
+  "remoteBusinessNumberConnectedAndMatches": true,
+  "remoteNumberItemsObserved": 1,
+  "syntheticHttp": 200,
+  "accountMatched": true,
+  "verificationOnly": true,
+  "before": {
+    "contacts": 0,
+    "conversations": 0,
+    "messages": 0,
+    "inbound_events": 0,
+    "message_jobs": 0,
+    "message_outbox": 0,
+    "channel_connections": 0
+  },
+  "after": {
+    "contacts": 0,
+    "conversations": 0,
+    "messages": 0,
+    "inbound_events": 0,
+    "message_jobs": 0,
+    "message_outbox": 0,
+    "channel_connections": 0
+  },
+  "actualProviderDelivery": "pending",
+  "actualWhatsAppSent": false,
+  "providerReadsOnly": true
+}
