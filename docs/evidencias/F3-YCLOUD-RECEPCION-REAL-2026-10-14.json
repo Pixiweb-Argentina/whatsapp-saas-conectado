@@ -1,0 +1,39 @@
+{
+  "phase": "F3",
+  "date": "2026-10-14",
+  "branch": "codex/omnichannel-f3-ycloud-pilot",
+  "workspaceId": "ff50ed19-6330-43c1-a69d-32252c9ca756",
+  "project": "bzanbpyzujlogipxvkfn",
+  "providerDelivery": {
+    "source": "YCloud delivery log for the new endpoint, after user reported enviado",
+    "endpointId": "6acfef56108a835e37b5c86d",
+    "eventId": "evt_6acff36a8c323a69db3d3cde",
+    "eventType": "whatsapp.inbound_message.received",
+    "createTimeUtc": "2026-10-14T21:26:02.212Z",
+    "localTime": "2026-10-14 18:26:02 America/Buenos_Aires",
+    "messageTextMatchedRequestedTestIgnoringCase": true,
+    "httpStatus": 200,
+    "response": { "received": true, "verificationOnly": true, "accountMatched": true },
+    "signatureVerifiedBeforeAcknowledgement": true,
+    "visibleProviderEvents": 1,
+    "relayMatchedRequests": 2,
+    "relayMatchedSyntheticRequestsPreviously": 1,
+    "retriesOrUniqueMessageCountsInferredFromRelay": false
+  },
+  "scopedDatabaseCheck": {
+    "checkedAtUtc": "2026-10-14T21:27:37.043Z",
+    "contacts": 0, "conversations": 0, "messages": 0,
+    "inbound_events": 0, "message_jobs": 0, "message_outbox": 0, "channel_connections": 0,
+    "readsOnly": true
+  },
+  "limits": [
+    "Real provider transport and signature/destination validated; this event is distinct from the earlier locally generated synthetic request",
+    "Verification-only mode intentionally does not create a contact, conversation, identity, grants, durable event or send job",
+    "No outgoing WhatsApp or model call from this fork; the original independent receiver was not modified or audited",
+    "Physical account and stored secret were checked by provider GET in the prior step, not disclosed in this report",
+    "Durable inbox, authorized human response, AI flow and integral F3 acceptance remain pending",
+    "Temporary HTTPS tunnel must be checked on resume; do not infer a production deployment"
+  ],
+  "privacy": { "phoneValues": false, "credentialValues": false, "rawPayload": false, "wamid": false },
+  "productionDeploy": false, "push": false, "merge": false, "purchases": false
+}
