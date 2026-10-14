@@ -1,0 +1,33 @@
+import { z } from "zod";
+import { samePhone } from "@/features/inbox/services/phone";
+
+const phone = z.string().regex(/^\+[1-9]\d{7,14}$/);
+const event = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("whatsapp.inbound_message.received"), whatsappInboundMessage: z.object({ to: phone }) }),
+  z.object({ type: z.literal("whatsapp.message.updated"), whatsappMessage: z.object({ from: phone }) }),
+]);
+
+/** Explicit server-only opt-in for transport verification, never a send grant. */
+export function ycloudVerificationOnly(workspaceId: string,
+  env: Readonly<Record<string, string | undefined>> = process.env): boolean {
+  const raw = env.YCLOUD_VERIFICATION_ONLY_WORKSPACES?.trim();
+  if (!raw) return false;
+  const parsed = z.array(z.uuid()).max(3).safeParse(raw.split(",").map((s) => s.trim().toLowerCase()));
+  if (!parsed.success) throw new Error("YCLOUD_VERIFICATION_CONFIG_INVALID");
+  return parsed.data.includes(workspaceId);
+}
+
+export interface YCloudVerificationResult {
+  received: true;
+  verificationOnly: true;
+  accountMatched: boolean;
+}
+
+/** Signature verification must precede this; no payload or recipient is returned. */
+export function ycloudVerificationResult(body: unknown, configuredPhone: unknown): YCloudVerificationResult {
+  const parsed = event.safeParse(body), configured = phone.safeParse(configuredPhone);
+  const account = parsed.success ? parsed.data.type === "whatsapp.inbound_message.received"
+    ? parsed.data.whatsappInboundMessage.to : parsed.data.whatsappMessage.from : null;
+  return { received: true, verificationOnly: true,
+    accountMatched: !!account && configured.success && samePhone(account, configured.data) };
+}

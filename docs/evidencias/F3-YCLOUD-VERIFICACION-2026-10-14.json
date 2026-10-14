@@ -1,0 +1,56 @@
+{
+  "phase": "F3",
+  "increment": 17,
+  "branch": "codex/omnichannel-f3-ycloud-pilot",
+  "date": "2026-10-14",
+  "workspaceId": "ff50ed19-6330-43c1-a69d-32252c9ca756",
+  "project": "bzanbpyzujlogipxvkfn",
+  "local": { "unit": 1865, "directedIncludingRelay": 27, "typecheck": "passed", "lint": "passed" },
+  "runtime": {
+    "nextPort": 3100,
+    "relayPort": 3104,
+    "bind": "127.0.0.1",
+    "verificationOnly": true,
+    "newMigrations": 0,
+    "durableRollout": { "ingress": false, "worker": false, "human": false, "ai": false },
+    "publicDashboardGet": 404,
+    "publicWebhookGet": 404,
+    "publicInvalidSignaturePost": 401,
+    "configuredChannelConnections": 0
+  },
+  "ycloud": {
+    "apiKeyTest": "reported successful by user; authenticated test route returned HTTP 200",
+    "visibleConnectedNumbers": 1,
+    "customApps": "unavailable on current Free plan; no upgrade requested or purchased",
+    "webhooksVisible": 2,
+    "existingEndpoint": "preserved active",
+    "newEndpointId": "6acfef56108a835e37b5c86d",
+    "newEndpointStatus": "inactive",
+    "events": ["whatsapp.inbound_message.received", "whatsapp.message.updated"],
+    "creationAuthorization": "explicit user approval in this session",
+    "scope": "account-wide webhook; connected number count is current observation, not a permanent restriction",
+    "signedProviderDelivery": "pending user secret entry, save and activation"
+  },
+  "sideEffects": {
+    "newProviderWebhookCreated": true,
+    "temporaryHttpsReceiverStarted": true,
+    "messagesSent": 0,
+    "modelsCalledByAgent": 0,
+    "credentialsCopiedByAgent": false,
+    "conversationOrCrmWritesInVerificationMode": false,
+    "push": false,
+    "merge": false,
+    "productionDeploy": false,
+    "purchases": false
+  },
+  "limits": [
+    "Verification mode authenticates signature and matches business number but does not persist conversations/events/grants or authorize sending",
+    "Counters count requests, not unique messages; no raw payload, phone or credential is logged",
+    "Relay exposes one POST route/workspace, bounded body, minimal headers and request budget",
+    "Required verification header fails closed even if the mode is removed after the relay health check",
+    "Original receiver remains independent; verify it does not answer the dedicated number before real message tests",
+    "Quick Tunnel is temporary; reconcile endpoint ID and update after restart instead of creating duplicates",
+    "UI unsaved inputs reset during development-server restart; user must reenter credentials privately",
+    "F3 remains open; signed receipt, active account/identity/grants and authorized full flow still pending"
+  ]
+}

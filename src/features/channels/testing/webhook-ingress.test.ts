@@ -56,14 +56,15 @@ mock.module("@/features/inbox/services/message-status.ts", { exports: { applyMes
 mock.module("@/features/inbox/services/daily-events.ts", { exports: { emitEventOncePerDay: unused } });
 const ycloud = await import("@/app/api/webhooks/ycloud/route.ts");
 const kapso = await import("@/app/api/webhooks/kapso/route.ts");
-afterEach(() => { trace.length = 0; envelopes.length = 0; storageFails = false; rowId = id(2); });
+afterEach(() => { trace.length = 0; envelopes.length = 0; storageFails = false; rowId = id(2);
+  delete process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES; });
 
 function payload() {
   const time = Date.now() - 10_000;
   return provider === "ycloud" ? { ...YCLOUD_TEXT, createTime: new Date(time).toISOString() }
     : { ...KAPSO_TEXT, message: { ...KAPSO_TEXT.message, timestamp: String(Math.floor(time / 1000)) } };
 }
-function send(body: unknown = payload(), secret = "fixture-signature-secret", eventName = "whatsapp.message.received") {
+function send(body: unknown = payload(), secret = "fixture-signature-secret", eventName = "whatsapp.message.received", verificationRequired = false) {
   const raw = JSON.stringify(body);
   const time = Math.floor(Date.now() / 1000);
   const signed = provider === "ycloud" ? `${time}.${raw}` : raw;
@@ -71,6 +72,7 @@ function send(body: unknown = payload(), secret = "fixture-signature-secret", ev
   const headers: Record<string, string> = provider === "ycloud"
     ? { "YCloud-Signature": `t=${time},s=${digest}` }
     : { "X-Webhook-Signature": digest, "X-Webhook-Event": eventName };
+  if (verificationRequired) headers["X-YCloud-Verification-Only"] = "true";
   const request = new NextRequest(`http://localhost/api/webhooks/${provider}?wsid=${id(1)}`, { method: "POST", body: raw, headers });
   return (provider === "ycloud" ? ycloud : kapso).POST(request);
 }
@@ -120,6 +122,44 @@ function receiptPayload() {
     : {phone_number_id:"synthetic-phone-id",message:{id:"wamid.receipt",timestamp:String(Math.floor(time/1000)),
       to:"15555550101",kapso:{origin:"cloud_api",status:"read"}}};
 }
+
+test("YCloud verification mode authenticates and binds the account without any durable or legacy work", async () => {
+  provider = "ycloud"; process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES = id(1);
+  for (const body of [payload(), receiptPayload()]) {
+    const response = await send(body);
+    assert.deepEqual(await response.json(), { received: true, verificationOnly: true, accountMatched: true });
+    assert.deepEqual(trace, []); assert.deepEqual(envelopes, []);
+  }
+});
+test("YCloud verification rejects invalid signatures and does not attest foreign or missing business numbers", async () => {
+  provider = "ycloud"; process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES = id(1);
+  assert.equal((await send(payload(), "wrong-secret")).status, 401);
+  for (const to of ["+15555550999", undefined, "5555550100"]) {
+    const response = await send({ ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage, to } });
+    assert.equal((await response.json()).accountMatched, false); assert.deepEqual(trace, []);
+  }
+});
+test("YCloud verification config fails closed; an unrelated workspace keeps its existing behavior", async () => {
+  provider = "ycloud"; process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES = "*";
+  assert.equal((await send()).status, 500); assert.deepEqual(trace, []);
+  process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES = id(9);
+  assert.equal((await send()).status, 200); assert.deepEqual(trace, ["resolve-connection", "persist-event", "legacy-dedup"]);
+});
+test("YCloud local verification health exposes no account data and cannot approve sending", async () => {
+  process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES = id(1);
+  const response = await ycloud.GET(new NextRequest(`http://localhost/api/webhooks/ycloud?wsid=${id(1)}`));
+  assert.deepEqual(await response.json(), { verificationOnly: true, workspaceId: id(1) });
+  assert.equal((await ycloud.GET(new NextRequest(`http://localhost/api/webhooks/ycloud?wsid=${id(9)}`))).status, 404);
+  assert.deepEqual(trace, []);
+});
+test("YCloud relay requirement prevents legacy effects even when the flag is removed between health and POST", async () => {
+  provider = "ycloud";
+  assert.equal((await send(payload(), "fixture-signature-secret", "whatsapp.message.received", true)).status, 503);
+  assert.deepEqual(trace, []);
+  process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES = id(1);
+  const result = await send(payload(), "fixture-signature-secret", "whatsapp.message.received", true);
+  assert.equal((await result.json()).verificationOnly, true); assert.deepEqual(trace, []);
+});
 for (const channel of ["ycloud","kapso"] as const) {
   test(`${channel}: receipt signature precedes durable persistence; no batch/model/incoming message is reached`,async()=>{
     provider=channel;const payload=receiptPayload();

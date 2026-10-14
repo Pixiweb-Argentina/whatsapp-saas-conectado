@@ -1,4 +1,5 @@
 import { captureWhatsAppDelivery } from "@/features/channels/services/whatsapp-event-ingress";
+import { ycloudVerificationOnly, ycloudVerificationResult } from "@/features/channels/services/ycloud-verification-mode";
 import { captureWhatsAppReceipt } from "@/features/channels/services/delivery-receipt-store";
 import { type NextRequest, NextResponse, after } from "next/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
@@ -43,6 +44,15 @@ import { emitEventOncePerDay } from "@/features/inbox/services/daily-events";
 // 7-minute stale lease.
 export const maxDuration = 300;
 
+/** Local relay startup check. Contains no credentials, account or customer data. */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  try {
+    const workspaceId = request.nextUrl.searchParams.get("wsid") ?? "";
+    if (!ycloudVerificationOnly(workspaceId)) return NextResponse.json({ available: false }, { status: 404 });
+    return NextResponse.json({ verificationOnly: true, workspaceId });
+  } catch { return NextResponse.json({ available: false }, { status: 503 }); }
+}
+
 function svc() {
   return createSbClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -58,6 +68,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // E3: per-tenant webhook routing via ?wsid query param
     const wsidParam = request.nextUrl.searchParams.get("wsid");
+    const requireVerification = request.headers.get("X-YCloud-Verification-Only") === "true";
+    if (requireVerification && (!wsidParam || !ycloudVerificationOnly(wsidParam))) {
+      return NextResponse.json({ error: "Verification mode unavailable" }, { status: 503 });
+    }
 
     let body: unknown;
     try {
@@ -154,6 +168,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // CRITICAL: verify the signature BEFORE acting on ANY event (status or inbound).
     if (!verifyYCloudSignature(rawBody, sigHeader, webhookSecret)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // The initial dedicated pilot validates transport only. Stop before status
+    // writes, destination telemetry, durable ingress, legacy CRM/buffer or media.
+    const verificationOnly = ycloudVerificationOnly(ws.workspace_id);
+    if (requireVerification && !verificationOnly) {
+      return NextResponse.json({ error: "Verification mode unavailable" }, { status: 503 });
+    }
+    if (verificationOnly) {
+      return NextResponse.json(ycloudVerificationResult(body, ws.config.phone_number));
     }
 
     // WH-02: monotonic status updates — only reached after signature verification.
