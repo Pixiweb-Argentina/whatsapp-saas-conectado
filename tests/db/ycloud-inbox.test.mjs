@@ -50,6 +50,17 @@ test("YCloud receive-only inbox is atomic, idempotent and scoped without send au
     await persist({ ...event(), providerEventId: "wamid.live", externalMessageId: "wamid.live" });
     assert.ok(await scalar(db, "select verified_at result from public.contact_identities where connection_id=$1", [id(51)]));
   });
+  await isolated("bounded local receipt skew is clamped to database time without admitting future provider events", async () => {
+    await db.exec("SET LOCAL ROLE service_role");
+    const value = event({ receivedAt: new Date(Date.now() + 2000).toISOString() });
+    const first = await persist(value);
+    const stored = await scalar(db, "select envelope result from public.inbound_events where id=$1", [first.eventId]);
+    assert.ok(Date.parse(stored.receivedAt) <= Date.now());
+    assert.equal(stored.occurredAt, value.occurredAt);
+    assert.equal((await persist(value)).inserted, false);
+    await reject(() => persist(event({ providerEventId: "future-receipt", externalMessageId: "future-receipt", receivedAt: new Date(Date.now() + 60000).toISOString() })));
+    await reject(() => persist(event({ providerEventId: "future-provider", externalMessageId: "future-provider", occurredAt: new Date(Date.now() + 2000).toISOString(), receivedAt: new Date(Date.now() + 2000).toISOString() })));
+  });
   await isolated("failure late in materialization rolls back every artifact and permits a clean retry", async () => {
     await db.exec("create function private.inbox_test_abort() returns trigger language plpgsql as $$ begin raise exception 'SYNTHETIC_ABORT' using errcode='23514'; end $$; create trigger inbox_abort before insert on public.messages for each row execute function private.inbox_test_abort()");
     const value = event(); await reject(() => persist(value));

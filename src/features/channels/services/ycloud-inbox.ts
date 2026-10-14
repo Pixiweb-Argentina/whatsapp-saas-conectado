@@ -34,6 +34,12 @@ export async function materializeYCloudInbox(db: SupabaseClient, input: Authenti
   const response = await db.rpc("materialize_ycloud_inbound", { p_workspace: input.workspaceId,
     p_integration: input.integrationId, p_event: normalized.event, p_customer_name: name.data, p_historical: historical });
   const result = resultSchema.safeParse(response.data);
-  if (response.error || !result.success) throw new Error("YCLOUD_INBOX_PERSIST_FAILED");
+  if (response.error) {
+    const code = z.string().regex(/^[A-Z0-9]{5,10}$/).safeParse(response.error.code);
+    const reason = ["INBOX_EVENT_INVALID", "INBOX_EVENT_COLLISION", "INBOX_CONVERSATION_COLLISION", "INBOX_AI_MUST_BE_PAUSED"]
+      .includes(response.error.message) ? response.error.message : "DATABASE_ERROR";
+    throw new Error(`YCLOUD_INBOX_PERSIST_FAILED:${code.success ? code.data : "UNKNOWN"}:${reason}`);
+  }
+  if (!result.success) throw new Error("YCLOUD_INBOX_RESULT_INVALID");
   return result.data;
 }

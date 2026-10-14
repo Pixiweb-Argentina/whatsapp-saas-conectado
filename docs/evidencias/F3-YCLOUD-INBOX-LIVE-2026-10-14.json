@@ -1,0 +1,23 @@
+{
+  "stage": "F3 YCloud real provider-to-inbox reception",
+  "workspaceId": "ff50ed19-6330-43c1-a69d-32252c9ca756",
+  "connectionId": "776d904b-1ff0-40ed-86e7-b25432799522",
+  "conversationId": "1f3c15bc-4ba8-4dde-970b-7dc2752f7a28",
+  "eventId": "evt_6acffccf47f5ae0997b23dae",
+  "messageId": "1c45188c-2503-46a0-a0a8-95da7db1d501",
+  "providerDelivery": {"httpStatus": 200, "received": true, "inboxOnly": true, "accountMatched": true, "recorded": true, "successfulAttemptAt": "2026-10-14T22:11:58Z", "previousFailedAttempts": 3},
+  "source": "real-provider-webhook-retry",
+  "historical": false,
+  "operatorRpcRecoveryInserted": false,
+  "diagnostic": {"failedCode": "23514", "failedReason": "INBOX_EVENT_INVALID", "freshReceiptRpcFailedBeforeFix": true, "sameCapturedArgsAcceptedLater": true, "boundedReceiptClockSkewSeconds": 5, "futureReceiptClampedToDatabaseTime": true, "futureProviderOccurredAtRejected": true},
+  "migration": "20261014221455_omnichannel_ycloud_receipt_clock",
+  "cloudMigrations": 85,
+  "counts": {"contacts": 1, "conversations": 1, "incomingMessages": 2, "historicalIncoming": 1, "liveIncoming": 1, "internalNotes": 1, "verifiedIdentities": 1, "outgoingMessages": 0, "jobs": 0, "outbox": 0},
+  "controls": {"aiEnabled": false, "connectionStatus": "needs_permissions", "textGrants": 0, "consentedContacts": 0, "normalRolloutFlags": "off"},
+  "verification": {"directedWebhookUnitTests": 25, "databaseTests": 145, "typecheck": "passed", "lint": "passed", "cloudRpcDuplicateSameIds": true, "cloudRpcPlusTwoSecondReceiptAcceptedWithoutInsert": true, "serviceOnlyAclPreserved": true, "browserReloadShowsLiveMessage": true, "advisorsErrors": 0, "advisorsInheritedWarnings": 10},
+  "screenshot": "test-results/f3-ycloud-inbox-live-2026-10-14.png",
+  "f3Acceptance": "pending-human-send-and-full-pipeline",
+  "externalSend": false,
+  "modelCall": false,
+  "productionDeploy": false
+}
