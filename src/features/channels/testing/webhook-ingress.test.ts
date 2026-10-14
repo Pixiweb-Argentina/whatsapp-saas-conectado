@@ -33,10 +33,10 @@ const fakeSvc = {
     return q;
   },
   async rpc(name: string, args: Record<string, unknown>) {
-    assert.ok(["persist_channel_event","persist_channel_receipt","persist_business_app_echo"].includes(name));
-    trace.push(name === "persist_channel_event" ? "persist-event" : name === "persist_business_app_echo" ? "persist-echo" : "persist-receipt");
+    assert.ok(["persist_channel_event","persist_channel_receipt","persist_business_app_echo","materialize_ycloud_inbound"].includes(name));
+    trace.push(name === "materialize_ycloud_inbound" ? "materialize-inbox" : name === "persist_channel_event" ? "persist-event" : name === "persist_business_app_echo" ? "persist-echo" : "persist-receipt");
     envelopes.push((args.p_event ?? args.p_receipt ?? args.p_echo) as Record<string, unknown>);
-    return { data: name === "persist_business_app_echo" ? {conversationId:id(31),inserted:true,aiDisabled:true} : id(4), error: storageFails ? { message: "private details" } : null };
+    return { data: name === "materialize_ycloud_inbound" ? {eventId:id(4),conversationId:id(31),messageId:id(41),inserted:true} : name === "persist_business_app_echo" ? {conversationId:id(31),inserted:true,aiDisabled:true} : id(4), error: storageFails ? { message: "private details" } : null };
   },
 };
 mock.module("@supabase/supabase-js", { exports: { createClient: () => fakeSvc } });
@@ -57,14 +57,14 @@ mock.module("@/features/inbox/services/daily-events.ts", { exports: { emitEventO
 const ycloud = await import("@/app/api/webhooks/ycloud/route.ts");
 const kapso = await import("@/app/api/webhooks/kapso/route.ts");
 afterEach(() => { trace.length = 0; envelopes.length = 0; storageFails = false; rowId = id(2);
-  delete process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES; });
+  delete process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES; delete process.env.YCLOUD_INBOX_ONLY_WORKSPACES; });
 
 function payload() {
   const time = Date.now() - 10_000;
   return provider === "ycloud" ? { ...YCLOUD_TEXT, createTime: new Date(time).toISOString() }
     : { ...KAPSO_TEXT, message: { ...KAPSO_TEXT.message, timestamp: String(Math.floor(time / 1000)) } };
 }
-function send(body: unknown = payload(), secret = "fixture-signature-secret", eventName = "whatsapp.message.received", verificationRequired = false) {
+function send(body: unknown = payload(), secret = "fixture-signature-secret", eventName = "whatsapp.message.received", verificationRequired = false, receptionMode?: string) {
   const raw = JSON.stringify(body);
   const time = Math.floor(Date.now() / 1000);
   const signed = provider === "ycloud" ? `${time}.${raw}` : raw;
@@ -73,6 +73,7 @@ function send(body: unknown = payload(), secret = "fixture-signature-secret", ev
     ? { "YCloud-Signature": `t=${time},s=${digest}` }
     : { "X-Webhook-Signature": digest, "X-Webhook-Event": eventName };
   if (verificationRequired) headers["X-YCloud-Verification-Only"] = "true";
+  if (receptionMode) headers["X-YCloud-Reception-Mode"] = receptionMode;
   const request = new NextRequest(`http://localhost/api/webhooks/${provider}?wsid=${id(1)}`, { method: "POST", body: raw, headers });
   return (provider === "ycloud" ? ycloud : kapso).POST(request);
 }
@@ -130,6 +131,33 @@ test("YCloud verification mode authenticates and binds the account without any d
     assert.deepEqual(await response.json(), { received: true, verificationOnly: true, accountMatched: true });
     assert.deepEqual(trace, []); assert.deepEqual(envelopes, []);
   }
+});
+
+test("YCloud inbox stores only verified account-matched text atomically, with no legacy side effects", async () => {
+  provider = "ycloud"; process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);
+  assert.equal((await send(payload(), "wrong-secret")).status, 401); assert.deepEqual(trace, []);
+  const response = await send(payload(), "fixture-signature-secret", "unused", false, "inbox");
+  assert.deepEqual(await response.json(), { received: true, inboxOnly: true, accountMatched: true, recorded: true });
+  assert.deepEqual(trace, ["resolve-connection", "materialize-inbox"]);
+  assert.equal(envelopes[0].workspaceId, id(1)); assert.equal(envelopes[0].connectionId, id(3));
+});
+test("YCloud inbox ignores other accounts and status updates; persistence failure asks for retry", async () => {
+  provider = "ycloud"; process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);
+  for (const body of [receiptPayload(), { ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage, to: "+15555550999" } }]) {
+    assert.equal((await send(body)).status, 200); assert.deepEqual(trace, []);
+  }
+  storageFails = true; assert.equal((await send()).status, 500);
+  assert.deepEqual(trace, ["resolve-connection", "materialize-inbox"]);
+});
+test("YCloud inbox rejects ambiguous modes, mismatched relay requirements and guessed sender identities", async () => {
+  provider = "ycloud"; process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);
+  assert.equal((await send(payload(), "fixture-signature-secret", "unused", false, "verify")).status, 503);
+  assert.deepEqual(trace, []);
+  process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES = id(1);
+  assert.equal((await send()).status, 500); assert.deepEqual(trace, []);
+  delete process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES;
+  assert.equal((await send({ ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage, from: "5555550101" } })).status, 500);
+  assert.deepEqual(trace, ["resolve-connection"]);
 });
 test("YCloud verification rejects invalid signatures and does not attest foreign or missing business numbers", async () => {
   provider = "ycloud"; process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES = id(1);

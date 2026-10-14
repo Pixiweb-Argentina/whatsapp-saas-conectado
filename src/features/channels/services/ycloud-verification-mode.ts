@@ -7,14 +7,27 @@ const event = z.discriminatedUnion("type", [
   z.object({ type: z.literal("whatsapp.message.updated"), whatsappMessage: z.object({ from: phone }) }),
 ]);
 
-/** Explicit server-only opt-in for transport verification, never a send grant. */
-export function ycloudVerificationOnly(workspaceId: string,
-  env: Readonly<Record<string, string | undefined>> = process.env): boolean {
-  const raw = env.YCLOUD_VERIFICATION_ONLY_WORKSPACES?.trim();
-  if (!raw) return false;
+function scopedList(rawValue: string | undefined): string[] {
+  const raw = rawValue?.trim();
+  if (!raw) return [];
   const parsed = z.array(z.uuid()).max(3).safeParse(raw.split(",").map((s) => s.trim().toLowerCase()));
   if (!parsed.success) throw new Error("YCLOUD_VERIFICATION_CONFIG_INVALID");
-  return parsed.data.includes(workspaceId);
+  return parsed.data;
+}
+
+export type YCloudReceptionMode = "verify" | "inbox" | null;
+/** Explicit receive-only stages. Neither mode authorizes sending or AI. */
+export function ycloudReceptionMode(workspaceId: string,
+  env: Readonly<Record<string, string | undefined>> = process.env): YCloudReceptionMode {
+  const verification = scopedList(env.YCLOUD_VERIFICATION_ONLY_WORKSPACES);
+  const inbox = scopedList(env.YCLOUD_INBOX_ONLY_WORKSPACES);
+  if (verification.some((id) => inbox.includes(id))) throw new Error("YCLOUD_RECEPTION_CONFIG_CONFLICT");
+  return verification.includes(workspaceId) ? "verify" : inbox.includes(workspaceId) ? "inbox" : null;
+}
+
+export function ycloudVerificationOnly(workspaceId: string,
+  env: Readonly<Record<string, string | undefined>> = process.env): boolean {
+  return ycloudReceptionMode(workspaceId, env) === "verify";
 }
 
 export interface YCloudVerificationResult {

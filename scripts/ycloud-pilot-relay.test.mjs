@@ -45,7 +45,7 @@ test("disabled verification mode stops a delivery before forwarding; no cookies 
   assert.equal(ok.status, 200); assert.equal(enabled.relay.stats.matched, 1);
   const send = enabled.calls[1]; assert.equal(send.target, `http://127.0.0.1:3100${url}`);
   assert.deepEqual(send.options.headers, { "content-type": "application/json", "YCloud-Signature": "signature",
-    "X-YCloud-Verification-Only": "true" });
+    "X-YCloud-Reception-Mode": "verify" });
   assert.equal(send.options.body.toString(), '{"private":"sentinel"}'); assert(!ok.body.includes("sentinel"));
 });
 test("upstream errors and timeouts are redacted and never acknowledged as verified", async () => {
@@ -58,4 +58,20 @@ test("verification relay has a bounded request budget", async () => {
   for (let i = 0; i < 31; i++) { const res = response(); await relay.handler(request(), res);
     assert.equal(res.status, i === 30 ? 429 : 503); }
   assert.equal(calls.length, 30);
+});
+
+test("inbox relay requires an equally scoped inbox acknowledgement and never leaks upstream data", async () => {
+  for (const correct of [true, false]) {
+    const calls = [];
+    const relay = createPilotRelay(ws, async (target, options) => {
+      calls.push({ target, options });
+      return new Response(JSON.stringify(options.method === "POST"
+        ? { inboxOnly: correct, verificationOnly: !correct, accountMatched: true, recorded: true, private: "sentinel" }
+        : { inboxOnly: true, workspaceId: ws }), { status: 200 });
+    });
+    const res = response(); await relay.handler(request(), res);
+    assert.equal(calls[1].options.headers["X-YCloud-Reception-Mode"], "inbox");
+    assert.equal(res.status, correct ? 200 : 503); assert(!res.body.includes("sentinel"));
+    assert.equal(relay.stats.matched, correct ? 1 : 0);
+  }
 });

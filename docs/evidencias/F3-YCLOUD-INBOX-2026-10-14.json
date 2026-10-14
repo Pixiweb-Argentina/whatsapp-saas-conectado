@@ -1,0 +1,19 @@
+{
+  "stage": "F3 YCloud receive-only inbox",
+  "branch": "codex/omnichannel-f3-ycloud-inbox",
+  "workspaceId": "ff50ed19-6330-43c1-a69d-32252c9ca756",
+  "connectionId": "776d904b-1ff0-40ed-86e7-b25432799522",
+  "conversationId": "1f3c15bc-4ba8-4dde-970b-7dc2752f7a28",
+  "migration": "20261014214747_omnichannel_ycloud_inbox",
+  "cloudMigrations": 84,
+  "providerAccountRead": {"connectedNumberMatched": true, "newEndpointMatched": true, "originalEndpointModified": false},
+  "storedMessage": {"source": "verified-provider-log", "eventId": "evt_6acff36a8c323a69db3d3cde", "historical": true, "concurrentImportDeduplicated": true, "liveMaterializationVerified": false},
+  "counts": {"contacts": 1, "identities": 1, "conversations": 1, "incomingMessages": 1, "internalNotes": 1, "outgoingMessages": 0, "jobs": 0, "outbox": 0},
+  "controls": {"connectionStatus": "needs_permissions", "textGrants": 0, "identityVerified": false, "aiEnabled": false, "conversationState": "human_active", "ingressWorkerHumanAiFlags": "off", "pilotReceptionMode": "inbox-process-only"},
+  "verification": {"unitTests": 1868, "databaseTests": 144, "relayTests": 6, "typecheck": "passed", "lint": "passed", "cloudRpcServiceOnly": true, "securityAdvisors": {"errors": 0, "inheritedWarnings": 10, "informational": 17}, "publicInvalidSignature": 401, "publicDashboard": 404, "browserReloadPersistsMessageAndNote": true},
+  "screenshot": "test-results/f3-ycloud-inbox-borrador-2026-10-14.png",
+  "next": "Fresh user-owned inbound to verify direct provider-to-inbox materialization, then explicit send grants and authorized human reply. F3 remains open.",
+  "productionDeploy": false,
+  "externalSend": false,
+  "modelCall": false
+}

@@ -1,5 +1,6 @@
 import { captureWhatsAppDelivery } from "@/features/channels/services/whatsapp-event-ingress";
-import { ycloudVerificationOnly, ycloudVerificationResult } from "@/features/channels/services/ycloud-verification-mode";
+import { ycloudReceptionMode, ycloudVerificationOnly, ycloudVerificationResult } from "@/features/channels/services/ycloud-verification-mode";
+import { materializeYCloudInbox } from "@/features/channels/services/ycloud-inbox";
 import { captureWhatsAppReceipt } from "@/features/channels/services/delivery-receipt-store";
 import { type NextRequest, NextResponse, after } from "next/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
@@ -48,8 +49,9 @@ export const maxDuration = 300;
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const workspaceId = request.nextUrl.searchParams.get("wsid") ?? "";
-    if (!ycloudVerificationOnly(workspaceId)) return NextResponse.json({ available: false }, { status: 404 });
-    return NextResponse.json({ verificationOnly: true, workspaceId });
+    const mode = ycloudReceptionMode(workspaceId);
+    if (!mode) return NextResponse.json({ available: false }, { status: 404 });
+    return NextResponse.json(mode === "verify" ? { verificationOnly: true, workspaceId } : { inboxOnly: true, workspaceId });
   } catch { return NextResponse.json({ available: false }, { status: 503 }); }
 }
 
@@ -68,6 +70,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // E3: per-tenant webhook routing via ?wsid query param
     const wsidParam = request.nextUrl.searchParams.get("wsid");
+    const requiredMode = request.headers.get("X-YCloud-Reception-Mode");
+    if (requiredMode !== null && (!wsidParam || !["verify", "inbox"].includes(requiredMode)
+      || ycloudReceptionMode(wsidParam) !== requiredMode)) {
+      return NextResponse.json({ error: "Reception mode unavailable" }, { status: 503 });
+    }
     const requireVerification = request.headers.get("X-YCloud-Verification-Only") === "true";
     if (requireVerification && (!wsidParam || !ycloudVerificationOnly(wsidParam))) {
       return NextResponse.json({ error: "Verification mode unavailable" }, { status: 503 });
@@ -176,8 +183,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (requireVerification && !verificationOnly) {
       return NextResponse.json({ error: "Verification mode unavailable" }, { status: 503 });
     }
+    const mode = ycloudReceptionMode(ws.workspace_id);
+    if (requiredMode !== null && mode !== requiredMode) {
+      return NextResponse.json({ error: "Reception mode unavailable" }, { status: 503 });
+    }
     if (verificationOnly) {
       return NextResponse.json(ycloudVerificationResult(body, ws.config.phone_number));
+    }
+    if (mode === "inbox") {
+      const match = ycloudVerificationResult(body, ws.config.phone_number);
+      const stored = match.accountMatched ? await materializeYCloudInbox(supabase, {
+        workspaceId: ws.workspace_id, integrationId: ws.id, provider: "ycloud",
+        configuredAccountId: ws.config.phone_number, payload: body,
+      }) : null;
+      return NextResponse.json({ received: true, inboxOnly: true, accountMatched: match.accountMatched,
+        recorded: stored?.inserted ?? false });
     }
 
     // WH-02: monotonic status updates — only reached after signature verification.

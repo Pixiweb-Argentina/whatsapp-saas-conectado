@@ -20,9 +20,11 @@ async function readBody(req) {
 }
 async function healthy(target, fetchImpl) {
   const response = await fetchImpl(target, { redirect: "error", signal: AbortSignal.timeout(5000) });
-  if (!response.ok) return false;
+  if (!response.ok) return null;
   const result = await response.json();
-  return result.verificationOnly === true && result.workspaceId === new URL(target).searchParams.get("wsid");
+  if (result.workspaceId !== new URL(target).searchParams.get("wsid")) return null;
+  return result.verificationOnly === true && !result.inboxOnly ? "verify"
+    : result.inboxOnly === true && !result.verificationOnly ? "inbox" : null;
 }
 
 /** Local-only bridge. Exposes one POST destination, never the SaaS UI or other APIs. */
@@ -46,21 +48,25 @@ export function createPilotRelay(workspaceId, fetchImpl = fetch) {
       if (Number(req.headers["content-length"]) > MAX_BYTES) return respond(res, 413, { error: "Body too large" });
       // Recheck before EVERY delivery: removing the verification flag cannot
       // accidentally route public requests into the normal legacy workflow.
-      if (!await healthy(target, fetchImpl)) {
+      const mode = await healthy(target, fetchImpl);
+      if (!mode) {
         stats.unavailable++; return respond(res, 503, { error: "Verification mode unavailable" });
       }
       const body = await readBody(req);
       const response = await fetchImpl(target, { method: "POST", redirect: "error", body,
         headers: { "content-type": "application/json", "YCloud-Signature": signature,
-          "X-YCloud-Verification-Only": "true" }, signal: AbortSignal.timeout(10000) });
+          "X-YCloud-Reception-Mode": mode }, signal: AbortSignal.timeout(10000) });
       if (!response.ok) { stats.rejected++; return respond(res, response.status === 401 ? 401 : 503, { error: "Delivery rejected" }); }
       const result = await response.json();
-      if (result.verificationOnly !== true || typeof result.accountMatched !== "boolean") {
+      if ((mode === "verify" ? result.verificationOnly !== true || result.inboxOnly === true
+        : result.inboxOnly !== true || result.verificationOnly === true || typeof result.recorded !== "boolean")
+        || typeof result.accountMatched !== "boolean") {
         stats.unavailable++; return respond(res, 503, { error: "Verification mode unavailable" });
       }
       stats[result.accountMatched ? "matched" : "unmatched"]++;
-      console.log(JSON.stringify({ verificationOnly: true, ...stats }));
-      return respond(res, 200, { received: true, verificationOnly: true, accountMatched: result.accountMatched });
+      console.log(JSON.stringify({ receptionMode: mode, ...stats }));
+      return respond(res, 200, mode === "verify" ? { received: true, verificationOnly: true, accountMatched: result.accountMatched }
+        : { received: true, inboxOnly: true, accountMatched: result.accountMatched, recorded: result.recorded });
     } catch (error) {
       stats.unavailable++;
       if (!res.headersSent) respond(res, error instanceof Error && error.message === "BODY_LIMIT" ? 413 : 503,
