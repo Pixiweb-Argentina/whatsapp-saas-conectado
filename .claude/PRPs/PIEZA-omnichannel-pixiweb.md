@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-ycloud-inbox, desde b5af8d1. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-ycloud-receipts, desde1da1062. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -275,3 +275,9 @@ Bandeja QA y recarga muestran «Hola prueba F3» y borrador interno guardado, si
 ### Recepción YCloud directa — 2026-10-14
 
 Yani «Enviado»: «Hola bandeja F3» se guarda live en la misma conversación desde el reintento real de YCloud a19:11:58 Argentina, HTTP200/recorded=true, después de tres fallos sin filas parciales. Un contacto/identidad/conversación, dos inbound (uno histórico), una nota; identidad verificada, IA apagada y cero envíos/jobs/outbox. Sin grants/ready/consentimiento por inferencia. Ajuste de receivedAt local limitado a5s y reloj de BD, occurredAt del proveedor sigue estricto; migración85 aplicada y versiones alineadas.145 DB,25 unitarias dirigidas,typecheck/lint pasan; asesores cero ERROR/diez WARN heredados. Recepción exitosa ocurrió antes del ajuste; relecturas RPC deduplican, no son nueva entrega del proveedor. Detalle/Auto-Blindaje en continuidad y F3-YCLOUD-INBOX-LIVE-2026-10-14.json. Próximo: permisos/evidencia y envío humano específicamente autorizado; F3 sigue abierta. Sin IA/envíos/compras/push/merge/deploy.
+
+### F3, incremento 19 — receipts sin abrir IA, 2026-10-14
+
+Rama codex/omnichannel-f3-ycloud-receipts desde1da1062. Estados firmados del piloto persisten/concilián por cuenta y operación exactas en modo inbox, sin ingress normal ni writer legacy; verify continúa sin escrituras. Relay distingue comprobante de nuevo inbound.1.874 unitarias,7 relay,115 DB dirigidas,typecheck/lint pasan; SQL Cloud sintético revertido y tres rechazos HTTP reales sin filas nuevas. No acredita entrega externa nueva; se conservan2 inbound/1nota y0outbound/jobs/outbox/receipts. Cuenta YCloud/endpoint nuevo verificados por GET, conexión sigue needs_permissions/grants vacíos/opt_in=false.85 migraciones sin cambios.
+
+Next3100 reiniciado en modo inbox; túnel anterior no disponible, relay/túnel sin ejecutar. Restaurar callback nuevo antes de tráfico real. Yani no comprobó si el original respondió; no se tocó. Respuesta humana propuesta y ventana/destino/permisos pendientes detallados en continuidad; no envío ni consentimiento por inferencia. Los seis branches previos ya están en origin, este incremento todavía es local. F3 abierta,0/9 aceptadas. [Evidencia](../../docs/evidencias/F3-YCLOUD-RECEIPTS-PILOTO-2026-10-14.json).

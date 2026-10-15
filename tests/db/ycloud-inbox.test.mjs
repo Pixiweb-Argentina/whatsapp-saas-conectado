@@ -41,6 +41,25 @@ test("YCloud receive-only inbox is atomic, idempotent and scoped without send au
     assert.equal(await scalar(db, "select status result from public.channel_connections where id=$1", [id(51)]), "needs_permissions");
     await reject(() => persist({ ...value, content: { ...value.content, text: "changed" } }));
   });
+  await isolated("a receive-only receipt is durable and deduplicated without granting send or mutating an inbound message", async () => {
+    await db.exec("SET LOCAL ROLE service_role");
+    const first = await persist();
+    const before = (await db.query("select * from public.conversations where id=$1", [first.conversationId])).rows[0];
+    const receipt = { connectionId: id(51), provider: "ycloud", externalAccountId: "+15555550100",
+      providerEventId: "evt.inbox-receipt", status: "read", wamid: "wamid.external-outbound",
+      providerMessageId: "provider.external-outbound", operationId: null, recipient: "+15555550901",
+      occurredAt: new Date(Date.now() - 1000).toISOString() };
+    const save = () => scalar(db, "select public.persist_channel_receipt($1,$2,$3) result", [id(1), id(11), receipt]);
+    const receiptId = await save(); assert.equal(await save(), receiptId);
+    assert.equal(await scalar(db, "select count(*)::int result from private.channel_delivery_receipts"), 1);
+    assert.equal(await scalar(db, "select state result from private.channel_delivery_receipts where id=$1", [receiptId]), "pending");
+    assert.deepEqual((await db.query("select * from public.conversations where id=$1", [first.conversationId])).rows[0], before);
+    assert.equal(await scalar(db, "select count(*)::int result from public.messages where conversation_id=$1", [first.conversationId]), 1);
+    assert.equal(await scalar(db, "select count(*)::int result from public.message_jobs"), 0);
+    assert.equal(await scalar(db, "select count(*)::int result from public.message_outbox"), 0);
+    assert.equal(await scalar(db, "select opt_in result from public.contacts where id=$1", [before.contact_id]), false);
+    assert.equal(await scalar(db, "select status result from public.channel_connections where id=$1", [id(51)]), "needs_permissions");
+  });
   await isolated("historical import cannot become live evidence on retry; a distinct live message verifies the identity", async () => {
     const value = event(), first = await persist(value, true);
     assert.equal(await scalar(db, "select state result from public.inbound_events where id=$1", [first.eventId]), "ignored");

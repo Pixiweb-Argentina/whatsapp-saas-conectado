@@ -192,6 +192,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     if (mode === "inbox") {
       const match = ycloudVerificationResult(body, ws.config.phone_number);
+      if (isStatusUpdate) {
+        const receipt = match.accountMatched ? await captureWhatsAppReceipt(supabase, {
+          workspaceId: ws.workspace_id, integrationId: ws.id, provider: "ycloud",
+          configuredAccountId: ws.config.phone_number, payload: body,
+        }) : "ignored";
+        return NextResponse.json({ received: true, inboxOnly: true, accountMatched: match.accountMatched,
+          recorded: false, receiptRecorded: receipt === "persisted" });
+      }
       const stored = match.accountMatched ? await materializeYCloudInbox(supabase, {
         workspaceId: ws.workspace_id, integrationId: ws.id, provider: "ycloud",
         configuredAccountId: ws.config.phone_number, payload: body,

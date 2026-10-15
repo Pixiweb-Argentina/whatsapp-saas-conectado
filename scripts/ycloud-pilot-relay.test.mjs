@@ -75,3 +75,14 @@ test("inbox relay requires an equally scoped inbox acknowledgement and never lea
     assert.equal(relay.stats.matched, correct ? 1 : 0);
   }
 });
+
+test("inbox relay distinguishes receipt storage from a newly recorded incoming message", async () => {
+  const relay = createPilotRelay(ws, async (_target, options) => new Response(JSON.stringify(options.method === "POST"
+    ? { inboxOnly: true, accountMatched: true, recorded: false, receiptRecorded: true, private: "sentinel" }
+    : { inboxOnly: true, workspaceId: ws }), { status: 200 }));
+  const res = response(); await relay.handler(request(), res);
+  assert.equal(res.status, 200);
+  assert.deepEqual(JSON.parse(res.body), { received: true, inboxOnly: true, accountMatched: true,
+    recorded: false, receiptRecorded: true });
+  assert(!res.body.includes("sentinel"));
+});

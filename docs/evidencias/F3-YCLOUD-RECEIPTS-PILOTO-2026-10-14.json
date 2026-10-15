@@ -1,0 +1,55 @@
+{
+  "stage": "F3 receive-only YCloud delivery receipts",
+  "checkedAt": "2026-10-15T02:53:33Z",
+  "branch": "codex/omnichannel-f3-ycloud-receipts",
+  "baseCommit": "1da1062",
+  "workspaceId": "ff50ed19-6330-43c1-a69d-32252c9ca756",
+  "connectionId": "776d904b-1ff0-40ed-86e7-b25432799522",
+  "conversationId": "1f3c15bc-4ba8-4dde-970b-7dc2752f7a28",
+  "implementation": {
+    "inboxModeAcceptsSignedReceipts": true,
+    "normalIngressRequired": false,
+    "verificationModeStillWithoutWrites": true,
+    "legacyStatusWriterReachedInPilot": false,
+    "receiptAcknowledgementSeparateFromIncomingMessage": true,
+    "newMigration": false
+  },
+  "verification": {
+    "unitTests": 1874,
+    "relayTests": 7,
+    "directedQueueDatabaseTests": 106,
+    "directedInboxDatabaseTests": 9,
+    "typecheck": "passed",
+    "directedLint": "passed",
+    "actualNextHandlerSyntheticRejections": ["invalid_signature_401", "foreign_account_ignored", "unsupported_status_ignored"],
+    "cloudSyntheticReceiptTransaction": "inserted_one_receipt_with_zero_jobs_then_rollback",
+    "cloudReceiptCountAfterRollbackAndHttpChecks": 0,
+    "providerAccountRead": "connected_exact_account_and_existing_new_webhook_verified",
+    "newRealProviderReceipt": false
+  },
+  "cloudState": {
+    "contacts": 1, "verifiedIdentities": 1, "conversations": 1,
+    "incomingMessages": 2, "internalNotes": 1,
+    "outgoingMessages": 0, "jobs": 0, "outbox": 0, "receipts": 0,
+    "connectionStatus": "needs_permissions", "grants": [], "consentedContacts": 0
+  },
+  "review": {
+    "draft": "Hola, recibimos tu mensaje de prueba en la bandeja de Pixiweb.",
+    "recipient": "same user-owned sender of the verified live incoming message; resolve through the conversation identity",
+    "latestLiveEventId": "22c03cf7-b946-4c8b-ba4f-d3285f899d35",
+    "latestLiveOccurredAt": "2026-10-14T22:06:07.374Z",
+    "replyWindowUntil": "2026-10-15T22:06:07.374Z",
+    "sendApproval": "pending",
+    "pilotConsent": "pending",
+    "originalDashboardAutomaticReply": "user_has_not_checked"
+  },
+  "runtime": {
+    "nextPort": 3100, "nextSession": 81519, "mode": "inbox",
+    "normalRolloutFlags": "off", "publicCallback": "old_temporary_callback_unavailable",
+    "relayAndTunnel": "not_running"
+  },
+  "externalMessagePost": false,
+  "modelCall": false,
+  "productionDeploy": false,
+  "f3Acceptance": "pending"
+}

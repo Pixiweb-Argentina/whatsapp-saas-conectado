@@ -57,6 +57,7 @@ mock.module("@/features/inbox/services/daily-events.ts", { exports: { emitEventO
 const ycloud = await import("@/app/api/webhooks/ycloud/route.ts");
 const kapso = await import("@/app/api/webhooks/kapso/route.ts");
 afterEach(() => { trace.length = 0; envelopes.length = 0; storageFails = false; rowId = id(2);
+  process.env.CHANNEL_INGRESS_WORKSPACES = id(1);
   delete process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES; delete process.env.YCLOUD_INBOX_ONLY_WORKSPACES; });
 
 function payload() {
@@ -141,13 +142,42 @@ test("YCloud inbox stores only verified account-matched text atomically, with no
   assert.deepEqual(trace, ["resolve-connection", "materialize-inbox"]);
   assert.equal(envelopes[0].workspaceId, id(1)); assert.equal(envelopes[0].connectionId, id(3));
 });
-test("YCloud inbox ignores other accounts and status updates; persistence failure asks for retry", async () => {
+test("YCloud inbox ignores other accounts; persistence failure asks for retry", async () => {
   provider = "ycloud"; process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);
-  for (const body of [receiptPayload(), { ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage, to: "+15555550999" } }]) {
-    assert.equal((await send(body)).status, 200); assert.deepEqual(trace, []);
-  }
+  const body = { ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage, to: "+15555550999" } };
+  assert.equal((await send(body)).status, 200); assert.deepEqual(trace, []);
   storageFails = true; assert.equal((await send()).status, 500);
   assert.deepEqual(trace, ["resolve-connection", "materialize-inbox"]);
+});
+
+test("YCloud inbox captures signed receipts with normal ingress off, without legacy updates or messages", async () => {
+  provider = "ycloud"; process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);
+  process.env.CHANNEL_INGRESS_WORKSPACES = "";
+  assert.equal((await send(receiptPayload(), "wrong-secret")).status, 401);
+  assert.deepEqual(trace, []);
+  for (let n = 0; n < 2; n++) {
+    const response = await send(receiptPayload(), "fixture-signature-secret", "unused", false, "inbox");
+    assert.deepEqual(await response.json(), { received: true, inboxOnly: true, accountMatched: true,
+      recorded: false, receiptRecorded: true });
+  }
+  assert.deepEqual(trace, ["resolve-connection", "persist-receipt", "resolve-connection", "persist-receipt"]);
+  assert.equal(envelopes[0].providerEventId, envelopes[1].providerEventId);
+  assert.equal("content" in envelopes[0], false);
+});
+
+test("YCloud inbox receipt failure requests retry; foreign or invalid evidence cannot update status", async () => {
+  provider = "ycloud"; process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);
+  process.env.CHANNEL_INGRESS_WORKSPACES = "";
+  const original = receiptPayload() as { whatsappMessage: Record<string, unknown> };
+  for (const from of ["+15555550999", undefined]) {
+    const response = await send({ ...original, whatsappMessage: { ...original.whatsappMessage, from } });
+    assert.equal((await response.json()).receiptRecorded, false); assert.deepEqual(trace, []);
+  }
+  const response = await send({ ...original, whatsappMessage: { ...original.whatsappMessage, status: "accepted" } });
+  assert.equal((await response.json()).receiptRecorded, false);
+  assert.deepEqual(trace, ["resolve-connection"]); trace.length = 0;
+  storageFails = true; assert.equal((await send(receiptPayload())).status, 500);
+  assert.deepEqual(trace, ["resolve-connection", "persist-receipt"]);
 });
 test("YCloud inbox rejects ambiguous modes, mismatched relay requirements and guessed sender identities", async () => {
   provider = "ycloud"; process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);

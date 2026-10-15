@@ -66,7 +66,8 @@ export function createPilotRelay(workspaceId, fetchImpl = fetch) {
       stats[result.accountMatched ? "matched" : "unmatched"]++;
       console.log(JSON.stringify({ receptionMode: mode, ...stats }));
       return respond(res, 200, mode === "verify" ? { received: true, verificationOnly: true, accountMatched: result.accountMatched }
-        : { received: true, inboxOnly: true, accountMatched: result.accountMatched, recorded: result.recorded });
+        : { received: true, inboxOnly: true, accountMatched: result.accountMatched, recorded: result.recorded,
+          ...(typeof result.receiptRecorded === "boolean" ? { receiptRecorded: result.receiptRecorded } : {}) });
     } catch (error) {
       stats.unavailable++;
       if (!res.headersSent) respond(res, error instanceof Error && error.message === "BODY_LIMIT" ? 413 : 503,
