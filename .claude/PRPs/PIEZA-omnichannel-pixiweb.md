@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-onboarding, desde 27c6c17. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-permissions, desde 7879941. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; 90 migraciones. Auth/inbox, política/cola/receipts y conversaciones por cuenta probados en Supabase nuevo. Texto humano e IA YCloud reales entregados con una operación por prueba y comprobantes exactos. Verificación de cuenta/webhook desde Ajustes con seis checks reales y evidencia privada; sigue el túnel temporal. Permisos temporales retirados, agente/prompt restaurados; modo inbox/flags vacíos. Faltan cierre formal de AC, emisión/revocación persistente de capacidades, publicación estable y demostración integrada de carrera humano/IA. Multicuenta real y dedup global de wamid pendientes; canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 92 migraciones. Auth/inbox, política/cola/receipts y conversaciones por cuenta probados en Supabase nuevo. Texto humano e IA YCloud reales entregados con una operación por prueba y comprobantes exactos. Verificación de cuenta/webhook desde Ajustes con seis checks reales y evidencia privada; sigue el túnel temporal. Permisos temporales retirados, agente/prompt restaurados; modo inbox/flags vacíos. Gestión persistente de texto con autorización/renovación manual y revocación probada en fixture; sin permisos reales activos. Faltan cierre formal de AC, publicación estable/alta y renovación operativa, y demostración integrada de carrera humano/IA. Multicuenta real y dedup global de wamid pendientes; canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -328,3 +328,8 @@ Mismo contacto admite hilos explícitos por cuenta; NULL legacy único no se mez
 ### F3, incremento26 — alta verificable sin scripts del operador, 2026-10-15
 
 Ajustes permite al admin verificar credenciales guardadas,número y webhook con GETs acotados a YCloud. Manager lee evidencia saneada; no ve secretos ni otras cuentas. Migración90 guarda reporte privado RLS con fingerprint/frescura24h, revalida rol/fuente en transacción y evita sobreescribir resultados nuevos. La UI conserva comprobación y avisa desactualización/túnel temporal. Seis checks reales pasan, sin conceder envíos ni alterar grants/consentimiento/status/flags.1.914 unitarias/176DB,typecheck/lint,ACL/deriva SQL Cloud y UI móvil/escritorio pasan.90 migraciones alineadas;datos previos idénticos. [Evidencia](../../docs/evidencias/F3-ALTA-YCLOUD-2026-10-15.json). Emisión/revocación de permisos permanentes,publicación estable y carrera integrada humano/IA siguen pendientes; F3 abierta,0/9 aceptadas. No repetir pruebas reales sin nueva autorización. Sin push/merge/deploy;main intacto.
+
+
+### F3, incremento27 — permiso de texto con vencimiento y revocación
+
+UI y RPC para admin explícito, manager lector, prueba de entrega/fuente/origen de servidor, TTL24h ligado a verificación, renovación manual y registro privado. Cambios de integración/verificación invalidan sólo permisos gestionados; replay no reactiva un grant revocado. No activa transporte/IA/opt-in ni reemplaza legacy. Fixture UI autoriza→persiste→revoca, luego retirado; laboratorio real sin permisos/origen estable, flags apagados. 1.922 unitarias/188DB/typecheck/lint;92 migraciones alineadas y datos originales idénticos. Error previo de tipos exportados como server actions corregido en4797a0c y recorrido Ajustes/Automatizaciones probado. [Evidencia](../../docs/evidencias/F3-PERMISOS-YCLOUD-2026-10-15.json). Próximo carrera integrada humano/IA/AC; publicación estable y renovación operativa pendientes. F3 abierta,0/9 aceptadas;main intacto,sin push/merge/deploy.

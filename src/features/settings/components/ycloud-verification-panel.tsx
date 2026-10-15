@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { YCloudPermissionsPanel } from "./ycloud-permissions-panel";
 import { validYCloudCallback, YCLOUD_CHECKS, ycloudVerificationRecordSchema,
   type YCloudVerificationRecord } from "@/features/channels/types/ycloud-verification";
 
@@ -88,7 +89,7 @@ export function YCloudVerificationPanel({ workspaceId, canEdit }: Props) {
   const { record, endpointId, setEndpointId, callbackUrl, setCallbackUrl, busy, loading, error, verify } = useVerification(workspaceId);
   const valid = /^[a-zA-Z0-9_-]{1,128}$/.test(endpointId.trim()) && validYCloudCallback(callbackUrl.trim(), workspaceId);
   return (
-    <section aria-labelledby={`${prefix}-title`} className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
+    <><section aria-labelledby={`${prefix}-title`} className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
       <div>
         <h2 id={`${prefix}-title`} className="font-display text-base font-medium">Verificación de cuenta YCloud</h2>
         <p className="mt-1 text-sm text-muted-foreground">Comprobá el número y el webhook con las credenciales guardadas.</p>
@@ -117,5 +118,6 @@ export function YCloudVerificationPanel({ workspaceId, canEdit }: Props) {
         <p className="rounded-lg bg-muted p-3 text-muted-foreground">Esta comprobación no habilita envíos ni IA. El permiso de envío, el consentimiento del contacto y las pruebas de recepción se validan por separado.</p>
       </div>
     </section>
+    {!loading && <YCloudPermissionsPanel key={record?.report.checkedAt ?? "unverified"} workspaceId={workspaceId} canEdit={canEdit} />}</>
   );
 }

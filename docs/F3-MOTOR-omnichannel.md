@@ -1,6 +1,6 @@
 # F3 — Motor de canales e inbox unificado
 
-Actualizado: 2026-10-15. Build Manual. Rama vigente `codex/omnichannel-f3-onboarding`, desde `27c6c17`. Worktree `C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado`. Historial por incremento debajo; F3 sigue sin aceptación integral.
+Actualizado: 2026-10-15. Build Manual. Rama vigente `codex/omnichannel-f3-permissions`, desde `7879941`. Worktree `C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado`. Historial por incremento debajo; F3 sigue sin aceptación integral.
 
 ## Incremento 1: transporte y política
 
@@ -500,3 +500,18 @@ Admin verifica desde Ajustes con la clave guardada; manager lee evidencia sanead
 | Validación |1.914 unitarias/176DB/typecheck/lint;90 migraciones alineadas; UI390/1440sin overflow,cero consola |
 
 Datos previos intactos;0cron activos; sin modelos,mensajes,push/merge/deploy. Quedan emisión/revocación permanente de capacidades,publicación estable/recepción y carrera humano/IA integrada. F3 abierta,0/9 aceptadas. [Continuidad detallada](PLAN-STATUS-omnichannel-pixiweb.md) · [Evidencia](evidencias/F3-ALTA-YCLOUD-2026-10-15.json).
+
+
+## Incremento27: permiso de texto gestionado
+
+Admin autoriza/renueva/revoca el permiso local del pipeline durable. Requiere verificación vigente, origen estable del servidor, activo exacto y entrega confirmada en30d. Vigencia acotada por verificación +24h; renovación manual, sin cron ni permiso indefinido. Ledger privado y operaciones idempotentes; cambios de fuente o verificación invalidan sólo grants de este flujo. Revocar conserva los mensajes y resultados ya iniciados; no concede opt-in/IA/rollout ni hace cutover legacy.
+
+| Criterio | Evidencia |
+|---|---|
+| Admin explícito, manager lector | API/schemas/RPC y prueba de roles incluido UPDATE RLS autenticado |
+| Prueba del servidor y fuente exacta | Callback por CHANNEL_PUBLIC_ORIGIN; recibo/job/outbox/mensaje y fingerprint |
+| Revocación/replay/deriva | SQL Cloud con ROLLBACK; pruebas DB y UI con fixture ficticio |
+| UI y preservación | Autorizar→recargar→revocar; móvil/escritorio; fixture eliminado, datos reales idénticos |
+| Validación |1.922 unitarias/188 DB/typecheck/lint;92 migraciones alineadas |
+
+Configuración futura de despliegue: CHANNEL_PUBLIC_ORIGIN debe ser un origen HTTPS estable, sin ruta/credenciales/query/túnel. Se deriva /api/webhooks/ycloud?wsid=workspace. No se configura ni activa en este laboratorio; origen vacío bloquea la autorización real. Gestión de altas nuevas y renovación operativa antes de producción siguen. [Continuidad](PLAN-STATUS-omnichannel-pixiweb.md) · [Evidencia](evidencias/F3-PERMISOS-YCLOUD-2026-10-15.json). Próximo: carrera integrada humano/IA y AC restantes. F3 abierta,0/9 aceptadas.

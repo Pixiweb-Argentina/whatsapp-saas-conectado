@@ -1,0 +1,197 @@
+{
+  "date": "2026-10-15",
+  "phase": "F3",
+  "increment": 27,
+  "branch": "codex/omnichannel-f3-permissions",
+  "baseCommit": "7879941",
+  "migration": {
+    "version": "20261015172346",
+    "name": "omnichannel_ycloud_text_permissions",
+    "project": "bzanbpyzujlogipxvkfn",
+    "count": 92,
+    "versionsAndNamesAligned": true,
+    "ledger": "private.ycloud_permission_changes; RLS; browser denied; service SELECT/INSERT only",
+    "rpcs": "INVOKER, empty search_path, service_role only; active admin rechecked and integration/connection locked",
+    "invalidation": "trigger-only DEFINER, empty search_path, direct execution revoked; scoped to owned YCloud permissions",
+    "additionalGuard": {
+      "version": "20261015174047",
+      "name": "omnichannel_ycloud_permission_evidence_guard",
+      "purpose": "NULL destination fails closed; grant/revoke/invalidations and ACL rechecked in Cloud rollback probe"
+    }
+  },
+  "contract": {
+    "scope": "Local text permission for new durable channel engine, not provider scopes/recipient consent/AI or legacy cutover",
+    "verificationTtlHours": 24,
+    "deliveryProofMaxAgeDays": 30,
+    "grantRequires": [
+      "active admin explicit acknowledgement",
+      "exact current verification/source fingerprint",
+      "configured stable CHANNEL_PUBLIC_ORIGIN matching callback",
+      "account-bound accepted text job, accepted outbox and planned delivered/read receipt",
+      "unchanged connection and verification snapshots"
+    ],
+    "operations": [
+      "grant",
+      "revoke",
+      "automatic invalidation on integration/verification changes"
+    ],
+    "replay": "same operation never reactivates after revoke",
+    "expiry": "bounded by original verification plus 24h; successful check alone does not extend lease",
+    "inFlight": "revocation stops new permits; sends already started may complete"
+  },
+  "tests": {
+    "unitPass": 1922,
+    "dbPass": 188,
+    "typecheck": "pass",
+    "modifiedFileLint": "pass",
+    "liveUnauthenticatedApi": {
+      "GET": 401,
+      "POST": 401,
+      "invalidWorkspace": 400
+    },
+    "cloudProbe": {
+      "grant_revoke_replay_and_invalidation_pass": true,
+      "no_contact_consent_granted": true,
+      "no_new_jobs": true,
+      "private_audit_denied": true,
+      "direct_rpc_denied": true,
+      "nullDestinationRejected": true
+    },
+    "ui": {
+      "fixture": {
+        "ui_changes": [
+          {
+            "action": "grant",
+            "createdAt": "2026-10-15T17:28:40.035626+00:00",
+            "connectionId": "00000000-0000-4000-9000-000000002751"
+          },
+          {
+            "action": "revoke",
+            "createdAt": "2026-10-15T17:29:05.357107+00:00",
+            "connectionId": "00000000-0000-4000-9000-000000002751"
+          }
+        ],
+        "fixture_jobs": 1,
+        "fixture_messages": 1,
+        "fixture_opt_in": false,
+        "fixture_capabilities": {
+          "grants": [],
+          "version": 1
+        }
+      },
+      "grantDisabledBeforeAcknowledgement": true,
+      "grantAndPersistedReview": true,
+      "revokeAndReload": true,
+      "mobile": {
+        "width": 390,
+        "documentWidth": 375
+      },
+      "desktop": {
+        "width": 1440,
+        "documentWidth": 1425
+      },
+      "realPermissionButtonsDisabled": true,
+      "fixtureRemoved": true,
+      "viewportReset": true,
+      "settingsAutomationTab": "loads without runtime error after type-only export fix",
+      "console": "one initial TriggerType ReferenceError repaired; no further errors observed after 17:28Z",
+      "screenshots": [
+        "test-results/f3-permission-fixture-granted-2026-10-15.jpg",
+        "test-results/f3-permissions-2026-10-15.jpg"
+      ]
+    },
+    "advisors": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 19,
+      "newFindings": "1 INFO expected for private service-only ledger with RLS/no browser policy; no new WARN/ERROR",
+      "reference": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    }
+  },
+  "before": {
+    "migrations": 90,
+    "active_cron": 0,
+    "workspaces": 2,
+    "jobs": 3,
+    "connections": [
+      {
+        "id": "776d904b-1ff0-40ed-86e7-b25432799522",
+        "status": "needs_permissions",
+        "capabilities": {
+          "grants": [],
+          "version": 1
+        }
+      },
+      {
+        "id": "77b87e64-7505-4fb3-8849-07100bbb2a66",
+        "status": "connecting",
+        "capabilities": {}
+      },
+      {
+        "id": "a6dff18e-bad3-40f8-81cb-41ea4af26dfc",
+        "status": "connecting",
+        "capabilities": {}
+      }
+    ],
+    "contacts_hash": "7fdbb03e3d7a1cee66d3bd4705e9c2e5",
+    "conversations_hash": "9f479383e5ecd27515c34515481eb061",
+    "messages_hash": "aab744e5e2d1ff50c35bf3a91f1072d3"
+  },
+  "after": {
+    "migrations": 92,
+    "active_cron": 0,
+    "workspaces": 2,
+    "jobs": 3,
+    "permission_changes": 0,
+    "fixture_workspaces": 0,
+    "connections": [
+      {
+        "id": "776d904b-1ff0-40ed-86e7-b25432799522",
+        "status": "needs_permissions",
+        "capabilities": {
+          "grants": [],
+          "version": 1
+        }
+      },
+      {
+        "id": "77b87e64-7505-4fb3-8849-07100bbb2a66",
+        "status": "connecting",
+        "capabilities": {}
+      },
+      {
+        "id": "a6dff18e-bad3-40f8-81cb-41ea4af26dfc",
+        "status": "connecting",
+        "capabilities": {}
+      }
+    ],
+    "contacts_hash": "7fdbb03e3d7a1cee66d3bd4705e9c2e5",
+    "conversations_hash": "9f479383e5ecd27515c34515481eb061",
+    "messages_hash": "aab744e5e2d1ff50c35bf3a91f1072d3"
+  },
+  "runtime": {
+    "session": 30181,
+    "supervisorPid": 24816,
+    "receptionMode": "inbox",
+    "rollout": "all four off",
+    "CHANNEL_PUBLIC_ORIGIN": "empty/restored; example.org used only in temporary QA process",
+    "oldSupervisor": "stopped only after confirming prior one-shot authorization consumed and state restored",
+    "relaySession": 56796,
+    "tunnelSession": 67399
+  },
+  "sideEffects": {
+    "realGrantsChanged": false,
+    "realConsentChanged": false,
+    "realModelCalls": 0,
+    "realProviderCalls": 0,
+    "realMessagesSent": 0,
+    "push": false,
+    "merge": false,
+    "deploy": false
+  },
+  "remaining": [
+    "stable authorized deployment/public origin, production activation and operational renewal cadence",
+    "new-account binding and template/media/provider-wide permissions not added here",
+    "integrated synthetic human takeover during generation and other F3 acceptance criteria",
+    "F3 open, 0 of 9 phases fully accepted"
+  ]
+}
