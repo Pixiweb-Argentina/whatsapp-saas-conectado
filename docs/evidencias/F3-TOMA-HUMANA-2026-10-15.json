@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-15",
+  "phase": "F3",
+  "increment": 28,
+  "branch": "codex/omnichannel-f3-human-control",
+  "baseCommit": "02206391a451bba89b51751cd344cbb86b65fca1",
+  "scope": "Integrated synthetic human takeover while a deferred model generation is pending",
+  "productionCodeChanged": false,
+  "database": {
+    "engine": "local PGlite PostgreSQL, repository migration harness",
+    "cloudAccessed": false,
+    "migrationsAdded": 0,
+    "scenarioWrites": "rolled back; in-memory database closed"
+  },
+  "realCollaborators": [
+    "materialize_ycloud_pipeline",
+    "claim_ai_channel_batch",
+    "processNextBatch",
+    "decide and applyTransition",
+    "prepareAiQueueBatch and createAiReplyProducer",
+    "checkpoint_ai_channel_reply",
+    "enqueue_ai_channel_reply and handoff_ai_channel_reply",
+    "createMessageJobStore and drainMessageJobs"
+  ],
+  "simulatedCollaborators": [
+    "deferred model response with explicit promise barrier, no elapsed-time race",
+    "budgets and token accounting, knowledge base, prompts, agent lookup, Jev and enabled tools",
+    "local SQL transport bridge instead of Supabase HTTP"
+  ],
+  "scenarios": {
+    "unchangedControl": "one simulated generation and one pending job with expected text",
+    "humanTakeover": "manual applyTransition while generation blocked; revision advances, assignment persists; zero jobs/outbox/outgoing messages after completion",
+    "humanTakeoverThenResume": "two manual transitions before generation resolves; old revision rejected despite AI active again; no stale handoff overwrites current state",
+    "replayAndDrain": "exact batch replay does not regenerate; real job recovery/claim/drain finds no work and never resolves an adapter",
+    "preservation": "private immutable reply checkpoint and model usage retained; conversation and audit events unchanged after deferred result resolves",
+    "cleanup": "all scenario writes rolled back; zero batches/jobs/outbox remain"
+  },
+  "tests": {
+    "integratedRunnerPass": 5,
+    "dbSuitePass": 189,
+    "unitSuitePass": 1922,
+    "typecheck": "pass",
+    "modifiedFileLint": "pass",
+    "commands": [
+      "node --test tests/db/ai-human-race.test.mjs",
+      "npm run test:db:local",
+      "npm run test:unit",
+      "npm run typecheck",
+      "npx eslint tests/db/ai-human-race.test.mjs tests/db/ai-human-race-runner.mjs tests/db/local-sql-client.mjs"
+    ]
+  },
+  "externalEffects": {
+    "fetchAttempts": 0,
+    "realModelCalls": 0,
+    "realMessages": 0,
+    "cloudMutations": 0,
+    "rolloutOrConsentChanges": 0,
+    "deployments": 0
+  },
+  "limits": [
+    "Does not prove this timing race with real model/provider or Cloud concurrency",
+    "Does not retract provider POSTs already permitted or in flight",
+    "Existing delivered human/AI trials are distinct evidence and their one-shot authorizations remain consumed",
+    "Permanent origin/onboarding/cutover, operational renewal, multiaccount integration and workspace-global wamid dedup remain open",
+    "F3 remains open; no phase acceptance inferred"
+  ],
+  "autoBlindaje": "Isolated node:test child removes inherited NODE_TEST_CONTEXT and asserts five passes, preventing recursive-run skip from producing a false success"
+}

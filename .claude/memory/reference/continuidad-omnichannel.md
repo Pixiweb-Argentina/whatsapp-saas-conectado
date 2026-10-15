@@ -5,14 +5,14 @@ Guardado por pedido de Yani el 2026-10-15 para /avivar.
 ## Dónde continuar
 
 - Implementación: C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado.
-- Rama al guardar: codex/omnichannel-f3-permissions. Confirmar Git antes de trabajar; el nombre omnichannel-f1 del worktree no indica la fase actual.
+- Rama al guardar: codex/omnichannel-f3-human-control, incremento28 desde0220639. Confirmar Git antes de trabajar; el nombre omnichannel-f1 del worktree no indica la fase actual.
 - Checkout original C:/Users/Yani Acevedo/Documents/GitHub/apps/app-whatsapp-saas-conectado: preparación y documentación, NO implementar allí.
 - Leer AGENTS.md y luego, en el worktree activo: docs/PLAN-STATUS-omnichannel-pixiweb.md, .claude/PRPs/PIEZA-omnichannel-pixiweb.md y docs/F3-MOTOR-omnichannel.md.
-- Última evidencia: docs/evidencias/F3-PERMISOS-YCLOUD-2026-10-15.json. Las pruebas y el historial están en esas fuentes, no se duplican aquí.
+- Última evidencia: docs/evidencias/F3-TOMA-HUMANA-2026-10-15.json. Las pruebas y el historial están en esas fuentes, no se duplican aquí.
 
 ## Próximo paso acordado
 
-F3 sigue abierta. Retomar con una prueba sintética integrada de toma humana mientras una generación IA está pendiente: demostrar que no se encola ni envía la respuesta y que se conserva la revisión/handoff. Usar generación simulada controlada, sin llamadas a modelos ni mensajes reales.
+F3 sigue abierta. La prueba sintética integrada de toma humana durante generación pendiente ya pasó en incremento28, con buffer/SQL reales y modelo diferido. No repetirla por desconocer el avance; conservar el test de regresión. Retomar multicuenta operativa/deduplicación wamid y revisar AC con la matriz vigente; preparar publicación/alta/renovación sin activar servicios externos por inferencia.
 
 Después quedan alta/cutover y operación permanente de cuentas con origen público estable, renovación de permisos (actualmente manual, máximo 24 h), multicuenta operativa/deduplicación wamid y aceptación formal de US006–008. Instagram, Facebook, widget y Brevo corresponden a fases posteriores. No confundir avances parciales con fases aceptadas.
 
