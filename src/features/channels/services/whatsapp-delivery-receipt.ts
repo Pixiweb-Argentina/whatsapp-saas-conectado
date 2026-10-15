@@ -28,7 +28,7 @@ function kapsoTimestamp(value: unknown): string | null {
 /** Strict account identity comes from both the signed payload and server connection.
  * No body, error detail, URL or token is retained. Business App/history echoes are not receipts.
  */
-export function normalizeWhatsAppReceipt(input: AuthenticatedWhatsAppDelivery, connectionId: string,
+export function normalizeWhatsAppReceipt(input: Omit<AuthenticatedWhatsAppDelivery, "integrationId">, connectionId: string,
   now: number = Date.now()): DeliveryReceipt | null {
   const body=record(input.payload); const message=record(body[input.provider === "ycloud" ? "whatsappMessage" : "message"]);
   const conversation=record(body.conversation); const kapso=record(message.kapso);

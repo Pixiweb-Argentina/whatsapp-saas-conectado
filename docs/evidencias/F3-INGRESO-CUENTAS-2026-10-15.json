@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-15",
+  "phase": "F3",
+  "increment": 31,
+  "branch": "codex/omnichannel-f3-account-ingress",
+  "baseCommit": "df686570b1d55db552650eafffb54422f7341d2d",
+  "scope": "Private managed-account source, exact-account adapter and signed shadow intake for YCloud/Kapso; legacy unchanged",
+  "implementation": {
+    "source": "Service-only INVOKER RPC, empty search_path; exact workspace/connection/provider; legacy sources excluded, revoked or expired credentials unavailable; AES-GCM owner binding and key-version validation",
+    "revision": "Internal MD5 concurrency token over source identity/status/revision/ciphertext/key-version/expiry. Not an authentication credential and never returned by HTTP",
+    "transaction": "Connection and credential SHARE locks survive until delivery transaction commits; current revision rechecked before any write",
+    "adapter": "Ready managed connection uses its own API key and sender ID; no fallback to current workspace integration. Legacy path retained. Does not grant permission or enable a connection",
+    "endpoint": "/api/webhooks/whatsapp-accounts/[workspaceId]/[connectionId]",
+    "rollout": "CHANNEL_ACCOUNT_INGRESS_CONNECTIONS: explicit connection UUIDs only; empty off, independent of previous workspace flags",
+    "authentication": "Raw YCloud HMAC plus timestamp window, or raw Kapso HMAC; source resolved from route scope, never body IDs; exact destination checked by normalization",
+    "capture": "Signed normalized messages -> inbound_events; signed status -> private.channel_delivery_receipts and exact-account reconciliation. No contacts/conversations/materialized messages/buffer/model/new outbound jobs",
+    "dedup": "Per workspace/connection/provider event ID; receive-time differences allowed; content/status collisions rejected transactionally",
+    "acknowledgement": "Only normalized storage success is recorded:true; shadowOnly:true. Disabled/storage failure503, wrong signature/source401, invalid delivery400, streaming body above1MiB413",
+    "notOperational": "Shadow capture is not inbox materialization or a connected production account. No provider webhook was configured to this URL"
+  },
+  "migration": "20261015222406_omnichannel_account_ingress.sql",
+  "tests": {
+    "unitPass": 1952,
+    "localDbPass": 220,
+    "newUnitPass": 17,
+    "newDbFilePass": 9,
+    "typecheck": "pass with live restored runtime",
+    "lint": "pass for all changed TypeScript production/tests",
+    "cloudProbe": "PostgreSQL17.11 same probe local/Cloud: source, dedup, collision, rotation invalidation, receipt, revoke and ACL; rolled back",
+    "http": "22 checks through actual Next3100 -> PostgREST -> SQL against two synthetic accounts, plus endpoint-disabled checks before/after temporary QA flag",
+    "httpCases": ["signature", "signed invalid JSON", "shadow ACK without secrets", "replay", "same wamid in two accounts", "wrong destination", "content collision", "future timestamp", "receipt replay", "no contacts/conversations/messages/jobs/outbox", "needs_permissions and empty capabilities", "revocation"],
+    "transport": "Three adapter sends fully intercepted by test fetch: two YCloud accounts and one Kapso; exact own key and sender asserted; zero provider network requests",
+    "browser": "No visual changes or browser operations in this increment; previous account form interactive/responsive review remains pending under recorded browser policy block",
+    "build": "Not repeated; full unit/DB suites, typecheck/lint, real SQL and HTTP used"
+  },
+  "cloud": {
+    "project": "bzanbpyzujlogipxvkfn",
+    "migrationCount": 96,
+    "allLocalCloudVersionNamesAligned": true,
+    "advisorBeforeAndAfter": { "ERROR": 0, "WARN": 10, "INFO": 19 },
+    "advisorMethod": "Sum count/findings across grouped lints, not the five category rows",
+    "workspaces": 2,
+    "messages": 11,
+    "jobs": 3,
+    "outbox": 2,
+    "activeCron": 0,
+    "originalHashesUnchanged": {
+      "messages": "bb30a38b11cb0c1b6e36476bea148ee4",
+      "contacts": "dce114d05218582cf1710b45728a7e90",
+      "conversations": "baa60481267a1f21a6cf9f84d38da0fb",
+      "connections": "d401ca1b8d69c4d4f630143df6087380",
+      "integrations": "4b92b9cae64bbac35b09402de8b7b5e2"
+    },
+    "cleanup": "Synthetic workspace00000000-0000-4000-9000-000000003101 and its two accounts, credentials, events, receipt and audit removed after guarded reconciliation; QA user and original memberships untouched"
+  },
+  "runtime": {
+    "port": 3100,
+    "mode": "dedicated original pilot inbox",
+    "normalRolloutFlags": "off",
+    "managedAccountIngress": "off, verified HTTP503 after restore",
+    "publicOrigin": "empty",
+    "supervisorPidAtVerification": 20456,
+    "sessionAtVerification": 79517,
+    "pidsAreEphemeral": true,
+    "providerWebhooksChanged": false
+  },
+  "autoBlindaje": "HTTP fixture initially selected id from message_jobs, whose PK is operation_id. Check shared workspace_id for empty side-effect tables. Before retry, reconcile durable event and reuse its occurredAt; changing the timestamp under a fixed event ID is a collision, not a retry",
+  "sources": ["https://supabase.com/docs/guides/database/functions", "https://supabase.com/changelog/postgres-15-19-17-11-breaking-changes"],
+  "boundaries": { "realProviderSends": 0, "realModelCalls": 0, "purchases": 0, "newRealGrants": 0, "consentChanged": false, "mainChanged": false, "pushMergeDeploy": false },
+  "next": "Persist provider verification/capabilities tied to managed source revision and exact callback; materialize inbox per connection. Then stable origin, onboarding/cutover/renewal and remaining F3 AC; no repeated real pilot",
+  "formalPhaseAcceptance": "F3 open;0/9 phases formally accepted"
+}

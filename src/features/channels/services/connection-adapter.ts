@@ -5,6 +5,7 @@ import { whatsappSender } from "@/features/inbox/services/whatsapp-sender";
 import type { ChannelAdapter } from "../types/send-contracts";
 import { readPolicyConnection } from "./message-policy-context";
 import { durableWhatsAppAdapter } from "./whatsapp-channel-adapter";
+import { readWhatsAppAccountSource } from "./whatsapp-account-source";
 
 const integrationSchema = z.object({
   id: z.uuid(), workspace_id: z.uuid(), provider: z.enum(["ycloud", "kapso"]),
@@ -17,7 +18,16 @@ export async function resolveConnectionAdapter(
   db: SupabaseClient, workspaceId: string, connectionId: string,
 ): Promise<ChannelAdapter | null> {
   const connection = await readPolicyConnection(db, workspaceId, connectionId);
-  if (connection.channel !== "whatsapp" || connection.status !== "ready" || !connection.legacy_integration_id) return null;
+  if (connection.channel !== "whatsapp" || connection.status !== "ready") return null;
+  if (!connection.legacy_integration_id) {
+    const source = await readWhatsAppAccountSource(db, workspaceId, connectionId);
+    if (!source || source.status !== "ready" || source.provider !== connection.provider
+      || source.externalAccountId !== connection.external_account_id) return null;
+    const key = source.provider === "ycloud" ? "ycloud_api_key" : "kapso_api_key";
+    const senderKey = source.provider === "ycloud" ? "phone_number" : "phone_number_id";
+    return durableWhatsAppAdapter(whatsappSender(source.provider, { [key]: source.credentials.apiKey },
+      { [senderKey]: source.externalAccountId }));
+  }
   const { data, error } = await db.from("integrations").select("id,workspace_id,provider,enabled,config,credentials")
     .eq("workspace_id", workspaceId).eq("id", connection.legacy_integration_id)
     .eq("provider", connection.provider).eq("enabled", true).maybeSingle();

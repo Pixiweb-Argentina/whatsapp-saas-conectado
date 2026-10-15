@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-account-onboarding, desde 51d8230. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-account-ingress, desde df68657. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -359,3 +359,14 @@ Ajustes permite registrar/listar/revocar adicionales YCloud/Kapso sin cambiar pr
 Auto-Blindaje: conflictos de negocio usan23514 en migración95 para evitar reintentos PostgREST asociados a40001; rechazo obsoleto pasó de2,1min a3,2s en ensayo local. No hacer reemplazo global de errores de serialización. SQL con $$ usa callback String.replace; caché de tipos Next corrupto respaldado/regenerado con servidor propio detenido. Fuente compilada y servidor inbox restaurado; no versionar next-env.
 
 [Evidencia](../../docs/evidencias/F3-ALTAS-CUENTAS-2026-10-15.json). Próximo conectar webhook y transporte/verificación/permisos a credenciales por conexión; resolver legacy no fue reemplazado. Registro es previo a multicuenta operativa. Siguen origen estable/alta/cutover/renovación y AC restantes. F3 abierta,0/9aceptadas.
+### F3, incremento31 — fuente y captura firmada por cuenta, 2026-10-15
+
+La fuente de credenciales de adicionales ahora se resuelve por workspace/conexión/proveedor con RPC sólo servicio, INVOKER y search_path vacío. Excluye integración legacy, revocación y expiración; valida versión de clave y AES-GCM ligado al propietario. El adaptador usa la API key y remitente de esa cuenta sólo si está ready; no sustituye la integración principal ni crea capacidades verificadas.
+
+Nueva entrada /api/webhooks/whatsapp-accounts/[workspaceId]/[connectionId], apagada por CHANNEL_ACCOUNT_INGRESS_CONNECTIONS vacío e independiente de flags legacy. HMAC del cuerpo crudo y destino exacto antes de guardar; máximo1MiB. Guarda eventos normalizados y comprobantes privados con conciliación por cuenta; no materializa contactos/conversaciones/mensajes de bandeja, no buffer/modelo ni nuevos jobs/envíos. ACK identifica shadowOnly. Un fingerprint interno de concurrencia y locks de conexión/credencial rechazan fuente cambiada o revocada entre firma y escritura; fingerprint no es una credencial de autenticación. Replays por cuenta toleran sólo variación de receivedAt; contenido/estado distinto colisiona y revierte.
+
+96 migraciones locales/Cloud alineadas.1.952 unitarias/220DB/typecheck/lint pasan;9comprobaciones en el nuevo archivo DB. Probe PostgreSQL17.11 con rollback, mismo probe local y22controles HTTP reales a Next3100→PostgREST→SQL con2cuentas ficticias: firma,scope,dedup,colisión,receipts y revocación. Tres envíos de adaptador interceptados(2YCloud/1Kapso) verifican clave/remitente propios, sin red a proveedor. Fixture,privados,eventos/auditoría retirados; hashes originales idénticos,2workspaces/11mensajes/3jobs/2outbox/0cron activos preservados. Asesor0ERROR/10WARN heredados/19INFO, sumando count/findings, sin hallazgos nuevos. Next3100 restaurado inbox/flags apagados/origen vacío; ruta nueva503 comprobada.
+
+Auto-Blindaje31: message_jobs tiene PK operation_id, no id; usar workspace_id para verificar tablas de efectos vacías. Tras fallo del smoke, conciliar evento y reutilizar occurredAt; cambiar timestamp bajo mismo ID es colisión, no retry. El ACK shadow sólo acredita captura, no recepción en bandeja, permisos ni conexión operativa. No hubo navegador ni cambios visuales; revisión interactiva del formulario30 sigue pendiente por política URL. No proveedores/modelos reales,mensajes nuevos,compras,push/merge/deploy;main intacto.
+
+[Evidencia](../../docs/evidencias/F3-INGRESO-CUENTAS-2026-10-15.json). Siguiente: verificar proveedor/callback y persistir permisos ligados a sourceRevision para adicionales; materializar sus mensajes en bandeja. Verificación/permisos/materialización legacy aún usan integración principal/callback anterior. Luego origen estable/alta/cutover/renovación y AC. F3 abierta,0/9aceptadas; rama codex/omnichannel-f3-account-ingress desde df68657.
