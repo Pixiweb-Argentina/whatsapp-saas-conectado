@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-ycloud-pipeline, desde c357501. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-ai-pilot, desde 9b2cc16. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -297,3 +297,5 @@ Rama codex/omnichannel-f3-ycloud-pipeline desde c357501. Modo pipeline acotado/e
 Migración86 aplicada una vez y versiones alineadas; cuatro funciones invoker sólo servicio. 1.886 unitarias completas,156 DB,ocho relay,typecheck/lint pasan. SQL Cloud sintético prueba recepción/burst/checkpoint/enqueue único/toma humana/handoff, revierte fixture y cero outbox. Asesor sin hallazgos nuevos,0ERROR/10WARN heredados/17INFO. Laboratorio conserva cuatro mensajes (dos inbound/nota/única respuesta delivered),1job/1outbox accepted,0batches/cron; IA/flags/pipeline apagados, consentimiento/grant retirados. GET Next3100 inboxOnly y preflight completo sin efectos. HTTPS efímero no revalidado; sin tocar proveedor/original/credenciales ni enviar/modelos/comprar/push/merge/deploy. [Evidencia](../../docs/evidencias/F3-YCLOUD-PIPELINE-2026-10-15.json).
 
 **Próximo vigente:** preparar y autorizar prueba real acotada de IA: entrada→buffer→generación→cola→comprobante y toma humana/recuperación. Autorización anterior consumida en una respuesta humana. Onboarding permanente y multi-cuenta legacy pendientes; F3 sigue abierta,0/9 fases aceptadas. No reabrir blueprint/Manual/Lista Roja. Auto-Blindaje: fijar modo al crear batch evita fallback si cambian flags antes de consumir; replays no cambian autoridad ni crean respuestas retrospectivas. Sumar findings/count del asesor, no categorías agrupadas.
+
+Preparación IA real 2026-10-15: rama codex/omnichannel-f3-ai-pilot. No hay integración OpenRouter ni clave general local. UI Integraciones→OpenRouter abierta con API Key vacía; esperando ingreso de Yani o alternativa gratuita. Valor inicial visual Sonnet4.6 no está guardado. Sin modelo/envío/compra/grants/flags ni SQL nuevo. Antes de ejecutar: prompt de laboratorio, límite de llamadas/costo, claim exacto sin batches ajenos y autorización de respuesta/consentimiento temporal; runner aún pendiente. Detalle vigente en continuidad. Checks completos del incremento21 reutilizados,86 migraciones,F3 abierta.
