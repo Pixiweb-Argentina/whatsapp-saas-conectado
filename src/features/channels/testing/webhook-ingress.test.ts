@@ -179,6 +179,14 @@ test("YCloud inbox receipt failure requests retry; foreign or invalid evidence c
   storageFails = true; assert.equal((await send(receiptPayload())).status, 500);
   assert.deepEqual(trace, ["resolve-connection", "persist-receipt"]);
 });
+
+test("YCloud inbox asks for retry on a valid slightly future receipt before any status write", async () => {
+  provider = "ycloud"; process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);
+  process.env.CHANNEL_INGRESS_WORKSPACES = "";
+  const receipt = { ...receiptPayload(), createTime: new Date(Date.now() + 3000).toISOString() };
+  assert.equal((await send(receipt)).status, 500);
+  assert.deepEqual(trace, ["resolve-connection"]);
+});
 test("YCloud inbox rejects ambiguous modes, mismatched relay requirements and guessed sender identities", async () => {
   provider = "ycloud"; process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);
   assert.equal((await send(payload(), "fixture-signature-secret", "unused", false, "verify")).status, 503);

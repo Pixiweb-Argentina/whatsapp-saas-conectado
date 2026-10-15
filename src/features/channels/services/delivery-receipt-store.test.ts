@@ -60,3 +60,24 @@ test("receipt storage errors expose no raw database error", async () => {
   process.env.YCLOUD_INBOX_ONLY_WORKSPACES = workspaceId;
   await assert.rejects(captureWhatsAppReceipt(fixture(true).db, input, now), { message: "CHANNEL_RECEIPT_STORAGE_FAILED" });
 });
+
+test("a valid receipt up to five seconds ahead requests retry instead of being lost or persisted early", async () => {
+  process.env.YCLOUD_INBOX_ONLY_WORKSPACES = workspaceId;
+  const f = fixture();
+  const payload = { ...(input.payload as Record<string, unknown>), createTime: new Date(now() + 2000).toISOString() };
+  await assert.rejects(captureWhatsAppReceipt(f.db, { ...input, payload }, now), { message: "CHANNEL_RECEIPT_CLOCK_SKEW" });
+  assert.equal(f.calls.length, 0);
+  assert.equal(await captureWhatsAppReceipt(f.db, { ...input, payload }, () => now() + 3000), "persisted");
+  assert.equal(f.calls.length, 1);
+});
+
+test("far-future and malformed receipts remain ignored without a retry or write", async () => {
+  process.env.YCLOUD_INBOX_ONLY_WORKSPACES = workspaceId;
+  const f = fixture();
+  for (const payload of [{ ...(input.payload as Record<string, unknown>), createTime: new Date(now() + 6000).toISOString() },
+    { ...(input.payload as Record<string, unknown>), createTime: "not-a-timestamp" },
+    { ...(input.payload as Record<string, unknown>), createTime: new Date(now() + 2000).toISOString(), whatsappMessage: { status: "delivered" } }]) {
+    assert.equal(await captureWhatsAppReceipt(f.db, { ...input, payload }, now), "ignored");
+  }
+  assert.equal(f.calls.length, 0);
+});

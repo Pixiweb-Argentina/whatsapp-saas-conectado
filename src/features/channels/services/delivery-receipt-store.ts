@@ -15,8 +15,17 @@ export async function captureWhatsAppReceipt(db: SupabaseClient, input: Authenti
   if (receptionMode === "verify") return "disabled";
   if (receptionMode !== "inbox" && !channelRolloutWorkspaces("ingress").includes(input.workspaceId)) return "disabled";
   const connection=await resolveWhatsAppConnection(db,input);
-  const receipt=normalizeWhatsAppReceipt(input,connection.id,now());
-  if (!receipt) return "ignored";
+  const receivedAt = now();
+  const receipt=normalizeWhatsAppReceipt(input,connection.id,receivedAt);
+  if (!receipt) {
+    // A valid provider clock slightly ahead of this server must be retried,
+    // not acknowledged as ignored forever. This second parse only classifies
+    // bounded skew; it never persists a future timestamp or grants a send.
+    if (normalizeWhatsAppReceipt(input,connection.id,receivedAt + 5000)) {
+      throw new Error("CHANNEL_RECEIPT_CLOCK_SKEW");
+    }
+    return "ignored";
+  }
   const {data,error}=await db.rpc("persist_channel_receipt",{p_workspace_id:input.workspaceId,
     p_integration_id:input.integrationId,p_receipt:receipt});
   if (error || !z.uuid().safeParse(data).success) throw new Error("CHANNEL_RECEIPT_STORAGE_FAILED");

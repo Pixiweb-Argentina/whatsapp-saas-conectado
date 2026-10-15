@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-ycloud-receipts, desde1da1062. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-ycloud-human, desde8b39d88. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -283,3 +283,9 @@ Rama codex/omnichannel-f3-ycloud-receipts desde1da1062. Estados firmados del pil
 Next3100 reiniciado en modo inbox; túnel anterior no disponible, relay/túnel sin ejecutar. Restaurar callback nuevo antes de tráfico real. Yani no comprobó si el original respondió; no se tocó. Respuesta humana propuesta y ventana/destino/permisos pendientes detallados en continuidad; no envío ni consentimiento por inferencia. Los seis branches previos ya están en origin, este incremento todavía es local. F3 abierta,0/9 aceptadas. [Evidencia](../../docs/evidencias/F3-YCLOUD-RECEIPTS-PILOTO-2026-10-14.json).
 
 Receptor restablecido después: Next81519/relay59493/túnel67399; PATCH único al endpoint nuevo y GET confirma URL activa, mismos eventos/secreto. HTTPS/settings404 y firma inválida401; original sin lectura/mutación, sin mensajes/modelos. Callback efímero en runtime ignorado.18f1e33 es el commit del incremento; rama local, F3 pendiente de envío humano autorizado y permisos.
+
+### F3, incremento 20 — respuesta humana entregada, 2026-10-15
+
+Yani autoriza una única respuesta y consentimiento temporal. Rama codex/omnichannel-f3-ycloud-human. Cuenta CONNECTED, API key de cuenta, identidad live, ventana/supresión y endpoint revalidados. Permiso de texto diez minutos sólo para piloto y consentimiento auditados; API Next autenticada encola202 una operación humana. El core productivo del worker se ejecuta una vez desde runner acotado, no por cron: un POST a YCloud, una fila de mensaje/job/outbox. GET exacto del proveedor confirma delivered a07:18:56 Argentina. El receipt sent se guardó/conciliò por webhook; delivered llegó firmado pero fue ignorado200. Se recuperó del log real previamente verificado, corroborado por GET exacto y con mismo eventId, sin firma sintética ni reenvío. Es recuperación del operador, no una nueva entrega webhook posterior al fix.
+
+Fix: comprobante válido hasta5s en el futuro pide retry500 antes de escribir; más allá de5s o malformado sigue ignorado. No se persiste hora futura ni se amplía permiso. Desfase inferido, delta no medido.1.877 unitarias completas/38 dirigidas,typecheck/lint pasan; HTTP Next sintético con+4s devuelve500/CLOCK_SKEW. SQL sin cambios,85 migraciones. Browser muestra respuesta única con atribución humana e icono Entregado; composer vuelve a estar bloqueado. Consentimiento/opt_in_at y grant retirados, status needs_permissions, IA y cuatro flags normales apagados. Next19601/relay59493/túnel67399; original intacto. F3 continúa abierta: IA real/handoff/recuperación integral y onboarding permanente pendientes.0/9 fases aceptadas. [Evidencia](../../docs/evidencias/F3-YCLOUD-RESPUESTA-HUMANA-2026-10-15.json).

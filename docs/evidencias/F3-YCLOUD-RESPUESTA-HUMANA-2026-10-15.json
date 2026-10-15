@@ -1,0 +1,86 @@
+{
+  "stage": "F3 authorized single human YCloud reply",
+  "branch": "codex/omnichannel-f3-ycloud-human",
+  "baseCommit": "8b39d88",
+  "workspaceId": "ff50ed19-6330-43c1-a69d-32252c9ca756",
+  "connectionId": "776d904b-1ff0-40ed-86e7-b25432799522",
+  "conversationId": "1f3c15bc-4ba8-4dde-970b-7dc2752f7a28",
+  "operationId": "d6669099-a9d2-42b6-a88d-5a122d15f1dc",
+  "messageId": "7106a2b8-3ac4-4cea-9f22-3c049706ffab",
+  "providerMessageId": "6ad0a88b7510f5554d83d697",
+  "authorization": {
+    "source": "explicit_user_chat",
+    "answer": "Sí, autorizo esa única respuesta y el consentimiento temporal",
+    "replyBody": "Hola, recibimos tu mensaje de prueba en la bandeja de Pixiweb.",
+    "recipient": "same verified user-owned sender of Hola bandeja F3; no phone retained here",
+    "singleReply": true,
+    "temporaryConsent": true
+  },
+  "execution": {
+    "authenticatedNextHumanEnqueueHttpStatus": 202,
+    "queuedJobsBeforeWorker": 1,
+    "outboxBeforeWorker": 0,
+    "worker": "existing processClaimedJob called once by the scoped operator runner",
+    "cronEndpointInvoked": false,
+    "schedulerInstalled": false,
+    "providerMessagePostAttempts": 1,
+    "jobAttempts": 1,
+    "jobFence": 1,
+    "workerResult": "accepted",
+    "providerGetStatus": "delivered",
+    "sentAt": "2026-10-15T10:18:54Z",
+    "deliveredAt": "2026-10-15T10:18:56Z",
+    "readConfirmed": false
+  },
+  "receipts": {
+    "sent": {
+      "providerEventId": "evt_6ad0a88f7b00e1112e424612",
+      "source": "real_signed_webhook",
+      "persistedAndReconciledAutomatically": true
+    },
+    "delivered": {
+      "providerEventId": "evt_6ad0a891e718b265d4fbe348",
+      "originalWebhookHttpStatus": 200,
+      "originalAccountMatched": true,
+      "originalReceiptRecorded": false,
+      "recoverySource": "operator_import_of_original_verified_provider_log_plus_exact_message_get",
+      "sameProviderEventIdPreserved": true,
+      "newProviderWebhookAfterFix": false,
+      "messageResent": false
+    }
+  },
+  "fix": {
+    "futureReceiptSkewRetrySeconds": 5,
+    "futureTimestampPersisted": false,
+    "farFutureOrMalformedReceipt": "ignored",
+    "rootCause": "clock_skew_inferred_from_time_dependent_validation; exact_delta_not_measured",
+    "actualNextSyntheticFutureReceiptStatus": 500,
+    "actualNextSyntheticError": "CHANNEL_RECEIPT_CLOCK_SKEW"
+  },
+  "finalState": {
+    "incomingMessages": 2, "outgoingMessages": 1, "internalNotes": 1,
+    "jobs": 1, "outbox": 1, "receipts": 2,
+    "jobState": "accepted", "messageStatus": "delivered",
+    "conversationState": "human_active", "aiEnabled": false,
+    "optIn": false, "optInAt": null, "optedOutAt": null,
+    "connectionStatus": "needs_permissions", "grants": [],
+    "temporaryConsentRemoved": true, "temporaryGrantRemoved": true,
+    "normalRolloutFlags": "off", "cloudMigrations": 85
+  },
+  "validation": {
+    "unitTests": 1877,
+    "directedReceiptAndWebhookTests": 38,
+    "typecheck": "passed", "directedLint": "passed",
+    "newSqlMigration": false,
+    "browserShowsSingleReplyWithHumanAttributionAndDeliveredIcon": true,
+    "browserComposerBlockedAgain": true,
+    "screenshot": "test-results/f3-ycloud-human-delivered-2026-10-15.png"
+  },
+  "runtime": { "nextSession": 19601, "relaySession": 59493, "tunnelSession": 67399, "receptionMode": "inbox" },
+  "originalProviderWebhookModified": false,
+  "originalDashboardResponsesAudited": false,
+  "modelCall": false,
+  "campaignEnabled": false,
+  "productionDeploy": false,
+  "f3Acceptance": "pending_full_ai_handoff_and_recovery_integration"
+}
