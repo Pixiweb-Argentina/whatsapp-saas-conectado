@@ -37,7 +37,10 @@ BEGIN
  burst:=public.materialize_ycloud_pipeline('${workspace}','${integration}',envelope,null,true,3000);
  IF active->>'batchId' IS NULL OR active->>'batchId' IS DISTINCT FROM burst->>'batchId'
   THEN RAISE EXCEPTION 'EXPECTED_SHARED_PINNED_BATCH'; END IF;
- UPDATE public.message_batches SET status='processing' WHERE id=(active->>'batchId')::uuid;
+ UPDATE public.message_batches SET flush_at=clock_timestamp()-interval '1 second' WHERE id=(active->>'batchId')::uuid;
+ IF (SELECT count(*) FROM public.claim_ai_channel_batch('${workspace}',(active->>'batchId')::uuid))<>1
+  OR EXISTS(SELECT 1 FROM public.claim_ai_channel_batch('${workspace}',(active->>'batchId')::uuid))
+  THEN RAISE EXCEPTION 'EXPECTED_ONE_SCOPED_CLAIM'; END IF;
  prep:=public.prepare_ai_channel_reply('${workspace}',(active->>'batchId')::uuid,'legacy');
  IF prep->>'mode'<>'queue' OR prep->>'eligible'<>'true' THEN RAISE EXCEPTION 'EXPECTED_PINNED_QUEUE'; END IF;
  PERFORM public.checkpoint_ai_channel_reply('${workspace}',(active->>'batchId')::uuid,'Synthetic checkpoint; never send');
@@ -45,6 +48,7 @@ BEGIN
   THEN RAISE EXCEPTION 'EXPECTED_ENQUEUE'; END IF;
  IF (public.enqueue_ai_channel_reply('${workspace}',(active->>'batchId')::uuid,'Synthetic checkpoint; never send'))->>'duplicate'<>'true'
   THEN RAISE EXCEPTION 'EXPECTED_ONE_OPERATION'; END IF;
+ UPDATE public.message_batches SET status='processed' WHERE id=(active->>'batchId')::uuid;
  UPDATE public.conversations SET ai_enabled=false,state='human_active' WHERE id=(first->>'conversationId')::uuid;
  IF (public.prepare_ai_channel_reply('${workspace}',(active->>'batchId')::uuid,'legacy'))->>'eligible'<>'false'
   THEN RAISE EXCEPTION 'EXPECTED_HUMAN_INVALIDATION'; END IF;
@@ -56,7 +60,10 @@ BEGIN
  envelope:=envelope||'{"providerEventId":"wamid.pipeline.cloud.5","externalMessageId":"wamid.pipeline.cloud.5"}'::jsonb;
  resumed:=public.materialize_ycloud_pipeline('${workspace}','${integration}',envelope,null,true,3000);
  IF resumed->>'batchId' IS NULL OR resumed->>'batchId'=active->>'batchId' THEN RAISE EXCEPTION 'EXPECTED_NEW_REVISION'; END IF;
- UPDATE public.message_batches SET status='processing' WHERE id=(resumed->>'batchId')::uuid;
+ UPDATE public.message_batches SET flush_at=clock_timestamp()-interval '1 second' WHERE id=(resumed->>'batchId')::uuid;
+ IF EXISTS(SELECT 1 FROM public.claim_ai_channel_batch('${id(2)}',(resumed->>'batchId')::uuid))
+  OR (SELECT count(*) FROM public.claim_ai_channel_batch('${workspace}',(resumed->>'batchId')::uuid))<>1
+  THEN RAISE EXCEPTION 'EXPECTED_EXACT_TENANT_CLAIM'; END IF;
  IF public.handoff_ai_channel_reply('${workspace}',(resumed->>'batchId')::uuid,'keyword')<>'{"settled":true,"changed":true}'::jsonb
   OR public.handoff_ai_channel_reply('${workspace}',(resumed->>'batchId')::uuid,'keyword')<>'{"settled":true,"changed":false}'::jsonb
   THEN RAISE EXCEPTION 'EXPECTED_IDEMPOTENT_HANDOFF'; END IF;

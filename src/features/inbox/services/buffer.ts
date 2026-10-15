@@ -1,4 +1,5 @@
 import { createClient as createSbClient } from "@supabase/supabase-js";
+import { claimBufferBatch, type BufferClaimScope } from "./buffer-claim";
 import { generateWithTools, getWorkspaceModel } from "./openrouter";
 import { recordLlmUsage, checkRateLimits } from "./cost-tracker";
 import {
@@ -633,12 +634,12 @@ function handoffAttemptsOf(meta: Record<string, unknown>): number {
 //   9. Deliver via the workspace's WhatsApp provider, mark 'processed'
 //  10. On error: re-queue (isolated), hand off, or dead-letter
 // ──────────────────────────────────────────────────────────────────────────────
-export async function processNextBatch(): Promise<ProcessBatchResult> {
+export async function processNextBatch(target?: BufferClaimScope): Promise<ProcessBatchResult> {
   const supabase = svc();
 
   // ── 1. Claim one ready batch atomically ───────────────────────────────────
   const { data: claimedRows, error: claimError } =
-    await supabase.rpc("claim_next_batch");
+    await claimBufferBatch(supabase, target);
 
   if (claimError) {
     console.error("[buffer] claim_next_batch RPC error:", claimError);

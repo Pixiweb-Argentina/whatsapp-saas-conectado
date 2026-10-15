@@ -112,6 +112,7 @@ const fakeSvc = {
       const b = tables.message_batches?.find((r) => r.id === "batch_1");
       return { data: b ? [structuredClone(b)] : [], error: null };
     }
+    if (fn === "claim_ai_channel_batch") return { data: [], error: null };
     if (fn === "cancel_batch") {
       const b = tables.message_batches?.find((r) => r.id === args.p_batch_id);
       if (b && b.status === "processing") b.status = "cancelled";
@@ -434,6 +435,15 @@ function reset(meta: Row = {}) {
 }
 
 // ── the turn ─────────────────────────────────────────────────────────────────
+
+test("exact target with no due work cannot consume the available global batch", async () => {
+  reset();
+  const scope = { workspaceId: "00000000-0000-4000-8000-000000000001", batchId: "00000000-0000-4000-8000-000000000002" };
+  assert.deepEqual(await processNextBatch(scope), { processed: false });
+  assert.deepEqual(rpcCalls, [{ fn: "claim_ai_channel_batch", args: { p_workspace_id: scope.workspaceId, p_batch_id: scope.batchId } }]);
+  assert.equal(generateArgs.length, 0); assert.equal(dispatchArgs.length, 0);
+  assert.equal(batchRow().status, "processing");
+});
 
 test("the turn's reservation reaches recordLlmUsage, so the turn counts once", async () => {
   reset();

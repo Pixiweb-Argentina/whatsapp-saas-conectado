@@ -130,6 +130,38 @@ test("durable YCloud intake pins a queue before buffering and preserves human co
     assert.equal(await scalar(db, "select count(*)::int result from public.message_jobs"), 0);
     assert.equal(await scalar(db, "select count(*)::int result from public.message_outbox"), 0);
   });
+  const claim = async (batch, workspace = id(1)) => (await db.query(
+    "select * from public.claim_ai_channel_batch($1,$2)", [workspace, batch])).rows;
+  const due = (batch) => db.query("update public.message_batches set flush_at=clock_timestamp()-interval '1 second' where id=$1", [batch]);
+  await isolated("exact claim consumes only the due pinned batch, once, without global stale recovery", async () => {
+    await activate(); const first = await persist(event("claim"));
+    await db.query("insert into public.message_batches(id,workspace_id,conversation_id,status,updated_at) values($1,$2,$3,'processing',now()-interval '1 day')", [id(991), id(1), id(31)]);
+    assert.equal((await claim(first.batchId)).length, 0);
+    await due(first.batchId); assert.equal((await claim(first.batchId, id(2))).length, 0);
+    await db.exec("SET LOCAL ROLE service_role");
+    const rows = await claim(first.batchId); assert.equal(rows.length, 1); assert.equal(rows[0].id, first.batchId);
+    assert.equal(rows[0].status, "processing"); assert.equal((await claim(first.batchId)).length, 0);
+    assert.equal(await scalar(db, "select status::text result from public.message_batches where id=$1", [id(991)]), "processing");
+    assert.equal(await scalar(db, "select count(*)::int result from public.message_outbox"), 0);
+  });
+  await isolated("exact claim rejects legacy, older unfinished work, checkpoints and human control", async () => {
+    await activate(); const first = await persist(event("blocked-claim")); await due(first.batchId);
+    await db.query("insert into public.message_batches(id,workspace_id,conversation_id,status,created_at,flush_at) values($1,$2,$3,'buffering',now()-interval '1 day',now()-interval '1 day')", [id(991), id(1), first.conversationId]);
+    assert.equal((await claim(first.batchId)).length, 0); assert.equal((await claim(id(991))).length, 0);
+    await db.query("delete from public.message_batches where id=$1", [id(991)]);
+    await db.query("update private.ai_reply_preparations set reply='already generated' where batch_id=$1", [first.batchId]);
+    assert.equal((await claim(first.batchId)).length, 0);
+    await db.query("update private.ai_reply_preparations set reply=null where batch_id=$1", [first.batchId]);
+    await db.query("update public.conversations set ai_enabled=false,state='human_active' where id=$1", [first.conversationId]);
+    assert.equal((await claim(first.batchId)).length, 0);
+  });
+  await isolated("exact claim is service-only and refuses null scope", async () => {
+    await activate(); const first = await persist(event("scope-claim")); await due(first.batchId);
+    await reject(() => claim(null), "22023");
+    for (const role of ["anon", "authenticated"]) {
+      await db.exec(`SET LOCAL ROLE ${role}`); await reject(() => claim(first.batchId), "42501"); await db.exec("RESET ROLE");
+    }
+  });
   await isolated("failure while pinning a batch rolls back event, message and unread atomically", async () => {
     const baseline = await activate();
     const before = await scalar(db, "select unread_count result from public.conversations where id=$1", [baseline.conversationId]);
