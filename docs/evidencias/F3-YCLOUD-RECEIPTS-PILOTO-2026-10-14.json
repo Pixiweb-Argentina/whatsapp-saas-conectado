@@ -21,17 +21,29 @@
     "directedInboxDatabaseTests": 9,
     "typecheck": "passed",
     "directedLint": "passed",
-    "actualNextHandlerSyntheticRejections": ["invalid_signature_401", "foreign_account_ignored", "unsupported_status_ignored"],
+    "actualNextHandlerSyntheticRejections": [
+      "invalid_signature_401",
+      "foreign_account_ignored",
+      "unsupported_status_ignored"
+    ],
     "cloudSyntheticReceiptTransaction": "inserted_one_receipt_with_zero_jobs_then_rollback",
     "cloudReceiptCountAfterRollbackAndHttpChecks": 0,
     "providerAccountRead": "connected_exact_account_and_existing_new_webhook_verified",
     "newRealProviderReceipt": false
   },
   "cloudState": {
-    "contacts": 1, "verifiedIdentities": 1, "conversations": 1,
-    "incomingMessages": 2, "internalNotes": 1,
-    "outgoingMessages": 0, "jobs": 0, "outbox": 0, "receipts": 0,
-    "connectionStatus": "needs_permissions", "grants": [], "consentedContacts": 0
+    "contacts": 1,
+    "verifiedIdentities": 1,
+    "conversations": 1,
+    "incomingMessages": 2,
+    "internalNotes": 1,
+    "outgoingMessages": 0,
+    "jobs": 0,
+    "outbox": 0,
+    "receipts": 0,
+    "connectionStatus": "needs_permissions",
+    "grants": [],
+    "consentedContacts": 0
   },
   "review": {
     "draft": "Hola, recibimos tu mensaje de prueba en la bandeja de Pixiweb.",
@@ -44,12 +56,26 @@
     "originalDashboardAutomaticReply": "user_has_not_checked"
   },
   "runtime": {
-    "nextPort": 3100, "nextSession": 81519, "mode": "inbox",
-    "normalRolloutFlags": "off", "publicCallback": "old_temporary_callback_unavailable",
-    "relayAndTunnel": "not_running"
+    "nextPort": 3100,
+    "nextSession": 81519,
+    "mode": "inbox",
+    "normalRolloutFlags": "off",
+    "publicCallback": "restored_new_temporary_callback_verified",
+    "relayAndTunnel": "running",
+    "relaySession": 59493,
+    "tunnelSession": 67399
   },
   "externalMessagePost": false,
   "modelCall": false,
   "productionDeploy": false,
-  "f3Acceptance": "pending"
+  "f3Acceptance": "pending",
+  "callbackRefresh": {
+    "endpointId": "6acfef56108a835e37b5c86d",
+    "patchOnceVerifiedByGet": true,
+    "eventsAndSecretUnchanged": true,
+    "originalEndpointRequestedOrModified": false,
+    "publicDashboardStatus": 404,
+    "publicInvalidSignatureStatus": 401,
+    "providerMessagePost": false
+  }
 }
