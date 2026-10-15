@@ -12,5 +12,6 @@
       "Bash(vercel:*)",
       "Bash(brew install supabase/tap/supabase)"
     ]
-  }
+  },
+  "autoMemoryEnabled": false
 }
