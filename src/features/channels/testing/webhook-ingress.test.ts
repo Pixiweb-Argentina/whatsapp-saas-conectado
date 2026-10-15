@@ -14,6 +14,7 @@ const trace: string[] = [];
 const envelopes: Record<string, unknown>[] = [];
 let provider: "ycloud" | "kapso" = "ycloud";
 let storageFails = false;
+let pipelineBatch: string | null = null;
 let rowId = id(2);
 const fakeSvc = {
   from(table: string) {
@@ -33,10 +34,11 @@ const fakeSvc = {
     return q;
   },
   async rpc(name: string, args: Record<string, unknown>) {
-    assert.ok(["persist_channel_event","persist_channel_receipt","persist_business_app_echo","materialize_ycloud_inbound"].includes(name));
-    trace.push(name === "materialize_ycloud_inbound" ? "materialize-inbox" : name === "persist_channel_event" ? "persist-event" : name === "persist_business_app_echo" ? "persist-echo" : "persist-receipt");
+    assert.ok(["persist_channel_event","persist_channel_receipt","persist_business_app_echo","materialize_ycloud_inbound","materialize_ycloud_pipeline"].includes(name));
+    trace.push(name === "materialize_ycloud_pipeline" ? "materialize-pipeline" : name === "materialize_ycloud_inbound" ? "materialize-inbox" : name === "persist_channel_event" ? "persist-event" : name === "persist_business_app_echo" ? "persist-echo" : "persist-receipt");
     envelopes.push((args.p_event ?? args.p_receipt ?? args.p_echo) as Record<string, unknown>);
-    return { data: name === "materialize_ycloud_inbound" ? {eventId:id(4),conversationId:id(31),messageId:id(41),inserted:true} : name === "persist_business_app_echo" ? {conversationId:id(31),inserted:true,aiDisabled:true} : id(4), error: storageFails ? { message: "private details" } : null };
+    return { data: name === "materialize_ycloud_pipeline" ? {eventId:id(4),conversationId:id(31),messageId:id(41),inserted:true,batchId:pipelineBatch}
+      : name === "materialize_ycloud_inbound" ? {eventId:id(4),conversationId:id(31),messageId:id(41),inserted:true} : name === "persist_business_app_echo" ? {conversationId:id(31),inserted:true,aiDisabled:true} : id(4), error: storageFails ? { message: "private details" } : null };
   },
 };
 mock.module("@supabase/supabase-js", { exports: { createClient: () => fakeSvc } });
@@ -57,6 +59,8 @@ mock.module("@/features/inbox/services/daily-events.ts", { exports: { emitEventO
 const ycloud = await import("@/app/api/webhooks/ycloud/route.ts");
 const kapso = await import("@/app/api/webhooks/kapso/route.ts");
 afterEach(() => { trace.length = 0; envelopes.length = 0; storageFails = false; rowId = id(2);
+  pipelineBatch = null; delete process.env.YCLOUD_PIPELINE_WORKSPACES;
+  delete process.env.CHANNEL_AI_WORKSPACES; delete process.env.CHANNEL_WORKER_WORKSPACES;
   process.env.CHANNEL_INGRESS_WORKSPACES = id(1);
   delete process.env.YCLOUD_VERIFICATION_ONLY_WORKSPACES; delete process.env.YCLOUD_INBOX_ONLY_WORKSPACES; });
 
@@ -186,6 +190,36 @@ test("YCloud inbox asks for retry on a valid slightly future receipt before any 
   const receipt = { ...receiptPayload(), createTime: new Date(Date.now() + 3000).toISOString() };
   assert.equal((await send(receipt)).status, 500);
   assert.deepEqual(trace, ["resolve-connection"]);
+});
+
+test("YCloud pipeline authenticates and materializes without the legacy writer, buffer runner or model", async () => {
+  provider = "ycloud"; process.env.YCLOUD_PIPELINE_WORKSPACES = id(1);
+  assert.equal((await send(payload(), "wrong-secret")).status, 401); assert.deepEqual(trace, []);
+  const health = await ycloud.GET(new NextRequest(`http://localhost/api/webhooks/ycloud?wsid=${id(1)}`));
+  assert.deepEqual(await health.json(), { pipeline: true, workspaceId: id(1) });
+  const response = await send(payload(), "fixture-signature-secret", "unused", false, "pipeline");
+  assert.deepEqual(await response.json(), { received: true, pipeline: true, accountMatched: true, recorded: true, aiBuffered: false });
+  assert.deepEqual(trace, ["resolve-connection", "materialize-pipeline"]);
+});
+
+test("YCloud pipeline reports a pinned batch but never starts processing it or falls back after failure", async () => {
+  provider = "ycloud"; process.env.YCLOUD_PIPELINE_WORKSPACES = id(1);
+  process.env.CHANNEL_AI_WORKSPACES = id(1); process.env.CHANNEL_WORKER_WORKSPACES = id(1);
+  pipelineBatch = id(91);
+  assert.equal((await (await send()).json()).aiBuffered, true);
+  assert.deepEqual(trace, ["resolve-connection", "materialize-pipeline"]); trace.length = 0;
+  storageFails = true; assert.equal((await send()).status, 500);
+  assert.deepEqual(trace, ["resolve-connection", "materialize-pipeline"]);
+});
+
+test("YCloud pipeline does not accept ambiguous modes, wrong relay requirements or another business account", async () => {
+  provider = "ycloud"; process.env.YCLOUD_PIPELINE_WORKSPACES = id(1);
+  assert.equal((await send(payload(), "fixture-signature-secret", "unused", false, "inbox")).status, 503);
+  assert.deepEqual(trace, []);
+  const foreign = { ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage, to: "+15555550999" } };
+  assert.equal((await (await send(foreign)).json()).accountMatched, false); assert.deepEqual(trace, []);
+  process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);
+  assert.equal((await send()).status, 500); assert.deepEqual(trace, []);
 });
 test("YCloud inbox rejects ambiguous modes, mismatched relay requirements and guessed sender identities", async () => {
   provider = "ycloud"; process.env.YCLOUD_INBOX_ONLY_WORKSPACES = id(1);

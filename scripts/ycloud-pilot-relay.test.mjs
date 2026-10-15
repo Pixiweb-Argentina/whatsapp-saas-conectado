@@ -86,3 +86,15 @@ test("inbox relay distinguishes receipt storage from a newly recorded incoming m
     recorded: false, receiptRecorded: true });
   assert(!res.body.includes("sentinel"));
 });
+
+test("pipeline relay requires its explicit acknowledgement and only forwards bounded intake results", async () => {
+  for (const ambiguous of [false, true]) {
+    const relay = createPilotRelay(ws, async (_target, options) => new Response(JSON.stringify(options.method === "POST"
+      ? { pipeline: true, inboxOnly: ambiguous, recorded: true, aiBuffered: true, accountMatched: true, private: "sentinel" }
+      : { pipeline: true, workspaceId: ws }), { status: 200 }));
+    const res = response(); await relay.handler(request(), res);
+    assert.equal(res.status, ambiguous ? 503 : 200); assert(!res.body.includes("sentinel"));
+    if (!ambiguous) assert.deepEqual(JSON.parse(res.body), { received: true, pipeline: true,
+      recorded: true, aiBuffered: true, accountMatched: true });
+  }
+});

@@ -23,8 +23,9 @@ async function healthy(target, fetchImpl) {
   if (!response.ok) return null;
   const result = await response.json();
   if (result.workspaceId !== new URL(target).searchParams.get("wsid")) return null;
-  return result.verificationOnly === true && !result.inboxOnly ? "verify"
-    : result.inboxOnly === true && !result.verificationOnly ? "inbox" : null;
+  const modes = [["verify", "verificationOnly"], ["inbox", "inboxOnly"], ["pipeline", "pipeline"]];
+  const active = modes.filter(([, key]) => result[key] === true);
+  return active.length === 1 ? active[0][0] : null;
 }
 
 /** Local-only bridge. Exposes one POST destination, never the SaaS UI or other APIs. */
@@ -58,15 +59,16 @@ export function createPilotRelay(workspaceId, fetchImpl = fetch) {
           "X-YCloud-Reception-Mode": mode }, signal: AbortSignal.timeout(10000) });
       if (!response.ok) { stats.rejected++; return respond(res, response.status === 401 ? 401 : 503, { error: "Delivery rejected" }); }
       const result = await response.json();
-      if ((mode === "verify" ? result.verificationOnly !== true || result.inboxOnly === true
-        : result.inboxOnly !== true || result.verificationOnly === true || typeof result.recorded !== "boolean")
-        || typeof result.accountMatched !== "boolean") {
+      const modeKeys = { verify: "verificationOnly", inbox: "inboxOnly", pipeline: "pipeline" };
+      if (result[modeKeys[mode]] !== true || Object.entries(modeKeys).some(([other, key]) => other !== mode && result[key] === true)
+        || (mode !== "verify" && typeof result.recorded !== "boolean") || typeof result.accountMatched !== "boolean") {
         stats.unavailable++; return respond(res, 503, { error: "Verification mode unavailable" });
       }
       stats[result.accountMatched ? "matched" : "unmatched"]++;
       console.log(JSON.stringify({ receptionMode: mode, ...stats }));
       return respond(res, 200, mode === "verify" ? { received: true, verificationOnly: true, accountMatched: result.accountMatched }
-        : { received: true, inboxOnly: true, accountMatched: result.accountMatched, recorded: result.recorded,
+        : { received: true, [modeKeys[mode]]: true, accountMatched: result.accountMatched, recorded: result.recorded,
+          ...(mode === "pipeline" && typeof result.aiBuffered === "boolean" ? { aiBuffered: result.aiBuffered } : {}),
           ...(typeof result.receiptRecorded === "boolean" ? { receiptRecorded: result.receiptRecorded } : {}) });
     } catch (error) {
       stats.unavailable++;

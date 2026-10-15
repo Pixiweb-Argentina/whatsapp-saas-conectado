@@ -1,6 +1,7 @@
 import { captureWhatsAppDelivery } from "@/features/channels/services/whatsapp-event-ingress";
 import { ycloudReceptionMode, ycloudVerificationOnly, ycloudVerificationResult } from "@/features/channels/services/ycloud-verification-mode";
 import { materializeYCloudInbox } from "@/features/channels/services/ycloud-inbox";
+import { materializeYCloudPipeline } from "@/features/channels/services/ycloud-pipeline";
 import { captureWhatsAppReceipt } from "@/features/channels/services/delivery-receipt-store";
 import { type NextRequest, NextResponse, after } from "next/server";
 import { createClient as createSbClient } from "@supabase/supabase-js";
@@ -51,7 +52,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const workspaceId = request.nextUrl.searchParams.get("wsid") ?? "";
     const mode = ycloudReceptionMode(workspaceId);
     if (!mode) return NextResponse.json({ available: false }, { status: 404 });
-    return NextResponse.json(mode === "verify" ? { verificationOnly: true, workspaceId } : { inboxOnly: true, workspaceId });
+    return NextResponse.json(mode === "verify" ? { verificationOnly: true, workspaceId }
+      : mode === "inbox" ? { inboxOnly: true, workspaceId } : { pipeline: true, workspaceId });
   } catch { return NextResponse.json({ available: false }, { status: 503 }); }
 }
 
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // E3: per-tenant webhook routing via ?wsid query param
     const wsidParam = request.nextUrl.searchParams.get("wsid");
     const requiredMode = request.headers.get("X-YCloud-Reception-Mode");
-    if (requiredMode !== null && (!wsidParam || !["verify", "inbox"].includes(requiredMode)
+    if (requiredMode !== null && (!wsidParam || !["verify", "inbox", "pipeline"].includes(requiredMode)
       || ycloudReceptionMode(wsidParam) !== requiredMode)) {
       return NextResponse.json({ error: "Reception mode unavailable" }, { status: 503 });
     }
@@ -190,15 +192,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (verificationOnly) {
       return NextResponse.json(ycloudVerificationResult(body, ws.config.phone_number));
     }
-    if (mode === "inbox") {
+    if (mode === "inbox" || mode === "pipeline") {
       const match = ycloudVerificationResult(body, ws.config.phone_number);
+      const stage = mode === "inbox" ? { inboxOnly: true } : { pipeline: true };
       if (isStatusUpdate) {
         const receipt = match.accountMatched ? await captureWhatsAppReceipt(supabase, {
           workspaceId: ws.workspace_id, integrationId: ws.id, provider: "ycloud",
           configuredAccountId: ws.config.phone_number, payload: body,
         }) : "ignored";
-        return NextResponse.json({ received: true, inboxOnly: true, accountMatched: match.accountMatched,
+        return NextResponse.json({ received: true, ...stage, accountMatched: match.accountMatched,
           recorded: false, receiptRecorded: receipt === "persisted" });
+      }
+      if (mode === "pipeline") {
+        const stored = match.accountMatched ? await materializeYCloudPipeline(supabase, {
+          workspaceId: ws.workspace_id, integrationId: ws.id, provider: "ycloud",
+          configuredAccountId: ws.config.phone_number, payload: body,
+        }, ws.config.buffer_silence_seconds) : null;
+        return NextResponse.json({ received: true, pipeline: true, accountMatched: match.accountMatched,
+          recorded: stored?.inserted ?? false, aiBuffered: !!stored?.batchId });
       }
       const stored = match.accountMatched ? await materializeYCloudInbox(supabase, {
         workspaceId: ws.workspace_id, integrationId: ws.id, provider: "ycloud",

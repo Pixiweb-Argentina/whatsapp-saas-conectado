@@ -15,14 +15,17 @@ function scopedList(rawValue: string | undefined): string[] {
   return parsed.data;
 }
 
-export type YCloudReceptionMode = "verify" | "inbox" | null;
-/** Explicit receive-only stages. Neither mode authorizes sending or AI. */
+export type YCloudReceptionMode = "verify" | "inbox" | "pipeline" | null;
+/** Reception mode alone never authorizes sending or model execution. */
 export function ycloudReceptionMode(workspaceId: string,
   env: Readonly<Record<string, string | undefined>> = process.env): YCloudReceptionMode {
   const verification = scopedList(env.YCLOUD_VERIFICATION_ONLY_WORKSPACES);
   const inbox = scopedList(env.YCLOUD_INBOX_ONLY_WORKSPACES);
-  if (verification.some((id) => inbox.includes(id))) throw new Error("YCLOUD_RECEPTION_CONFIG_CONFLICT");
-  return verification.includes(workspaceId) ? "verify" : inbox.includes(workspaceId) ? "inbox" : null;
+  const pipeline = scopedList(env.YCLOUD_PIPELINE_WORKSPACES);
+  if (verification.some((id) => inbox.includes(id) || pipeline.includes(id))
+    || inbox.some((id) => pipeline.includes(id))) throw new Error("YCLOUD_RECEPTION_CONFIG_CONFLICT");
+  return verification.includes(workspaceId) ? "verify" : inbox.includes(workspaceId) ? "inbox"
+    : pipeline.includes(workspaceId) ? "pipeline" : null;
 }
 
 export function ycloudVerificationOnly(workspaceId: string,

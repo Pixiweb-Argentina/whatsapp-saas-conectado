@@ -13,7 +13,8 @@ export async function captureWhatsAppReceipt(db: SupabaseClient, input: Authenti
   // forbids every write, even if normal ingress happens to be enabled.
   const receptionMode = input.provider === "ycloud" ? ycloudReceptionMode(input.workspaceId) : null;
   if (receptionMode === "verify") return "disabled";
-  if (receptionMode !== "inbox" && !channelRolloutWorkspaces("ingress").includes(input.workspaceId)) return "disabled";
+  if (receptionMode !== "inbox" && receptionMode !== "pipeline"
+    && !channelRolloutWorkspaces("ingress").includes(input.workspaceId)) return "disabled";
   const connection=await resolveWhatsAppConnection(db,input);
   const receivedAt = now();
   const receipt=normalizeWhatsAppReceipt(input,connection.id,receivedAt);
