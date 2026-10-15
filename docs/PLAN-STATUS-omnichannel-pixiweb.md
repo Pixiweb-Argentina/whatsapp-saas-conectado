@@ -1,5 +1,7 @@
 # Estado de /plan — Omnichannel Pixiweb
 
+**Respaldo GitHub verificado — 2026-10-15:** Yani autorizó subir los commits. En origin quedaron codex/omnichannel-f3-human-control (3806f34), codex/omnichannel-f3-message-dedup (51d8230), codex/omnichannel-f3-account-onboarding (e25e8af) y codex/omnichannel-preparacion (c836f86); hashes completos contrastados con git ls-remote. Este registro se versiona después de esos commits. Main permanece en 28a1530, sin merge ni deploy. Los antecedentes que indican sin push describen el estado previo al respaldo.
+
 Actualizado: 2026-10-15. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb.md](../BLUEPRINT-omnichannel-pixiweb.md).
 
 ## Resultado
