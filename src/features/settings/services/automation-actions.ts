@@ -18,8 +18,6 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type { TriggerType, ActionType };
-
 export interface AutomationRule {
   id: string;
   workspace_id: string;

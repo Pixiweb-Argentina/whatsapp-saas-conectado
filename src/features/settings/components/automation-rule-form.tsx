@@ -25,8 +25,6 @@ import { cn } from "@/lib/utils";
 import {
   saveAutomationRule,
   type AutomationRule,
-  type TriggerType,
-  type ActionType,
 } from "../services/automation-actions";
 import type { TemplateRow } from "@/features/inbox/services/templates";
 import {
@@ -34,6 +32,8 @@ import {
   TEMPLATE_VARIABLES,
   AutomationRuleInputSchema,
   firstErrorMessage,
+  type TriggerType,
+  type ActionType,
 } from "@/features/automations/lib/rule-schema";
 
 // ── Constants ─────────────────────────────────────────────────────────────────

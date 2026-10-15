@@ -23,9 +23,8 @@ import {
   deleteAutomationRule,
   toggleAutomationRule,
   type AutomationRule,
-  type TriggerType,
-  type ActionType,
 } from "../services/automation-actions";
+import type { TriggerType, ActionType } from "@/features/automations/lib/rule-schema";
 import { AutomationRuleForm } from "./automation-rule-form";
 import { AutomationRunsPanel } from "./automation-runs-panel";
 import type {
