@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-message-dedup, desde 3806f34. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-account-onboarding, desde 51d8230. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; 93 migraciones alineadas local/Cloud. Auth/inbox, política/cola/receipts y conversaciones por cuenta probados en Supabase nuevo. Texto humano e IA YCloud reales entregados con una operación por prueba y comprobantes exactos. Incremento28 acredita la carrera sintética de toma humana durante generación; incremento29 separa dedup wamid por conexión y bloquea estados legacy ambiguos/ajenos, con fixtures local/PostgreSQL17 y hashes históricos conservados. 1.924 unitarias/200 DB/typecheck/lint pasan. No hay nuevos modelos/mensajes reales ni permisos activados. Faltan cierre formal de AC, publicación estable/alta, renovación operativa y multicuenta operativa; canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 95 migraciones alineadas local/Cloud. Incrementos28–29 acreditan toma humana integrada y dedup por cuenta. Incremento30 agrega registro/lista/revocación de cuentas WA adicionales con credenciales cifradas por conexión, roles y reconciliación HTTP; la integración principal conserva su contrato. 1.935 unitarias/211 DB/typecheck/lint, prueba PostgreSQL17 y26 checks HTTP pasan. Hashes originales conservados; fixtures retirados. Las adicionales quedan needs_permissions: webhook, verificación/permisos y transporte por conexión pendientes. Revisión interactiva de UI bloqueada por política URL del navegador; sólo render inicial y HTTP comprobados. Texto humano/IA YCloud real previo es evidencia aparte, sin nueva autorización. Faltan aceptación formal, origen estable/alta/cutover/renovación y multicuenta operativa; canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -349,3 +349,13 @@ Migración93 aplicada en Supabase nuevo;93 versiones alineadas.1.924 unitarias/2
 Auto-Blindaje: no usar columna GENERATED con replica identity FULL/publicación heredada; el ensayo local detectó incompatibilidad antes de Cloud. Se usa scope ordinario comprobado y trigger del servidor. Esquema/escritores requieren despliegue coordinado; no restaurar onConflict viejo ni imponer unicidad global tras admitir IDs entre cuentas.
 
 [Evidencia](../../docs/evidencias/F3-DEDUP-CUENTAS-2026-10-15.json). Próximo alta multicuenta operativa/credenciales y routing por conexión,origen estable/alta/cutover/renovación y AC restantes. F3 abierta,0/9aceptadas. Rama codex/omnichannel-f3-message-dedup desde3806f34;main intacto,sin push/merge/deploy.
+
+### F3, incremento30 — registro adicional con credenciales por cuenta,2026-10-15
+
+Ajustes permite registrar/listar/revocar adicionales YCloud/Kapso sin cambiar proveedor principal. Alta atómica de conexión/credenciales privadas, AES-GCM ligado a workspace/conexión/proveedor, ningún secreto en resumen; admin muta,manager lee,membresía revalidada por SQL. UUID/ciphertext inmutables, revocación con revisión, replay sin reactivación y pérdida de respuesta conciliada por GET. Nuevas cuentas needs_permissions/sin grants; no recepción, envío o IA por guardar.
+
+95 migraciones alineadas;1.935 unitarias/211 DB/typecheck/lint,probe PostgreSQL17 con rollback y26 controles HTTP pasan. Fixtures/privados/auditoría retirados y hashes de datos/integraciones originales conservados. Browser Use bloqueó la inspección de Ajustes por política URL: sólo render inicial y HTTP,interacción/responsive pendientes. No proveedor/modelo/mensaje real,compras,push/merge/deploy;main intacto.
+
+Auto-Blindaje: conflictos de negocio usan23514 en migración95 para evitar reintentos PostgREST asociados a40001; rechazo obsoleto pasó de2,1min a3,2s en ensayo local. No hacer reemplazo global de errores de serialización. SQL con $$ usa callback String.replace; caché de tipos Next corrupto respaldado/regenerado con servidor propio detenido. Fuente compilada y servidor inbox restaurado; no versionar next-env.
+
+[Evidencia](../../docs/evidencias/F3-ALTAS-CUENTAS-2026-10-15.json). Próximo conectar webhook y transporte/verificación/permisos a credenciales por conexión; resolver legacy no fue reemplazado. Registro es previo a multicuenta operativa. Siguen origen estable/alta/cutover/renovación y AC restantes. F3 abierta,0/9aceptadas.

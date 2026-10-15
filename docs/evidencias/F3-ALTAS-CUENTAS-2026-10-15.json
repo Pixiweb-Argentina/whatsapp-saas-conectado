@@ -1,0 +1,109 @@
+{
+  "date": "2026-10-15",
+  "phase": "F3",
+  "increment": 30,
+  "branch": "codex/omnichannel-f3-account-onboarding",
+  "baseCommit": "51d82300d121ddbc0efa0d7913033e411db9f72d",
+  "scope": "Register, list and revoke additional WhatsApp accounts with private per-connection credentials, preserving legacy integration",
+  "implementation": {
+    "providers": [
+      "ycloud",
+      "kapso"
+    ],
+    "ui": "Settings integrations panel: register pending account, list safe metadata, explicit revoke confirmation and lost-response reconciliation by GET",
+    "credentials": "AES-256-GCM; AAD binds workspace + connection + provider; no plaintext fallback; no ciphertext accepted from form",
+    "registry": "channel_connections + private.channel_credentials in one transaction; no changes to integrations or legacy provider switch",
+    "authority": "Session admin mutation / manager read; SQL rechecks active membership; RPC service-only INVOKER/empty search_path",
+    "state": "New accounts needs_permissions, capabilities empty; registration never enables reception, model, send or consent",
+    "idempotency": "Connection UUID and exact encrypted mutation pinned; conflicting source cannot replace credentials; revoked registration replay cannot reactivate",
+    "revoke": "Expected updated_at guard, original connection excluded; preserves history and encrypted credential retention"
+  },
+  "migrations": [
+    "20261015215248_omnichannel_whatsapp_accounts.sql",
+    "20261015220436_omnichannel_account_conflict_codes.sql"
+  ],
+  "tests": {
+    "unitPass": 1935,
+    "localDbPass": 211,
+    "newDbFilePass": 11,
+    "typecheck": "pass",
+    "lint": "pass",
+    "reactReview": "React Best Practices; effect fetch uses abortable promise callback",
+    "staticRender": "Initial panel rendered with React DOM server; not an interactive form/browser test",
+    "cloud": "PostgreSQL17.11 probe passed with rollback; exact probe also passes locally",
+    "http": {
+      "adminChecks": 18,
+      "managerChecks": 3,
+      "inactiveMemberChecks": 3,
+      "staleChecks": 2,
+      "total": 26,
+      "extraAnonymousDeleteStatus": 401,
+      "staleAfterFixMs": 3204,
+      "lateStaleBeforeFix": "approximately 2.1 minutes; domain conflict incorrectly used SQLSTATE40001"
+    },
+    "build": "Not repeated; relevant unit/DB/typecheck/lint/HTTP/initial render checks run"
+  },
+  "cloud": {
+    "project": "bzanbpyzujlogipxvkfn",
+    "migrations": 95,
+    "versionsAligned": true,
+    "fixturesRemoved": true,
+    "privateFixtureCredentialsRemoved": true,
+    "fixtureAuditRemoved": true,
+    "workspaces": 2,
+    "messages": 11,
+    "jobs": 3,
+    "outbox": 2,
+    "activeCron": 0,
+    "advisors": {
+      "errors": 0,
+      "warnings": 10,
+      "info": 19,
+      "newFindings": 0,
+      "remediation": "https://supabase.com/docs/guides/database/database-linter"
+    },
+    "preservedHashes": {
+      "messages": "bb30a38b11cb0c1b6e36476bea148ee4",
+      "contacts": "dce114d05218582cf1710b45728a7e90",
+      "conversations": "baa60481267a1f21a6cf9f84d38da0fb",
+      "connections": "d401ca1b8d69c4d4f630143df6087380",
+      "integrations": "4b92b9cae64bbac35b09402de8b7b5e2"
+    }
+  },
+  "runtime": {
+    "devServerPort": 3100,
+    "supervisorPid": 2232,
+    "receptionMode": "inbox",
+    "rolloutFlags": "off",
+    "publicOrigin": "empty; not configured",
+    "permissionsUiTest": false,
+    "tunnel": "Not revalidated; no provider callbacks changed",
+    "note": "PIDs are a snapshot; confirm before reuse; old AI runner remains off"
+  },
+  "externalEffects": {
+    "providerOrModelCalls": 0,
+    "realMessages": 0,
+    "realAccountRegistrations": 0,
+    "realConsentOrCapabilityChanges": 0,
+    "deployments": 0,
+    "pushes": 0,
+    "purchases": 0
+  },
+  "limits": [
+    "Additional accounts are stored pending; per-connection signed webhook, verification/permissions and transport source still need integration",
+    "Legacy resolveConnectionAdapter/ingress still use legacy integration and were not silently replaced",
+    "Interactive browser inspection was denied by browser URL policy; no alternate browser/workaround attempted; responsive and form UX review pending",
+    "Static render proves initial markup only; HTTP proves server-to-database flows, not browser interaction",
+    "No new real account, model or message trial authorized; previous trials consumed",
+    "F3 and formal acceptance remain open"
+  ],
+  "autoBlindaje": {
+    "conflictCodes": "Business conflicts now23514, not40001; PostgREST may retry serialization failures. Rejection measured3204ms after fix; inspect older domain40001 uses separately, never globally replace true serialization errors",
+    "sqlFixture": "Use function replacement in String.replace when SQL contains dollar-quoted blocks; string replacement interprets $$",
+    "generatedTypes": "Corrupt Next dev metadata caused initial404/type errors. Stop only this task server, back up generated types inside workspace, next typegen, restart; final runtime typecheck passes. No generated next-env committed"
+  },
+  "sources": {
+    "conflictRetry": "https://supabase.com/docs/guides/troubleshooting/high-cpu-and-infinite-transaction-retries-when-using-custom-error-codes-in-rpc-functions-77326b"
+  },
+  "next": "Wire account-scoped signed reception and transport/verification/permissions using per-connection credentials; do not treat registry as operational multiaccount"
+}

@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_HANDOFF_ACK } from "@/features/inbox/types/handoff";
 import { ModelPicker } from "@/features/agents/components/model-picker";
 import { YCloudVerificationPanel } from "./ycloud-verification-panel";
+import { WhatsAppAccountsPanel } from "@/features/channels/components/whatsapp-accounts-panel";
 import {
   describeKapsoNumber,
   e164FromDisplay,
@@ -1740,6 +1741,8 @@ export function IntegrationsTab({
         <YCloudVerificationPanel key={`${workspaceId}:${verificationRevision}`} workspaceId={workspaceId} canEdit={canEdit} />
         <Separator />
       </>}
+      <WhatsAppAccountsPanel key={workspaceId} workspaceId={workspaceId} canEdit={canEdit} />
+      <Separator />
       <OpenRouterSection
         workspaceId={workspaceId}
         initial={openrouter}
