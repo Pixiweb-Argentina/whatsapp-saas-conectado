@@ -1,0 +1,100 @@
+{
+  "date": "2026-10-15",
+  "increment": 24,
+  "phase": "F3",
+  "branch": "codex/omnichannel-f3-acceptance",
+  "baseCommit": "9c08aaf",
+  "scope": [
+    "assignment filtering before pagination using session identity",
+    "all six conversation states exposed",
+    "channel account in row and thread",
+    "mobile thread containment"
+  ],
+  "migration": {
+    "version": "20261015143400",
+    "name": "omnichannel_inbox_assignment",
+    "cloudAndLocalCount": 88,
+    "project": "bzanbpyzujlogipxvkfn",
+    "security": "INVOKER, empty search_path, authenticated only, existing RLS unchanged",
+    "compatibility": "old seven-argument RPC delegates to distinctly named new RPC"
+  },
+  "checks": {
+    "unit": {
+      "pass": 1895,
+      "fail": 0
+    },
+    "databaseLocal": {
+      "pass": 162,
+      "fail": 0
+    },
+    "renderPlaywright": {
+      "pass": 2,
+      "fail": 0,
+      "scope": "actual ConversationItem with synthetic props; desktop/mobile"
+    },
+    "typecheck": "passed",
+    "targetedLint": "passed",
+    "authenticatedBrowser": [
+      "mine filter",
+      "thread and back preserve assignment",
+      "unassigned empty state",
+      "mine plus paused",
+      "reload",
+      "account label",
+      "header at y56 after auto-scroll",
+      "375x812 and 1440x900 without horizontal overflow",
+      "viewport reset",
+      "console errors zero"
+    ],
+    "cloudProbe": {
+      "role": "authenticated",
+      "syntheticConversations": 60,
+      "assignedToSession": 55,
+      "unassigned": 5,
+      "pagination": "50 visible plus 5 next; first query 51",
+      "foreignWorkspace": "empty",
+      "invalidAssignment": "22023",
+      "legacyRpc": "compatible",
+      "membershipRevocation": "immediate",
+      "rollback": "fixture removed",
+      "initialFixtureFailure": "required WhatsApp phone missing; corrected fixture; schema unchanged"
+    },
+    "advisors": {
+      "error": 0,
+      "warn": 10,
+      "info": 17,
+      "newFindings": 0
+    }
+  },
+  "preserved": {
+    "workspaces": 2,
+    "labMessages": 6,
+    "labJobs": 2,
+    "activeCron": 0,
+    "newModelCalls": 0,
+    "newProviderSends": 0,
+    "temporaryApprovals": "already consumed; not reused",
+    "main": "unchanged",
+    "push": false,
+    "merge": false,
+    "deploy": false
+  },
+  "artifacts": [
+    "test-results/f3-acceptance-unit.log",
+    "test-results/f3-acceptance-db.log",
+    "test-results/f3-inbox-assignment-probe.sql",
+    "test-results/f3-inbox-filters-2026-10-15.jpg",
+    "test-results/f3-inbox-account-mobile-2026-10-15.jpg"
+  ],
+  "phaseAccepted": false,
+  "remaining": [
+    "same contact across accounts/channels; legacy unique constraint",
+    "permanent onboarding and verified grants",
+    "synthetic demonstration of human control during generation",
+    "complete cross-channel acceptance as adapters become available"
+  ],
+  "references": [
+    "https://supabase.com/docs/guides/database/functions",
+    "https://supabase.com/docs/guides/database/database-linter"
+  ]
+}

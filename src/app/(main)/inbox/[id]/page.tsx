@@ -86,6 +86,7 @@ export default async function InboxDetailPage({ params, searchParams }: PageProp
 
   const conversation: ConversationWithContact = {
     ...convWithContact,
+    connection: page.accounts.find((account) => account.id === convWithContact.connection_id) ?? null,
     last_message:
       messages.length > 0
         ? {

@@ -9,6 +9,12 @@ async function page(db, changes = {}) {
     before: null, cursor: null, ...changes };
   return (await db.query("select public.read_inbox_page($1,$2,$3,$4,$5,$6,$7) row", Object.values(args))).rows.map((r) => r.row);
 }
+async function assignedPage(db, changes = {}) {
+  const args = { workspace: id(1), channel: null, account: null, state: null, search: "",
+    before: null, cursor: null, assignment: "all", ...changes };
+  return (await db.query("select public.read_inbox_page_assigned($1,$2,$3,$4,$5,$6,$7,$8) row",
+    Object.values(args))).rows.map((r) => r.row);
+}
 async function login(db, n) {
   await db.exec("RESET ROLE; SET ROLE authenticated");
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id(n)]);
@@ -57,6 +63,30 @@ test("F3 inbox query preserves RLS, previews and cursor boundaries", async (t) =
     await db.exec("RESET ROLE; SET ROLE anon");
     await assert.rejects(() => page(db), (e) => e.code === "42501");
   });
+  await t.test("assignment is evaluated as the session user and combined with account/state/search", async () => {
+    await db.exec("RESET ROLE");
+    await db.query("update public.conversations set assigned_to=$1 where id=$2", [id(101), id(31)]);
+    await login(db, 101);
+    assert.deepEqual((await assignedPage(db, { assignment: "mine" })).map((r) => r.id), [id(31)]);
+    assert.deepEqual((await assignedPage(db, { assignment: "unassigned" })).map((r) => r.id), [id(33)]);
+    assert.equal((await assignedPage(db, { assignment: "assigned", account: id(51), search: "Fixture 1" })).length, 1);
+    assert.equal((await assignedPage(db, { assignment: "mine", state: "closed" })).length, 0);
+    assert.equal((await assignedPage(db, { assignment: "mine", workspace: id(2) })).length, 0);
+    assert.equal((await assignedPage(db, { assignment: "mine", account: id(52) })).length, 0);
+    await login(db, 102);
+    assert.equal((await assignedPage(db, { assignment: "mine" })).length, 0);
+    assert.equal((await assignedPage(db, { assignment: "assigned" })).length, 1);
+    await login(db, 103);
+    assert.equal((await assignedPage(db)).length, 0);
+  });
+  await t.test("assignment rejects arbitrary user IDs/null and anonymous execution", async () => {
+    await login(db, 101);
+    for (const assignment of [id(102), "invalid", null]) {
+      await assert.rejects(() => assignedPage(db, { assignment }), (e) => e.code === "22023");
+    }
+    await db.exec("RESET ROLE; SET ROLE anon");
+    await assert.rejects(() => assignedPage(db), (e) => e.code === "42501");
+  });
   await t.test("cursor traverses 55 conversations once, including tied and null activity dates", async () => {
     await db.exec("RESET ROLE");
     for (let n = 200; n < 253; n++) {
@@ -75,10 +105,24 @@ test("F3 inbox query preserves RLS, previews and cursor boundaries", async (t) =
     assert.equal(new Set([...first.slice(0, 50), ...second].map((r) => r.id)).size, 55);
     assert.equal((await page(db, { search: "Fixture 1" })).length, 1);
   });
+  await t.test("assignment filters before pagination and remains stable for tied dates", async () => {
+    await db.exec("RESET ROLE");
+    await db.query("update public.conversations set assigned_to=$1 where workspace_id=$2", [id(101), id(1)]);
+    await db.query("update public.conversations set assigned_to=null where id=$1", [id(352)]);
+    await login(db, 101);
+    const first = await assignedPage(db, { assignment: "mine" });
+    assert.equal(first.length, 51);
+    const last = first[49];
+    const second = await assignedPage(db, { assignment: "mine", before: last.activity_at, cursor: last.id });
+    assert.equal(second.length, 4);
+    assert.equal(new Set([...first.slice(0, 50), ...second].map((r) => r.id)).size, 54);
+    assert.deepEqual((await assignedPage(db, { assignment: "unassigned" })).map((r) => r.id), [id(352)]);
+  });
   await t.test("deactivating membership immediately hides the complete page", async () => {
     await db.exec("RESET ROLE");
     await db.query("update public.memberships set is_active=false where user_id=$1", [id(101)]);
     await login(db, 101);
     assert.deepEqual(await page(db), []);
+    assert.deepEqual(await assignedPage(db, { assignment: "mine" }), []);
   });
 });

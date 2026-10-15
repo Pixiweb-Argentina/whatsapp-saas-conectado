@@ -18,13 +18,16 @@ import type {
   ConversationState,
 } from "@/features/inbox/types";
 
-type FilterTab = "all" | "ai_active" | "human_active" | "handoff_pending";
+type FilterTab = "all" | ConversationState;
 
 const TABS: { id: FilterTab; label: string }[] = [
   { id: "all", label: "Todos" },
   { id: "ai_active", label: "IA activa" },
   { id: "human_active", label: "Humano" },
   { id: "handoff_pending", label: "Handoff" },
+  { id: "waiting_reply", label: "Esperando" },
+  { id: "paused", label: "Pausadas" },
+  { id: "closed", label: "Cerradas" },
 ];
 
 interface InboxLayoutProps {
@@ -164,12 +167,12 @@ export function InboxLayout({
           </div> : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
               <p className="text-sm text-muted-foreground">
-                {search || activeTab !== "all" || filters?.channel || filters?.account || filters?.cursor
+                {search || activeTab !== "all" || filters?.channel || filters?.account || filters?.assignment || filters?.cursor
                   ? "Sin resultados"
                   : "No hay conversaciones"}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {search || activeTab !== "all" || filters?.channel || filters?.account || filters?.cursor
+                {search || activeTab !== "all" || filters?.channel || filters?.account || filters?.assignment || filters?.cursor
                   ? "Intenta con otro filtro o búsqueda"
                   : "Los mensajes de tus canales conectados aparecerán aquí"}
               </p>

@@ -1,6 +1,6 @@
 # F3 — Motor de canales e inbox unificado
 
-Actualizado: 2026-10-10. Build Manual. Rama `codex/omnichannel-f3-inbox`, creada desde `2fea741` de F2. Se reutiliza el worktree `C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado`. F1/F2 conservan pendientes externos; no se declaran aceptadas.
+Actualizado: 2026-10-15. Build Manual. Rama vigente `codex/omnichannel-f3-acceptance`, desde `9c08aaf`. Worktree `C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado`. Historial por incremento debajo; F3 sigue sin aceptación integral.
 
 ## Incremento 1: transporte y política
 
@@ -451,3 +451,29 @@ OpenRouter del laboratorio validado con GETkey200; GPT-4.1 y fallback Gemini3.5F
 ### F3, incremento23 — texto IA real YCloud,2026-10-15
 
 Prueba única autorizada ejecutada: inbound real firmado→bufferqueue exacto→GPT4.1 (una petición714/21tokens)→checkpoint/job→core worker (un POST/attempts1/fence1)→YCloud delivered11:10:16Argentina→receipts automáticos sent/delivered→inbox con atribución IA/Entregado. No importación manual, cron ni otro modelo/envío. Autorización consumida; consentimiento/grant/prompt/agente restaurados, humano/IAfalse/inbox y cuatro flags vacíos. Supervisor detectó restored y reinició Next. Replay procesado no trabaja; checkpoint queue y operaciónduplicateaccepted se conservan sin otrojob/outbox. El control humano fue posterior al envío; carreras durante generación y unknown mantienen pruebas sintéticas previas.87 migraciones,checks completos del incremento22 reutilizados. [Evidencia](evidencias/F3-IA-ENTREGADA-2026-10-15.json); próximo cierre AC/conexión permanente/multi-cuenta en [continuidad](PLAN-STATUS-omnichannel-pixiweb.md). F3 abierta; sin compras/push/merge/deploy.
+
+### F3, incremento24 — filtros completos y cuenta persistente,2026-10-15
+
+Asignación Todas/Mías/Sin asignar/Asignadas calculada con JWT/RLS y antes de cursor/LIMIT, junto a canal/cuenta/búsqueda/estado. Se agregan Esperando/Pausadas/Cerradas a la UI. Navegar al hilo y volver conserva filtros; cambio de filtro retira cursor. Etiqueta de canal/cuenta en lista y encabezado, incluso sin nombre, sin confundir teléfono del contacto con cuenta. min-h-0 en el contenedor del hilo y ScrollArea impide que el desplazamiento automático oculte encabezado/control humano. Cuenta del hilo usa las conexiones del workspace ya leídas por la sesión, sin consulta adicional.
+
+Migración88 con RPC nueva de nombre único y wrapper compatible de la firma anterior, ambas invoker/search_path vacío/anon sin permiso.1.895 unitarias,162DB,typecheck/lint y dos renders desktop/mobile pasan. Navegador autenticado mine→hilo→volver/unassigned/mine+paused/recarga,375/1440px y cero errores de consola. Prueba Cloud60 conversaciones sintéticas,tenant ajeno/revocación/paginación/compatibilidad,rollback sin fixture; asesor sin hallazgos nuevos. No proveedor/modelo/consentimiento/flags nuevos ni datos operativos alterados. [Evidencia](evidencias/F3-INBOX-ASIGNACION-2026-10-15.json). No push/merge/deploy; F3 abierta.
+
+## Matriz de aceptación F3 — 2026-10-15
+
+Esta matriz separa implementación y evidencia de la aceptación integral. Los nueve criterios son los del blueprint; no convierte los canales aún deshabilitados en capacidades disponibles. No se exige repetir la prueba real de WhatsApp ya entregada.
+
+| Criterio | Evidencia vigente | Límite para el cierre integral |
+|---|---|---|
+| US-006 AC1: filtros y cuenta visible | Incremento24; filtros por seis estados/canal/cuenta/asignación, RPC/RLS/paginación, hilo y fila, navegación real375/1440px | Resolver mismo contacto en varias cuentas/canales; `uq_conversations_contact` sigue vigente |
+| US-006 AC2: timeline, notas y origen | Notas y texto real humano/IA en incrementos18/20/23; tipos media legacy conservados; fixtures de diseño multicanal de F2 | Piloto nuevo recibe texto; media/origen de nuevas fuentes necesitan adapters/materialización y recorrido de sus fases |
+| US-006 AC3: tenant/rol y delivered/read | Tests `inbox-read.test.mjs`, comprobaciones GoTrue previas y receipts YCloud reales; delivered IA automático en incremento23 | Extender recorrido de permisos/lecturas por cada cuenta/canal cuando se habiliten; accepted por sí solo no prueba entrega |
+| US-007 AC1: toma humana y revisión | Cola/RPC/worker en incrementos3/6/8/10/11/21/22; tests `message-queue.test.mjs`, `ai-reply-checks.mjs` y `ycloud-pipeline.test.mjs` | Demostración integrada con generación en curso y toma humana usando fixtures; no confundir restauración posterior de la prueba real con esa carrera |
+| US-007 AC2: composer y bloqueos | Política/contexto y composer de incrementos5/6/8/16; rechazo422 con capabilities inventadas; bloqueo visible actual needs_permissions | Alta permanente de cuenta/grants y ampliación de cada capacidad externa; permisos temporales ya retirados |
+| US-007 AC3: sin bypass y devolución explícita | `send-policy.test.ts`, contexto/permiso transaccional y control por revisión; UI de toma/devolución explícita | Probar onboarding permanente sin dar permisos por guardar API key ni por rol admin |
+| US-008 AC1: dedup webhook/receipt/eco | DB y HTTP en incrementos7/12/13/18/19/21; replay del lote real en23 conserva una operación y no genera/envía | Ecos YCloud no observados; conservar distinción entre soporte de código y eventos reales probados |
+| US-008 AC2: lease, unknown y recuperación | DB/worker con fencing y carreras Cloud, receipts y límites; reanudación/replay real de23 sin envío nuevo | No se indujo timeout real ni se mató un proceso tras POST; pruebas de esas condiciones siguen sintéticas |
+| US-008 AC3: firma/activo/orden/ACK | Ingress/receipts/pipeline con tests inválidos/ajenos/desorden; rechazos HTTP y recepción firmada real en17–23 | Mantener pruebas por nuevo adaptador y no afirmar que el ACK de verificación equivale a persistencia |
+
+**Próximo bloque concreto:** compatibilidad del mismo contacto entre cuentas/canales con recorrido legacy protegido; después alta permanente de cuenta/verificación de grants y demostración integrada de toma humana durante generación. WhatsApp humano e IA ya probados. Las fuentes Meta y sus permisos/OAuth se construyen en F4/F5,widget en F6 y Brevo en F7. Capacidades no probadas permanecen apagadas. No cerrar F3 ni aceptar fases por el éxito de una prueba acotada.
+
+Auto-Blindaje24: filtrar antes de paginar y resolver “mí” por sesión. RPC con nombre único evita sobrecarga ambigua de PostgREST. Mantener min-h-0 en la cadena flex para que el scroll de mensajes no oculte la cuenta/controles. Un fixture WA también requiere teléfono; corregir fixture, nunca relajar esa invariante.

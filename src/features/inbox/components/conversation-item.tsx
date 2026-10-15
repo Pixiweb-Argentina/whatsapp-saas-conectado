@@ -5,7 +5,7 @@ import type {
 } from "@/features/inbox/types";
 import { StateBadge } from "./state-badge";
 import { contactInitials, contactLabel } from "@/features/contacts/lib/contact-display";
-import { INBOX_CHANNEL_LABELS } from "../lib/inbox-filters";
+import { conversationAccountLabel } from "../lib/conversation-account";
 
 interface ConversationItemProps {
   conversation: ConversationWithContact;
@@ -100,8 +100,7 @@ export function ConversationItem({
         </div>
 
         <p className="text-[11px] text-muted-foreground truncate">
-          {INBOX_CHANNEL_LABELS[conversation.channel] ?? "Canal desconocido"}
-          {conversation.connection?.display_name && ` · ${conversation.connection.display_name}`}
+          {conversationAccountLabel(conversation)}
           {contact.phone && ` · ${contact.phone}`}
         </p>
       </div>

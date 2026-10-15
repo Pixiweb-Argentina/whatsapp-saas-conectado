@@ -7,6 +7,7 @@ export const INBOX_CHANNEL_LABELS: Record<string, string> = {
 export const inboxFiltersSchema = z.object({
   channel: channelSchema.optional().catch(undefined),
   account: z.uuid().optional().catch(undefined),
+  assignment: z.enum(["mine", "unassigned", "assigned"]).optional().catch(undefined),
   state: z.enum(["ai_active", "human_active", "handoff_pending", "waiting_reply", "paused", "closed"])
     .optional().catch(undefined),
   q: z.string().trim().max(80).catch(""),

@@ -1,5 +1,6 @@
 "use client";
 import { contactLabel } from "@/features/contacts/lib/contact-display";
+import { conversationAccountLabel } from "../lib/conversation-account";
 import type { ComposerAvailability } from "@/features/channels/types/composer-availability";
 
 import { useEffect, useRef, useState } from "react";
@@ -191,9 +192,9 @@ export function ChatThread({
   };
 
   return (
-    <div className="flex h-full min-w-0 flex-col md:flex-row">
+    <div className="flex h-full min-h-0 min-w-0 flex-col md:flex-row">
       {/* Left: thread */}
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex min-h-0 flex-col flex-1 min-w-0">
         {/* Sticky header */}
         <header
           className={cn(
@@ -209,8 +210,9 @@ export function ChatThread({
             <h2 className="font-display text-sm font-semibold text-foreground truncate">
               {contactLabel(conversation.contact)}
             </h2>
-            <p className="font-mono text-[10px] text-muted-foreground">
-              {conversation.contact.phone ?? "Sin teléfono"}
+            <p className="truncate font-mono text-[10px] text-muted-foreground"
+              title={conversationAccountLabel(conversation)}>
+              {conversationAccountLabel(conversation)}
             </p>
             </div>
           </div>
@@ -319,7 +321,7 @@ export function ChatThread({
         />}
 
         {/* Message list */}
-        <ScrollArea className="flex-1 px-4">
+        <ScrollArea className="min-h-0 flex-1 px-4">
           <div className="py-4 space-y-2">
             {messages.length === 0 && !queue?.messages.length ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">

@@ -1,11 +1,11 @@
 # La Pieza: Omnichannel Pixiweb
 
 > **Estado del alcance:** APROBADO por Yani el 2026-10-10: «apruebo el blueprint comienza».
-> **Ejecución:** Build Manual; F3 en progreso. Supabase nuevo y recorrido autenticado probados con datos sintéticos; contratos externos/pipeline integral pendientes. 0/9 fases con aceptación integral.
+> **Ejecución:** Build Manual; F3 en progreso. Supabase nuevo, bandeja autenticada y texto humano/IA YCloud real probados; aceptación integral y alta permanente pendientes. 0/9 fases con aceptación integral.
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-ai-pilot, desde 9b2cc16. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-acceptance, desde 9c08aaf. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -311,3 +311,9 @@ Yani autoriza una consulta GPT4.1 y una respuesta exacta al número propio, cons
 Restore y relectura exacta confirman consentimiento false/opt_in_atnull/grantsvacíos/needs_permissions/human_active/IAfalse/prompt-agente originales. Supervisor de Next detecta restored y reinicia en inbox con flags vacíos; fallback por expiración no necesario. Preflight sideEffectsfalse. Replay del lote procesado processedfalse, preparación siguequeue/eligiblefalse/checkpoint; enqueue recupera duplicateaccepted sin otrojob/envío/modelo. Autorización consumida. Seis mensajes totales (3inbound/nota/humana/IA),2jobs/2outbox accepted,1batchprocessed,0cron. No DDL/producto nuevo;87 migraciones y checks completos previos reutilizados (1892unit/159DB/7guardas). [Evidencia](../../docs/evidencias/F3-IA-ENTREGADA-2026-10-15.json). Estado detallado y runtime efímero en continuidad (Next3525/relay56796/túnel67399).
 
 **Próximo vigente:** cierre formal de AC de F3, conexión/grants permanentes y multi-cuenta legacy; la prueba WA humano/IA ya está acreditada. Carreras durante generación y unknown no se indujeron en este mensaje; conservar evidencia sintética previa y demostrar control humano con fixtures. F3 abierta/0de9 aceptadas, F4–F9 pendientes. Sin push/merge/deploy; no repetir pruebas reales/modelos sin nueva autorización. Auto-Blindaje: respetar flush_at, restaurar baseline/flags además de grant y distinguir accepted/entregado con receipt/GET reales.
+
+### F3, incremento24 — revisión de aceptación y filtros,2026-10-15
+
+US-006 AC1 ampliado: asignación por sesión en DB antes de paginar, seis estados visibles, filtros persistidos al navegar; canal/cuenta en fila e hilo con fallback inequívoco. Flex/ScrollArea corregidos para no ocultar controles al cargar el último mensaje. Migración88 invoker/RLS y RPC compatible;1.895 unitarias/162DB/typecheck/lint/dos renders y recorrido real375/1440px pasan. SQL Cloud60 conversaciones/revocación/tenant ajeno con rollback; asesor0ERROR/10WARN heredados/17INFO. Dos workspaces,seis mensajes/dos jobs/cero cron conservados. Sin modelo/proveedor/grants/activación adicional. Rama codex/omnichannel-f3-acceptance; main intacto y sin push/merge/deploy.
+
+[Matriz vigente de los nueve AC](../../docs/F3-MOTOR-omnichannel.md#matriz-de-aceptación-f3--2026-10-15) y [evidencia](../../docs/evidencias/F3-INBOX-ASIGNACION-2026-10-15.json). Próximo: mismo contacto en varias cuentas, alta/grants permanentes y demostración sintética de toma humana durante generación. La prueba real de IA ya no bloquea. F3 abierta,0/9 fases aceptadas. No repetir blueprint/Manual/Lista Roja ni consumos reales autorizados una sola vez.

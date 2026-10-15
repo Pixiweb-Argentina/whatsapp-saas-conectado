@@ -39,6 +39,7 @@ export interface ConversationRow {
   workspace_id: string;
   contact_id: string;
   channel: string;
+  connection_id?: string | null;
   state: ConversationState;
   ai_enabled: boolean;
   assigned_to: string | null;

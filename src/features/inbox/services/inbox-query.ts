@@ -29,8 +29,9 @@ export async function readInboxPage(
   z.uuid().parse(workspaceId);
   const input = inboxFiltersSchema.parse(filters);
   const [page, accounts] = await Promise.all([
-    db.rpc("read_inbox_page", { p_workspace_id: workspaceId, p_channel: input.channel ?? null,
+    db.rpc("read_inbox_page_assigned", { p_workspace_id: workspaceId, p_channel: input.channel ?? null,
       p_connection_id: input.account ?? null, p_state: input.state ?? null, p_search: input.q,
+      p_assignment: input.assignment ?? "all",
       p_before_at: input.before ?? null, p_before_id: input.cursor ?? null }),
     db.from("channel_connections").select("id,channel,display_name").eq("workspace_id", workspaceId)
       .order("created_at", { ascending: true }),

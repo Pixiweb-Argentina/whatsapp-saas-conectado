@@ -15,3 +15,19 @@ test("inbox query preserves encoded search and account through navigation", () =
   assert.equal(new URLSearchParams(query).get("channel"), "instagram");
   assert.equal(inboxQuery(filters, { channel: undefined, q: "" }), "");
 });
+
+test("assignment stays in thread and pagination links, unsupported values are discarded", () => {
+  for (const assignment of ["mine", "assigned", "unassigned"]) {
+    const filters = parseInboxFilters({ channel: "whatsapp", assignment });
+    const params = new URLSearchParams(inboxQuery(filters, {
+      before: "2026-10-15T14:00:00Z", cursor: "00000000-0000-4000-8000-000000000001",
+    }));
+    assert.equal(params.get("assignment"), assignment);
+    assert.equal(params.get("channel"), "whatsapp");
+    assert.equal(params.has("cursor"), true);
+    assert.equal(new URLSearchParams(inboxQuery(filters, { assignment: undefined })).has("assignment"), false);
+  }
+  for (const assignment of ["someone-elses-id", "all", ["mine"], ""]) {
+    assert.equal(parseInboxFilters({ assignment }).assignment, undefined);
+  }
+});

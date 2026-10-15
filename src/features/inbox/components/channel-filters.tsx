@@ -30,5 +30,16 @@ export function ChannelFilters({ filters, accounts, onChange, disabled }: Props)
         </option>)}
       </select>
     </label>
+    <label className="col-span-2 min-w-0 text-xs text-muted-foreground">
+      Asignación
+      <select disabled={disabled} aria-label="Filtrar por asignación" className={classes}
+        value={filters.assignment ?? ""}
+        onChange={(event) => onChange({ assignment: event.target.value as InboxFilters["assignment"] || undefined })}>
+        <option value="">Todas las asignaciones</option>
+        <option value="mine">Asignadas a mí</option>
+        <option value="unassigned">Sin asignar</option>
+        <option value="assigned">Asignadas</option>
+      </select>
+    </label>
   </div>;
 }
