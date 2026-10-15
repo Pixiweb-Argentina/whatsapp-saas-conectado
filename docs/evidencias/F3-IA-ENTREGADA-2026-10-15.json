@@ -1,0 +1,98 @@
+{
+  "stage": "F3 increment 23: authorized real AI reply delivered",
+  "branch": "codex/omnichannel-f3-ai-pilot",
+  "implementationCommit": "fd34091",
+  "workspaceId": "ff50ed19-6330-43c1-a69d-32252c9ca756",
+  "connectionId": "776d904b-1ff0-40ed-86e7-b25432799522",
+  "conversationId": "1f3c15bc-4ba8-4dde-970b-7dc2752f7a28",
+  "authorization": {
+    "source": "explicit user chat",
+    "answer": "Sí, autorizo esa única prueba y los permisos temporales",
+    "singleModelRequestAndSingleReply": true,
+    "temporaryConsentAndGrantMaximumMinutes": 10,
+    "consumed": true
+  },
+  "incoming": {
+    "text": "Hola IA F3",
+    "messageId": "30a137c0-0abc-426c-8761-2ac9a5177efe",
+    "providerOccurredAt": "2026-10-15T14:08:59.282Z",
+    "batchId": "a6aa9e6c-6fed-43ba-9173-930453a7f13c",
+    "batchMessageCount": 1,
+    "source": "real signed YCloud webhook through temporary HTTPS relay",
+    "modePinned": "queue"
+  },
+  "generation": {
+    "source": "production processNextBatch with exact workspace/batch claim, invoked by scoped operator runner",
+    "model": "openai/gpt-4.1",
+    "requests": 1,
+    "promptTokens": 714,
+    "completionTokens": 21,
+    "outputTokenLimit": 128,
+    "usageEventId": "524ca3da-d267-4e55-bf16-53559e24332d",
+    "reply": "Hola, soy el asistente de prueba de Pixiweb. Recibí tu mensaje correctamente.",
+    "matchesApprovedText": true,
+    "toolsCrmEmbeddingsJudgeCampaigns": false
+  },
+  "delivery": {
+    "operationId": "a6aa9e6c-6fed-43ba-9173-930453a7f13c",
+    "messageId": "52195406-f2ca-4dbd-8d07-d05a1ebd36bc",
+    "providerMessageId": "6ad0dec6f6be5b7c74125dcb",
+    "source": "production processClaimedJob core invoked once by scoped operator runner",
+    "actor": "ai",
+    "providerPosts": 1,
+    "jobAttempts": 1,
+    "jobFence": 1,
+    "jobState": "accepted",
+    "batchState": "processed",
+    "visibleMessageRowsForOperation": 1,
+    "outboxRowsForOperation": 1,
+    "providerGetStatus": "delivered",
+    "providerDeliveredAt": "2026-10-15T14:10:16.000Z",
+    "argentinaDeliveredAt": "2026-10-15 11:10:16",
+    "readConfirmed": false,
+    "cronEndpointInvoked": false,
+    "schedulerInstalled": false
+  },
+  "automaticReceipts": [
+    { "providerEventId": "evt_6ad0dec975304024a1c2a9df", "status": "sent", "state": "planned" },
+    { "providerEventId": "evt_6ad0dec97b00e1112e510504", "status": "delivered", "state": "planned" }
+  ],
+  "manualReceiptImport": false,
+  "postRestoreRecovery": {
+    "prepareWithLegacyRequestedMode": "queue",
+    "eligible": false,
+    "replyCheckpointRetained": true,
+    "sameOperationEnqueue": "duplicate accepted; no new job",
+    "completedBatchReplay": { "processed": false },
+    "additionalModelRequestsOrProviderPosts": 0
+  },
+  "restoration": {
+    "consentWithdrawn": true,
+    "textGrantWithdrawn": true,
+    "contactOptIn": false,
+    "contactOptInAt": null,
+    "connectionStatus": "needs_permissions",
+    "conversationState": "human_active",
+    "aiEnabled": false,
+    "originalAgentAndPromptRestored": true,
+    "receptionMode": "inboxOnly",
+    "allFourNormalRolloutFlags": false,
+    "expiryFallbackPreparedButNotNeeded": true,
+    "supervisorRestartToInboxObserved": true,
+    "auditSource": "authorized_ai_pilot_restored"
+  },
+  "labFinalCounts": { "messages": 6, "inbound": 3, "internalNotes": 1, "outbound": 2, "jobs": 2, "outbox": 2, "newProcessedBatches": 1, "activeCron": 0 },
+  "verification": {
+    "authenticatedBrowserShowsReplyWithAiAttributionAndDeliveredIcon": true,
+    "composerBlockedAgain": true,
+    "screenshot": "ignored test-results/f3-ai-delivered-2026-10-15.jpg",
+    "newProductionCodeOrSchema": false,
+    "migrationsUnchanged": 87,
+    "previousUnitAndDatabaseChecksReused": { "unit": 1892, "database": 159, "networkBoundary": 7 },
+    "productionCronEndToEndNotTested": true,
+    "humanTakeoverDuringLiveGenerationNotTestedInThisTrial": true,
+    "unknownNetworkFailureNotInducedInThisTrial": true,
+    "phase3Accepted": false
+  },
+  "purchasesPushMergeDeploy": false
+}
