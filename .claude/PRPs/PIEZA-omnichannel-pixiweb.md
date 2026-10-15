@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-multiaccount, desde ee05fd9. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-onboarding, desde 27c6c17. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO;87 migraciones, Auth/inbox/concurrencia y política/cola/receipts probados en Supabase nuevo. Texto humano e IA YCloud reales entregados con una operación por prueba y comprobantes exactos. IA ejecutada por consumidor/lote y core worker acotados, sin cron. Permisos temporales retirados y agente/prompt restaurados; modo inbox/flags vacíos. Falta cierre formal de AC, conexión/grants permanentes y compatibilidad multi-cuenta legacy; canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 90 migraciones. Auth/inbox, política/cola/receipts y conversaciones por cuenta probados en Supabase nuevo. Texto humano e IA YCloud reales entregados con una operación por prueba y comprobantes exactos. Verificación de cuenta/webhook desde Ajustes con seis checks reales y evidencia privada; sigue el túnel temporal. Permisos temporales retirados, agente/prompt restaurados; modo inbox/flags vacíos. Faltan cierre formal de AC, emisión/revocación persistente de capacidades, publicación estable y demostración integrada de carrera humano/IA. Multicuenta real y dedup global de wamid pendientes; canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -323,3 +323,8 @@ US-006 AC1 ampliado: asignación por sesión en DB antes de paginar, seis estado
 Mismo contacto admite hilos explícitos por cuenta; NULL legacy único no se mezcla con vinculados. Inbox/pipeline fijan cuenta/identidad; legacy resuelve integración/activo y contacto/conversación en transacción. Ecos/automatizaciones/dispatch no eligen cuenta ambigua ni cola por fallback. Migración89 invoker en RPC pública y trigger privado acotado;1.905 unitarias/170DB/typecheck/lint/Cloud SQL pasan. Concurrencia real en2procesos crea un único hiloB con cuentaA intacta; cron efímero retirado. UI autenticada con mismo contacto ficticio y dos hilos/cuentas/estados/historias,fixture eliminado. Hashes de todos los datos anteriores intactos; dos workspaces/cero cron activos.89 versiones alineadas y asesor0ERROR/10WARN heredados/17INFO. Una navegación20s terminó200; rendimiento no certificado.
 
 [Evidencia](../../docs/evidencias/F3-MULTICUENTA-2026-10-15.json), límites y matriz en F3-MOTOR/continuidad. Rama codex/omnichannel-f3-multiaccount; main intacto,sin push/merge/deploy. Alta/grants permanentes y demostración sintética de toma humana durante generación siguen. Integración multicuenta real y dedup global de wamid no resueltos por esta migración. F3 abierta,0/9 aceptadas; nuevas pruebas reales requieren autorización específica.
+
+
+### F3, incremento26 — alta verificable sin scripts del operador, 2026-10-15
+
+Ajustes permite al admin verificar credenciales guardadas,número y webhook con GETs acotados a YCloud. Manager lee evidencia saneada; no ve secretos ni otras cuentas. Migración90 guarda reporte privado RLS con fingerprint/frescura24h, revalida rol/fuente en transacción y evita sobreescribir resultados nuevos. La UI conserva comprobación y avisa desactualización/túnel temporal. Seis checks reales pasan, sin conceder envíos ni alterar grants/consentimiento/status/flags.1.914 unitarias/176DB,typecheck/lint,ACL/deriva SQL Cloud y UI móvil/escritorio pasan.90 migraciones alineadas;datos previos idénticos. [Evidencia](../../docs/evidencias/F3-ALTA-YCLOUD-2026-10-15.json). Emisión/revocación de permisos permanentes,publicación estable y carrera integrada humano/IA siguen pendientes; F3 abierta,0/9 aceptadas. No repetir pruebas reales sin nueva autorización. Sin push/merge/deploy;main intacto.

@@ -1,0 +1,154 @@
+{
+  "date": "2026-10-15",
+  "phase": "F3",
+  "increment": 26,
+  "branch": "codex/omnichannel-f3-onboarding",
+  "baseCommit": "27c6c17",
+  "migration": {
+    "version": "20261015165035",
+    "name": "omnichannel_ycloud_verification",
+    "project": "bzanbpyzujlogipxvkfn",
+    "count": 90,
+    "localCloudAligned": true,
+    "storage": "private.ycloud_verifications; RLS; service-only; no credential copy, SHA-256 source fingerprint",
+    "rpc": "INVOKER; empty search_path; service_role only; actor membership checked again at write"
+  },
+  "providerProof": {
+    "input": {
+      "endpointId": "6acfef56108a835e37b5c86d",
+      "callbackUrl": "https://wallace-vpn-vanilla-salon.trycloudflare.com/api/webhooks/ycloud?wsid=ff50ed19-6330-43c1-a69d-32252c9ca756"
+    },
+    "report": {
+      "checks": {
+        "api_access": true,
+        "webhook_url": true,
+        "webhook_active": true,
+        "webhook_events": true,
+        "webhook_secret": true,
+        "connected_number": true
+      },
+      "version": 1,
+      "checkedAt": "2026-10-15T16:51:44.239Z",
+      "destination": "temporary",
+      "providerRead": "complete",
+      "sendAuthorization": false
+    },
+    "current": true
+  },
+  "tests": {
+    "unitPass": 1914,
+    "dbPass": 176,
+    "typecheck": "pass",
+    "modifiedFileLint": "pass",
+    "liveApiUnauthorized": {
+      "get": 401,
+      "post": 401,
+      "invalidWorkspace": 400
+    },
+    "cloudProbe": {
+      "private_read_denied": true,
+      "rpc_denied": true,
+      "invoker_empty_search_path": true,
+      "drift_rejected": true
+    },
+    "ui": {
+      "persistedRead": "pass",
+      "editedEndpointStale": "pass",
+      "mobile": {
+        "width": 390,
+        "documentWidth": 375
+      },
+      "desktop": {
+        "width": 1440,
+        "documentWidth": 1425
+      },
+      "consoleErrors": 0,
+      "screenshot": "test-results/f3-onboarding-2026-10-15.jpg",
+      "temporaryViewportReset": true
+    },
+    "advisors": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 18,
+      "newFindings": "1 INFO: RLS enabled without browser policy for new service-only private table; no new WARN/ERROR",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"
+    }
+  },
+  "before": {
+    "migrations": 89,
+    "workspaces": 2,
+    "jobs": 3,
+    "active_cron": 0,
+    "connections": [
+      {
+        "id": "776d904b-1ff0-40ed-86e7-b25432799522",
+        "status": "needs_permissions",
+        "capabilities": {
+          "grants": [],
+          "version": 1
+        }
+      },
+      {
+        "id": "77b87e64-7505-4fb3-8849-07100bbb2a66",
+        "status": "connecting",
+        "capabilities": {}
+      },
+      {
+        "id": "a6dff18e-bad3-40f8-81cb-41ea4af26dfc",
+        "status": "connecting",
+        "capabilities": {}
+      }
+    ],
+    "contacts_hash": "7fdbb03e3d7a1cee66d3bd4705e9c2e5",
+    "conversations_hash": "9f479383e5ecd27515c34515481eb061",
+    "messages_hash": "aab744e5e2d1ff50c35bf3a91f1072d3"
+  },
+  "after": {
+    "workspaces": 2,
+    "jobs": 3,
+    "active_cron": 0,
+    "verification_records": 1,
+    "connections": [
+      {
+        "id": "776d904b-1ff0-40ed-86e7-b25432799522",
+        "status": "needs_permissions",
+        "capabilities": {
+          "grants": [],
+          "version": 1
+        }
+      },
+      {
+        "id": "77b87e64-7505-4fb3-8849-07100bbb2a66",
+        "status": "connecting",
+        "capabilities": {}
+      },
+      {
+        "id": "a6dff18e-bad3-40f8-81cb-41ea4af26dfc",
+        "status": "connecting",
+        "capabilities": {}
+      }
+    ],
+    "contacts_hash": "7fdbb03e3d7a1cee66d3bd4705e9c2e5",
+    "conversations_hash": "9f479383e5ecd27515c34515481eb061",
+    "messages_hash": "aab744e5e2d1ff50c35bf3a91f1072d3"
+  },
+  "sideEffects": {
+    "providerGetsOnly": true,
+    "providerMutations": 0,
+    "messagesSent": 0,
+    "modelCalls": 0,
+    "grantsChanged": false,
+    "consentChanged": false,
+    "rolloutChanged": false,
+    "push": false,
+    "merge": false,
+    "deploy": false
+  },
+  "limitations": [
+    "Verification is advisory, never a capability or permission to send",
+    "HTTPS callback is temporary; stable deployment and reception validation still pending",
+    "No permanent send-grant issuance or automatic channel-account binding in this increment",
+    "Permanent onboarding and integrated synthetic human takeover during generation remain pending",
+    "F3 remains open; 0 of 9 phases fully accepted"
+  ]
+}

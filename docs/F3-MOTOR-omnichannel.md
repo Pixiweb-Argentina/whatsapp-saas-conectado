@@ -1,6 +1,6 @@
 # F3 — Motor de canales e inbox unificado
 
-Actualizado: 2026-10-15. Build Manual. Rama vigente `codex/omnichannel-f3-multiaccount`, desde `ee05fd9`. Worktree `C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado`. Historial por incremento debajo; F3 sigue sin aceptación integral.
+Actualizado: 2026-10-15. Build Manual. Rama vigente `codex/omnichannel-f3-onboarding`, desde `27c6c17`. Worktree `C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado`. Historial por incremento debajo; F3 sigue sin aceptación integral.
 
 ## Incremento 1: transporte y política
 
@@ -485,3 +485,18 @@ Migración89 reemplaza unicidad por contacto/canal con cuenta y NULLS NOT DISTIN
 1.905 unitarias/170DB/typecheck/lint pasan; SQL Cloud con rollback,roles/RLS y guardas de perfil; asesor sin nuevos hallazgos,89 versiones alineadas. Dos procesos PostgreSQL diferentes compiten por el mismo hilo B: segundo espera al primero y ambos obtienen el mismo ID; cuenta A intacta. Cron de prueba autoeliminado,0activo. UI real muestra un contacto ficticio con dos cuentas,previews/estados/filtros/historias separados. Fixture retirado y contexto/viewport restaurados; hashes de todos los contactos/conversaciones/mensajes previos idénticos. Una navegación demoró20s y luego200; no es prueba de rendimiento. [Evidencia](evidencias/F3-MULTICUENTA-2026-10-15.json).
 
 No hay dos números reales nuevos conectados ni permisos persistentes activos: el onboarding WA todavía admite una integración activa por workspace y uq_messages_wamid conserva dedup global por workspace. Coincidencia externa entre cuentas se rechaza, no se mezcla. Nuevos canales siguen bloqueados por F1. F3 continúa abierta por alta/grants permanentes,demostración de toma humana durante generación y AC restantes. Sin nuevos mensajes/modelos reales,compras,push/merge/deploy. Prueba real humana/IA previa no se repite.
+
+
+## Incremento26: comprobación persistente de alta YCloud
+
+Admin verifica desde Ajustes con la clave guardada; manager lee evidencia saneada. Seis checks: acceso,número CONNECTED,webhook activo,URL,eventos y secreto exactos. Sólo GETs a YCloud; no consulta al callback ni cambios de proveedor/permisos/envíos. Tabla privada/RLS con fingerprint canónico24h y RPCs INVOKER sólo servicio; rol/fuente se revalidan bajo lock al guardar. Configuración modificada y resultados viejos invalidan la comprobación.
+
+| Criterio | Evidencia |
+|---|---|
+| Cuenta y webhook coinciden | Prueba real16:51:44.239UTC; seis checks pasan |
+| Persistencia y deriva | Volver al panel conserva resultado; editar endpoint marca desactualizado; SQL Cloud deriva/ROLLBACK |
+| Control de acceso y datos | Admin verifica,manager consulta; anon401; ACL privada; respuestas sin claves ni otros números |
+| No autorizar por una lectura | sendAuthorizationfalse,grants/status/opt-in/flags idénticos; túnel temporal visible |
+| Validación |1.914 unitarias/176DB/typecheck/lint;90 migraciones alineadas; UI390/1440sin overflow,cero consola |
+
+Datos previos intactos;0cron activos; sin modelos,mensajes,push/merge/deploy. Quedan emisión/revocación permanente de capacidades,publicación estable/recepción y carrera humano/IA integrada. F3 abierta,0/9 aceptadas. [Continuidad detallada](PLAN-STATUS-omnichannel-pixiweb.md) · [Evidencia](evidencias/F3-ALTA-YCLOUD-2026-10-15.json).

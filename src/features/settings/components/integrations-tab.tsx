@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_HANDOFF_ACK } from "@/features/inbox/types/handoff";
 import { ModelPicker } from "@/features/agents/components/model-picker";
+import { YCloudVerificationPanel } from "./ycloud-verification-panel";
 import {
   describeKapsoNumber,
   e164FromDisplay,
@@ -1688,6 +1689,7 @@ export function IntegrationsTab({
   const [integrations, setIntegrations] = useState<IntegrationData[]>(
     initialIntegrations as IntegrationData[],
   );
+  const [verificationRevision, setVerificationRevision] = useState(0);
   // Same split as the RLS policies: admins and managers read, admins write.
   const canRead = role === "admin" || role === "manager";
   const canEdit = role === "admin";
@@ -1696,7 +1698,10 @@ export function IntegrationsTab({
     try {
       const res = await fetch(`/api/workspace/${workspaceId}/integrations`);
       const json = (await res.json()) as { integrations?: IntegrationData[] };
-      if (json.integrations) setIntegrations(json.integrations);
+      if (json.integrations) {
+        setIntegrations(json.integrations);
+        setVerificationRevision((revision) => revision + 1);
+      }
     } catch {
       // Non-critical — stale data is fine after save
     }
@@ -1731,6 +1736,10 @@ export function IntegrationsTab({
         teamEmailReady={teamEmailReady}
       />
       <Separator />
+      {ycloud?.enabled && !kapso?.enabled && <>
+        <YCloudVerificationPanel key={`${workspaceId}:${verificationRevision}`} workspaceId={workspaceId} canEdit={canEdit} />
+        <Separator />
+      </>}
       <OpenRouterSection
         workspaceId={workspaceId}
         initial={openrouter}
