@@ -1,7 +1,7 @@
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import type { OutboundEcho } from "./kapso-webhook-handler";
 import type { ContactRow, ConversationRow, MessageRow } from "../types/index";
-import type { ConversationState } from "./state-machine";
+import { readLegacyWhatsAppConversation, writeLegacyWhatsAppContext, type LegacyWhatsAppRouting } from "./legacy-whatsapp-context";
 import { DEFAULT_COUNTRY_CODE, normalizePhone } from "./phone";
 
 /**
@@ -47,14 +47,15 @@ export interface ProcessInboundResult {
  * Persists an inbound message and its related contact/conversation records.
  *
  * - Upserts the contact (by workspace_id + phone).
- * - Upserts the conversation (by workspace_id + contact_id + channel),
- *   incrementing unread_count and refreshing last_message_at.
+ * - Resolves the legacy conversation against verified account routing,
+ *   refreshing unread_count and last_message_at.
  * - Inserts the message, deduplicating on workspace_id + wamid.
  *   Returns message: null when the wamid already exists.
  */
 export async function processInbound(
   workspaceId: string,
   normalized: InboundMessage,
+  routing: LegacyWhatsAppRouting,
 ): Promise<ProcessInboundResult> {
   const supabase = svc();
 
@@ -70,69 +71,11 @@ export async function processInbound(
 
   const phone = normalizePhone(normalized.from, defaultCc);
 
-  // 1. Upsert contact
-  // A user messaging the business first is implicit opt-in for service
-  // messages within the 24h window, so inbound contacts are opted in — unless
-  // they opted out explicitly: trg_contacts_opt_out keeps opt_in false while
-  // their phone is in contact_opt_outs.
-  const { data: contactData, error: contactError } = await supabase
-    .from("contacts")
-    .upsert(
-      {
-        workspace_id: workspaceId,
-        phone,
-        // Only update name when the incoming value is non-null
-        name: normalized.customerName,
-        opt_in: true,
-        opt_in_at: new Date().toISOString(),
-      },
-      {
-        onConflict: "workspace_id,phone",
-        ignoreDuplicates: false,
-      },
-    )
-    .select()
-    .single();
-
-  if (contactError || !contactData) {
-    throw new Error(
-      `[normalizer] contact upsert failed: ${contactError?.message}`,
-    );
-  }
-
-  const contact = contactData as ContactRow;
-
-  // 2. Upsert conversation — reset 24h window on every inbound
-  const windowExpiresAt = new Date(
-    Date.now() + 24 * 60 * 60 * 1000,
-  ).toISOString();
-
-  const { data: convData, error: convError } = await supabase
-    .from("conversations")
-    .upsert(
-      {
-        workspace_id: workspaceId,
-        contact_id: contact.id,
-        channel: "whatsapp",
-        last_message_at: new Date().toISOString(),
-        window_expires_at: windowExpiresAt,
-        unread_count: 1,
-      },
-      {
-        onConflict: "workspace_id,contact_id,channel",
-        ignoreDuplicates: false,
-      },
-    )
-    .select()
-    .single();
-
-  if (convError || !convData) {
-    throw new Error(
-      `[normalizer] conversation upsert failed: ${convError?.message}`,
-    );
-  }
-
-  const conversation = convData as ConversationRow;
+  // Resolve contact and thread atomically against the verified account. A
+  // routing failure rolls back legacy profile/consent/window updates together.
+  const { contact, conversation } = await writeLegacyWhatsAppContext(
+    supabase, workspaceId, phone, normalized.customerName, routing,
+  );
 
   // 3. Insert message — deduplicate on wamid
   const { data: msgData, error: msgError } = await supabase
@@ -214,6 +157,7 @@ export interface ProcessEchoResult {
 export async function processOutboundEcho(
   workspaceId: string,
   echo: OutboundEcho,
+  routing: LegacyWhatsAppRouting,
 ): Promise<ProcessEchoResult> {
   const supabase = svc();
 
@@ -245,23 +189,8 @@ export async function processOutboundEcho(
 
   const contactId = (contactRow as { id: string }).id;
 
-  const { data: convRow } = await supabase
-    .from("conversations")
-    .select("id, state, ai_enabled")
-    .eq("workspace_id", workspaceId)
-    .eq("contact_id", contactId)
-    .eq("channel", "whatsapp")
-    .maybeSingle();
-
-  if (!convRow) {
-    return { conversationId: null, inserted: false, aiDisabled: false };
-  }
-
-  const conversation = convRow as {
-    id: string;
-    state: ConversationState;
-    ai_enabled: boolean;
-  };
+  const conversation = await readLegacyWhatsAppConversation(supabase, workspaceId, contactId, routing);
+  if (!conversation) return { conversationId: null, inserted: false, aiDisabled: false };
 
   const { data: msgData, error: msgError } = await supabase
     .from("messages")

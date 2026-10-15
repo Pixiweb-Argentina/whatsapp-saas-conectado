@@ -240,6 +240,14 @@ const fakeClient = {
   },
   rpc(fn: string, args?: unknown) {
     rpcCalls.push({ fn, args });
+    if (fn === "read_legacy_whatsapp_conversation") {
+      const scope = args as { p_workspace: string; p_contact: string };
+      const row = conversationRow;
+      return Promise.resolve({ data: row && row.workspace_id === scope.p_workspace
+        && row.contact_id === scope.p_contact && (!row.channel || row.channel === "whatsapp")
+        ? [{ channel: "whatsapp", ...row }] : [],
+        error: readErrorTables.has("conversations") ? { code: "read_failed" } : null });
+    }
     if (fn === "release_automation_run_dispatch") {
       callLog.push("release");
       return Promise.resolve(
@@ -678,7 +686,7 @@ test("5. close_conversation con applyTransition OK queda done", async () => {
   ]);
 });
 
-test("6. lead_qualified sin conversación resuelve la más reciente, la persiste y ejecuta", async () => {
+test("6. lead_qualified sin conversación resuelve el hilo WhatsApp inequívoco, lo persiste y ejecuta", async () => {
   reset();
   ruleRow = { ...TEMPLATE_RULE };
   conversationRow = { id: "conv_9", workspace_id: "ws_1", contact_id: "contact_1" };
@@ -689,11 +697,8 @@ test("6. lead_qualified sin conversación resuelve la más reciente, la persiste
   );
   assert.equal(outcome, "done");
 
-  assert.deepEqual(selectOrders.find((o) => o.table === "conversations"), {
-    table: "conversations",
-    column: "last_message_at",
-    options: { ascending: false, nullsFirst: false },
-  });
+  assert.deepEqual(rpcCalls.find((call) => call.fn === "read_legacy_whatsapp_conversation")?.args,
+    { p_workspace: "ws_1", p_contact: "contact_1", p_routing: null });
   const busqueda = firstFiltersFor("conversations");
   assert.deepEqual(busqueda.find(([c]) => c === "workspace_id"), [
     "workspace_id",
@@ -2392,5 +2397,14 @@ test("Cal.com: a failed read retries; a claim without a uid or no connection is 
   calcomConfig = null;
   assert.equal(await executeRun(makeRun({ trigger_type: "appointment_upcoming" })), "skipped");
   assert.equal(lastRunUpdate().error, "calcom_not_connected");
+  assert.equal(sendCalls.length, 0);
+});
+
+test("contact-level legacy rules never substitute an Instagram thread for WhatsApp", async () => {
+  reset(); ruleRow = { ...TEMPLATE_RULE };
+  conversationRow = { id: "conv_9", workspace_id: "ws_1", contact_id: "contact_1", channel: "instagram" };
+  contactRow = { id: "contact_1", workspace_id: "ws_1", opt_in: true };
+  assert.equal(await executeRun(makeRun({ trigger_type: "lead_qualified", conversation_id: null })), "skipped");
+  assert.equal(lastRunUpdate().error, "no_conversation");
   assert.equal(sendCalls.length, 0);
 });

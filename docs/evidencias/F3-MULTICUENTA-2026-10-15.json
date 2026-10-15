@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-15",
+  "phase": "F3",
+  "increment": 25,
+  "branch": "codex/omnichannel-f3-multiaccount",
+  "baseCommit": "ee05fd9",
+  "migration": {
+    "version": "20261015155713",
+    "name": "omnichannel_conversation_accounts",
+    "project": "bzanbpyzujlogipxvkfn",
+    "count": 89,
+    "routingKey": [
+      "workspace_id",
+      "contact_id",
+      "channel",
+      "connection_id"
+    ],
+    "nulls": "NOT DISTINCT",
+    "legacyBoundMix": "rejected",
+    "routingImmutable": true,
+    "serviceRpc": "INVOKER, empty search_path, service_role only",
+    "guard": "private trigger-only DEFINER; empty search_path; PUBLIC/anon/authenticated execute revoked"
+  },
+  "changes": [
+    "account-scoped inbox/pipeline conversation lookup",
+    "atomic legacy contact/conversation with signed webhook integration and asset",
+    "legacy echoes/contact-level rules never choose newest thread",
+    "mapped legacy recipient must be the exact eligible thread",
+    "durable thread with rollout off cannot use legacy composer"
+  ],
+  "tests": {
+    "unitPass": 1905,
+    "dbPass": 170,
+    "typecheck": "pass",
+    "modifiedFileLint": "pass",
+    "cloudSql": "pass; synthetic transaction rolled back",
+    "ui": "pass; fixture committed only for authenticated browser and then removed",
+    "consoleErrors": 0,
+    "advisors": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 17,
+      "newFindings": 0
+    }
+  },
+  "concurrency": {
+    "holderPid": 532672,
+    "competitorPid": 532675,
+    "holderAcquiredAt": "2026-10-15T16:02:57.588758Z",
+    "holderCompletedAt": "2026-10-15T16:03:09.603612Z",
+    "competitorStartedAt": "2026-10-15T16:03:01.365563Z",
+    "competitorCompletedAt": "2026-10-15T16:03:09.622231Z",
+    "sameThreadId": "5f3d79dc-0a9e-42ce-a1cf-11f2d6cf8784",
+    "resultingThreads": 2,
+    "meaning": "existing A plus one B; no duplicate B",
+    "temporaryCronJob": 8,
+    "remainingActiveJobs": 0,
+    "fixtureRemoved": true
+  },
+  "browser": [
+    "same contact listed twice with Ventas/Soporte account labels",
+    "different history and control state per thread",
+    "account Soporte filter returns one thread",
+    "back link preserves account",
+    "desktop1440x900 and mobile layout",
+    "blocked composer; no provider/model calls",
+    "original workspace and viewport restored"
+  ],
+  "observedLimit": "one filter navigation took 20 seconds and then completed HTTP200; not a performance certification",
+  "preserved": {
+    "allPriorContactsConversationsMessagesHashesMatch": true,
+    "workspaces": 2,
+    "dedicatedLabMessages": 6,
+    "dedicatedLabJobs": 2,
+    "activeCron": 0,
+    "newExternalMessages": 0,
+    "newModelCalls": 0,
+    "grantsOrConsentActivated": false,
+    "mainUntouched": true,
+    "push": false,
+    "merge": false,
+    "deploy": false
+  },
+  "limits": [
+    "fixtures do not prove two connected real numbers",
+    "one current WhatsApp integration per workspace remains",
+    "workspace-wide wamid uniqueness remains; cross-account collisions fail closed",
+    "new channel transports remain gated",
+    "permanent onboarding/grants and human takeover during generation remain"
+  ],
+  "artifacts": [
+    "test-results/f3-multiaccount-unit.log",
+    "test-results/f3-multiaccount-db.log",
+    "test-results/f3-multiaccount-2026-10-15.jpg",
+    "tests/db/cloud-conversation-accounts.mjs"
+  ],
+  "phaseAccepted": false,
+  "sources": [
+    "https://www.postgresql.org/docs/current/ddl-constraints.html",
+    "https://supabase.com/docs/guides/database/functions",
+    "https://supabase.com/docs/guides/database/database-linter"
+  ]
+}

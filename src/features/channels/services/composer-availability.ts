@@ -6,6 +6,7 @@ import type { ComposerAvailability } from "../types/composer-availability";
 
 const conversationSchema = z.object({
   workspace_id: z.uuid(), channel: channelSchema, connection_id: z.uuid().nullable(),
+  source_context: z.record(z.string(), z.unknown()).optional(),
 });
 const connectionSchema = z.object({
   id: z.uuid(), workspace_id: z.uuid(), channel: channelSchema,
@@ -43,6 +44,10 @@ export async function readComposerAvailability(db: SupabaseClient, input: unknow
       if (!channelRolloutWorkspaces("worker").includes(conversation.workspace_id)) return unavailable;
       return { ...legacy, deliveryMode: "queue" };
     }
+    if (Object.keys(conversation.source_context ?? {}).length) return {
+      allowed: false, reason: "transport_unavailable",
+      message: "Esta cuenta requiere el motor de canales habilitado para enviar mensajes.",
+    };
     return legacy;
   } catch {
     return unavailable;

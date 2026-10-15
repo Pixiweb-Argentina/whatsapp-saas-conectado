@@ -299,6 +299,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { contact, conversation, message } = await processInbound(
       workspaceId,
       normalized,
+      { integrationId: ws.id, provider: "ycloud", accountId: normalized.workspacePhone || null },
     );
 
     // Duplicate wamid — already processed

@@ -132,9 +132,10 @@ test("F1 migration rehearsal on a local PostgreSQL schema copy", async (t) => {
   });
   await isolated("legacy upserts and receipt updates still work after backfill", async () => {
     await backfill(db);
-    await db.exec(`insert into public.conversations(workspace_id,contact_id,channel)
-      values ('${id(1)}','${id(21)}','whatsapp')
-      on conflict (workspace_id,contact_id,channel) do update set unread_count=1`);
+    await db.query("update public.integrations set config=$1 where id=$2", [{ phone_number: "+15555550100" }, id(11)]);
+    const result = (await db.query("select public.upsert_legacy_whatsapp_inbound($1,$2,$3,$4) value",
+      [id(1), "+15555550101", "Fixture 1", { integrationId: id(11), provider: "ycloud", accountId: "+15555550100" }])).rows[0].value;
+    assert.equal(result.conversation.id, id(31));
     await db.exec(`insert into public.messages(id,workspace_id,conversation_id,direction,type,body,wamid,status)
       values ('${id(44)}','${id(1)}','${id(31)}','out','text','legacy writer','wamid.fixture-new','sent')`);
     assert.equal((await rows(db,`select connection_id from public.messages where id='${id(44)}'`))[0].connection_id,id(51));

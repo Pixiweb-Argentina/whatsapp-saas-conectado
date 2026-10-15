@@ -27,6 +27,14 @@ test("new channels never offer WA templates or route a contact by phone", async 
   }
 });
 
+test("turning the rollout off cannot offer legacy sending on a durable account thread", async () => {
+  const f = policyContextFixture();
+  const result = await readComposerAvailability(f.db, { ...f.rows.conversations[0],
+    source_context: { channel: "whatsapp", sourceType: "direct_message" } });
+  assert.equal(result.allowed, false);
+  assert.equal(result.reason, "transport_unavailable");
+});
+
 test("missing/foreign connections and read errors remain blocked, with no secret details", async () => {
   const f = policyContextFixture();
   f.rows.channel_connections[0].workspace_id = contextId(2);

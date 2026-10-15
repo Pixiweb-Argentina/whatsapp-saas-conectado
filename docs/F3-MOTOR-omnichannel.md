@@ -1,6 +1,6 @@
 # F3 — Motor de canales e inbox unificado
 
-Actualizado: 2026-10-15. Build Manual. Rama vigente `codex/omnichannel-f3-acceptance`, desde `9c08aaf`. Worktree `C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado`. Historial por incremento debajo; F3 sigue sin aceptación integral.
+Actualizado: 2026-10-15. Build Manual. Rama vigente `codex/omnichannel-f3-multiaccount`, desde `ee05fd9`. Worktree `C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado`. Historial por incremento debajo; F3 sigue sin aceptación integral.
 
 ## Incremento 1: transporte y política
 
@@ -464,7 +464,7 @@ Esta matriz separa implementación y evidencia de la aceptación integral. Los n
 
 | Criterio | Evidencia vigente | Límite para el cierre integral |
 |---|---|---|
-| US-006 AC1: filtros y cuenta visible | Incremento24; filtros por seis estados/canal/cuenta/asignación, RPC/RLS/paginación, hilo y fila, navegación real375/1440px | Resolver mismo contacto en varias cuentas/canales; `uq_conversations_contact` sigue vigente |
+| US-006 AC1: filtros y cuenta visible | Incrementos24–25; dos hilos por contacto/cuenta y filtros por seis estados/canal/cuenta/asignación, RPC/RLS/paginación, hilo y fila, navegación real375/1440px | Incremento25 cubre esquema/lecturas de dos cuentas con fixtures; alta real de cuentas y canales nuevos pendiente |
 | US-006 AC2: timeline, notas y origen | Notas y texto real humano/IA en incrementos18/20/23; tipos media legacy conservados; fixtures de diseño multicanal de F2 | Piloto nuevo recibe texto; media/origen de nuevas fuentes necesitan adapters/materialización y recorrido de sus fases |
 | US-006 AC3: tenant/rol y delivered/read | Tests `inbox-read.test.mjs`, comprobaciones GoTrue previas y receipts YCloud reales; delivered IA automático en incremento23 | Extender recorrido de permisos/lecturas por cada cuenta/canal cuando se habiliten; accepted por sí solo no prueba entrega |
 | US-007 AC1: toma humana y revisión | Cola/RPC/worker en incrementos3/6/8/10/11/21/22; tests `message-queue.test.mjs`, `ai-reply-checks.mjs` y `ycloud-pipeline.test.mjs` | Demostración integrada con generación en curso y toma humana usando fixtures; no confundir restauración posterior de la prueba real con esa carrera |
@@ -474,6 +474,14 @@ Esta matriz separa implementación y evidencia de la aceptación integral. Los n
 | US-008 AC2: lease, unknown y recuperación | DB/worker con fencing y carreras Cloud, receipts y límites; reanudación/replay real de23 sin envío nuevo | No se indujo timeout real ni se mató un proceso tras POST; pruebas de esas condiciones siguen sintéticas |
 | US-008 AC3: firma/activo/orden/ACK | Ingress/receipts/pipeline con tests inválidos/ajenos/desorden; rechazos HTTP y recepción firmada real en17–23 | Mantener pruebas por nuevo adaptador y no afirmar que el ACK de verificación equivale a persistencia |
 
-**Próximo bloque concreto:** compatibilidad del mismo contacto entre cuentas/canales con recorrido legacy protegido; después alta permanente de cuenta/verificación de grants y demostración integrada de toma humana durante generación. WhatsApp humano e IA ya probados. Las fuentes Meta y sus permisos/OAuth se construyen en F4/F5,widget en F6 y Brevo en F7. Capacidades no probadas permanecen apagadas. No cerrar F3 ni aceptar fases por el éxito de una prueba acotada.
+**Próximo bloque concreto:** alta permanente de cuenta/verificación de grants y demostración integrada de toma humana durante generación. Incremento25 resuelve unicidad/routing de conversaciones por cuenta y prueba doble hilo con fixtures; la integración multicuenta real sigue pendiente. WhatsApp humano e IA ya probados. Las fuentes Meta y sus permisos/OAuth se construyen en F4/F5,widget en F6 y Brevo en F7. Capacidades no probadas permanecen apagadas. No cerrar F3 ni aceptar fases por el éxito de una prueba acotada.
 
 Auto-Blindaje24: filtrar antes de paginar y resolver “mí” por sesión. RPC con nombre único evita sobrecarga ambigua de PostgREST. Mantener min-h-0 en la cadena flex para que el scroll de mensajes no oculte la cuenta/controles. Un fixture WA también requiere teléfono; corregir fixture, nunca relajar esa invariante.
+
+### F3, incremento25 — conversaciones por cuenta y legacy sin destinos ambiguos,2026-10-15
+
+Migración89 reemplaza unicidad por contacto/canal con cuenta y NULLS NOT DISTINCT; trigger privado serializa por contacto y prohíbe mezclar historial sin cuenta con hilos vinculados. Inbox/pipeline consultan cuenta/identidad exactas. Legacy usa RPC atómica con integración/activo del webhook firmado, mantiene IDs/control/supresión y no modifica perfil si falla routing. Ecos, resolución de contacto en automatizaciones y lector común del dispatch se detienen ante ambigüedad o hilo de cola; nunca seleccionan el más reciente de otro canal. Flags apagados no ofrecen legacy para hilos nuevos.
+
+1.905 unitarias/170DB/typecheck/lint pasan; SQL Cloud con rollback,roles/RLS y guardas de perfil; asesor sin nuevos hallazgos,89 versiones alineadas. Dos procesos PostgreSQL diferentes compiten por el mismo hilo B: segundo espera al primero y ambos obtienen el mismo ID; cuenta A intacta. Cron de prueba autoeliminado,0activo. UI real muestra un contacto ficticio con dos cuentas,previews/estados/filtros/historias separados. Fixture retirado y contexto/viewport restaurados; hashes de todos los contactos/conversaciones/mensajes previos idénticos. Una navegación demoró20s y luego200; no es prueba de rendimiento. [Evidencia](evidencias/F3-MULTICUENTA-2026-10-15.json).
+
+No hay dos números reales nuevos conectados ni permisos persistentes activos: el onboarding WA todavía admite una integración activa por workspace y uq_messages_wamid conserva dedup global por workspace. Coincidencia externa entre cuentas se rechaza, no se mezcla. Nuevos canales siguen bloqueados por F1. F3 continúa abierta por alta/grants permanentes,demostración de toma humana durante generación y AC restantes. Sin nuevos mensajes/modelos reales,compras,push/merge/deploy. Prueba real humana/IA previa no se repite.

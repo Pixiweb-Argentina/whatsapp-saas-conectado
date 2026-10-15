@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-acceptance, desde 9c08aaf. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-multiaccount, desde ee05fd9. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -317,3 +317,9 @@ Restore y relectura exacta confirman consentimiento false/opt_in_atnull/grantsva
 US-006 AC1 ampliado: asignación por sesión en DB antes de paginar, seis estados visibles, filtros persistidos al navegar; canal/cuenta en fila e hilo con fallback inequívoco. Flex/ScrollArea corregidos para no ocultar controles al cargar el último mensaje. Migración88 invoker/RLS y RPC compatible;1.895 unitarias/162DB/typecheck/lint/dos renders y recorrido real375/1440px pasan. SQL Cloud60 conversaciones/revocación/tenant ajeno con rollback; asesor0ERROR/10WARN heredados/17INFO. Dos workspaces,seis mensajes/dos jobs/cero cron conservados. Sin modelo/proveedor/grants/activación adicional. Rama codex/omnichannel-f3-acceptance; main intacto y sin push/merge/deploy.
 
 [Matriz vigente de los nueve AC](../../docs/F3-MOTOR-omnichannel.md#matriz-de-aceptación-f3--2026-10-15) y [evidencia](../../docs/evidencias/F3-INBOX-ASIGNACION-2026-10-15.json). Próximo: mismo contacto en varias cuentas, alta/grants permanentes y demostración sintética de toma humana durante generación. La prueba real de IA ya no bloquea. F3 abierta,0/9 fases aceptadas. No repetir blueprint/Manual/Lista Roja ni consumos reales autorizados una sola vez.
+
+### F3, incremento25 — unicidad y resolución por cuenta,2026-10-15
+
+Mismo contacto admite hilos explícitos por cuenta; NULL legacy único no se mezcla con vinculados. Inbox/pipeline fijan cuenta/identidad; legacy resuelve integración/activo y contacto/conversación en transacción. Ecos/automatizaciones/dispatch no eligen cuenta ambigua ni cola por fallback. Migración89 invoker en RPC pública y trigger privado acotado;1.905 unitarias/170DB/typecheck/lint/Cloud SQL pasan. Concurrencia real en2procesos crea un único hiloB con cuentaA intacta; cron efímero retirado. UI autenticada con mismo contacto ficticio y dos hilos/cuentas/estados/historias,fixture eliminado. Hashes de todos los datos anteriores intactos; dos workspaces/cero cron activos.89 versiones alineadas y asesor0ERROR/10WARN heredados/17INFO. Una navegación20s terminó200; rendimiento no certificado.
+
+[Evidencia](../../docs/evidencias/F3-MULTICUENTA-2026-10-15.json), límites y matriz en F3-MOTOR/continuidad. Rama codex/omnichannel-f3-multiaccount; main intacto,sin push/merge/deploy. Alta/grants permanentes y demostración sintética de toma humana durante generación siguen. Integración multicuenta real y dedup global de wamid no resueltos por esta migración. F3 abierta,0/9 aceptadas; nuevas pruebas reales requieren autorización específica.

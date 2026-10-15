@@ -15,6 +15,7 @@
  * RPC le entrega y no vuelve a filtrar por `enabled_since`.
  */
 
+import { readLegacyWhatsAppConversation } from "@/features/inbox/services/legacy-whatsapp-context";
 import { createClient as createSbClient } from "@supabase/supabase-js";
 import {
   prepareTemplateDispatch,
@@ -280,28 +281,20 @@ async function loadScoped<T>(
  * porque el ejecutor es el único punto de carga de conversación: duplicar la
  * lógica en dos lugares es cómo se desincronizan.
  *
- * "La conversación del contacto" = la más reciente por `last_message_at` EN ESTE
- * WORKSPACE. El filtro no es decorativo: sin él, un contacto que existe en dos
- * tenants mandaría el WhatsApp por la conversación equivocada.
+ * Sólo el hilo WhatsApp legacy inequívoco del mismo workspace y cuenta activa.
+ * Con varias cuentas o un hilo de cola no se elige reemplazo por recencia.
  */
 async function resolveConversationForContact(
   workspaceId: string,
   contactId: string,
 ): Promise<{ id: string | null; dbError: boolean }> {
-  const { data, error } = await svc()
-    .from("conversations")
-    .select("id")
-    .eq("workspace_id", workspaceId)
-    .eq("contact_id", contactId)
-    .order("last_message_at", { ascending: false, nullsFirst: false })
-    .limit(1);
-
-  if (error) {
-    console.error("[automations] no pude resolver la conversación:", error.message);
+  try {
+    const row = await readLegacyWhatsAppConversation(svc(), workspaceId, contactId);
+    return { id: row?.id ?? null, dbError: false };
+  } catch {
+    console.error("[automations] no pude resolver la conversación WhatsApp sin ambigüedad");
     return { id: null, dbError: true };
   }
-  const row = ((data as Array<{ id: string }> | null) ?? [])[0];
-  return { id: row?.id ?? null, dbError: false };
 }
 
 /**
@@ -1233,7 +1226,7 @@ export async function executeRun(claimed: AutomationRun): Promise<RunOutcome> {
     if (!rule || !rule.enabled) {
       return await finish(run, rule, skip("rule_disabled"));
     }
-    // 1b. Conversación de `lead_qualified`: el trigger de contacts
+    // 1b. Conversación WhatsApp inequívoca de `lead_qualified`: el trigger de contacts
     //     la emite en NULL, así que se resuelve acá, que es el único punto de
     //     carga, y se persiste para que el evento y el historial la citen.
     //

@@ -11,21 +11,33 @@ let updateError: string | null = null;
 /** The message insert hits the wamid dedupe: a redelivery. */
 let duplicateMessage = false;
 
+const workspaceId = "00000000-0000-4000-8000-000000000001";
+const routing = { integrationId: "00000000-0000-4000-8000-000000000011", provider: "ycloud" as const, accountId: "+15555550100" };
+let contextError = false;
+const rpcCalls: Array<Record<string, unknown>> = [];
 const fakeSvc = {
+  rpc: async (name: string, args: Record<string, unknown>) => {
+    assert.equal(name, "upsert_legacy_whatsapp_inbound");
+    rpcCalls.push(args);
+    return { data: contextError ? null : {
+      contact: { id: "contacts_1", workspace_id: workspaceId },
+      conversation: { id: "conversations_1", workspace_id: workspaceId, contact_id: "contacts_1", channel: "whatsapp" },
+    }, error: contextError ? { code: "23514" } : null };
+  },
   from: (table: string) => ({
     select: () => {
-      const q: any = { eq: () => q, maybeSingle: async () => ({ data: null, error: null }) };
+      const q = { eq() { return this; }, maybeSingle: async () => ({ data: null, error: null }) };
       return q;
     },
     update: (row: Row) => {
       const call = { table, row, filters: [] as Array<[string, unknown]> };
       updates.push(call);
-      const q: any = {
-        eq: (c: string, v: unknown) => {
+      const q = {
+        eq(c: string, v: unknown) {
           call.filters.push([c, v]);
-          return q;
+          return this;
         },
-        select: () => q,
+        select() { return this; },
         maybeSingle: async () =>
           updateError
             ? { data: null, error: { message: updateError } }
@@ -61,14 +73,14 @@ const inbound = (rawType: string) => ({
 
 test("a reaction is stored marked no_reply, so nothing ever answers it", async () => {
   upserts.length = 0;
-  await processInbound("ws_1", inbound("reaction"));
+  await processInbound(workspaceId, inbound("reaction"), routing);
   const message = upserts.find((u) => u.table === "messages")!.row;
   assert.deepEqual(message.meta, { from_name: "Ana", no_reply: true });
 });
 
 test("any other message is stored for answering", async () => {
   upserts.length = 0;
-  await processInbound("ws_1", inbound("text"));
+  await processInbound(workspaceId, inbound("text"), routing);
   const message = upserts.find((u) => u.table === "messages")!.row;
   assert.deepEqual(message.meta, { from_name: "Ana" });
 });
@@ -87,23 +99,39 @@ function reset() {
   updates.length = 0;
   updateError = null;
   duplicateMessage = false;
+  contextError = false;
+  rpcCalls.length = 0;
 }
 
 test("STOP is left to the database: the app writes no opt-out of its own", async () => {
   reset();
-  await processInbound("ws_1", textInbound("STOP"));
+  await processInbound(workspaceId, textInbound("STOP"), routing);
   assert.equal(updates.filter((u) => u.table === "contacts").length, 0);
   assert.ok(upserts.some((u) => u.table === "messages"), "the STOP message is stored, and its trigger applies it");
 });
 
 test("the provider's send time is kept on the message: STOP and START are settled by it", async () => {
   reset();
-  await processInbound("ws_1", { ...textInbound("hola"), createTime: "2026-10-01T10:00:00+00:00" });
+  await processInbound(workspaceId, { ...textInbound("hola"), createTime: "2026-10-01T10:00:00+00:00" }, routing);
   const message = upserts.find((u) => u.table === "messages")!.row;
   assert.equal((message.meta as Record<string, unknown>).sent_at, "2026-10-01T10:00:00.000Z");
 
   reset();
-  await processInbound("ws_1", { ...textInbound("hola"), createTime: "not a time" });
+  await processInbound(workspaceId, { ...textInbound("hola"), createTime: "not a time" }, routing);
   const other = upserts.find((u) => u.table === "messages")!.row;
   assert.equal("sent_at" in (other.meta as Record<string, unknown>), false);
+});
+
+test("verified routing reaches the atomic context writer, without a client-side conversation upsert", async () => {
+  reset();
+  await processInbound(workspaceId, textInbound("hola"), routing);
+  assert.deepEqual(rpcCalls[0].p_routing, routing);
+  assert.equal(rpcCalls[0].p_workspace, workspaceId);
+  assert.equal(upserts.some((call) => call.table !== "messages"), false);
+});
+
+test("ambiguous/stale legacy routing never inserts a message or falls back to the old upsert", async () => {
+  reset(); contextError = true;
+  await assert.rejects(() => processInbound(workspaceId, textInbound("hola"), routing), /LEGACY_WHATSAPP_CONTEXT_UNAVAILABLE/);
+  assert.equal(upserts.length, 0);
 });

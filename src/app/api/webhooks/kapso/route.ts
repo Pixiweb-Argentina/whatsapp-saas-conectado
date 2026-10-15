@@ -171,7 +171,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
     const echo = parseOutboundEcho(body, eventName);
     if (echo) {
-      const result = await processOutboundEcho(ws.workspace_id, echo);
+      const result = await processOutboundEcho(ws.workspace_id, echo,
+        { integrationId: ws.id, provider: "kapso", accountId: phoneNumberIdStr || null });
       return NextResponse.json({
         received: true,
         echo: true,
@@ -222,6 +223,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { contact, conversation, message } = await processInbound(
       workspaceId,
       normalized,
+      { integrationId: ws.id, provider: "kapso", accountId: normalized.phoneNumberId || null },
     );
 
     // Duplicate wamid — already processed. This is also what absorbs Kapso's
