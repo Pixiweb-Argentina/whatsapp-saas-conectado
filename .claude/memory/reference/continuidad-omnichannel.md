@@ -5,16 +5,18 @@ Guardado por pedido de Yani el 2026-10-15 para /avivar.
 ## Dónde continuar
 
 - Implementación: C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado.
-- Rama al guardar: codex/omnichannel-f3-human-control, incremento28 desde0220639. Confirmar Git antes de trabajar; el nombre omnichannel-f1 del worktree no indica la fase actual.
+- Rama al guardar: codex/omnichannel-f3-message-dedup, incremento29 desde3806f34. Confirmar Git antes de trabajar; el nombre omnichannel-f1 del worktree no indica la fase actual.
 - Checkout original C:/Users/Yani Acevedo/Documents/GitHub/apps/app-whatsapp-saas-conectado: preparación y documentación, NO implementar allí.
 - Leer AGENTS.md y luego, en el worktree activo: docs/PLAN-STATUS-omnichannel-pixiweb.md, .claude/PRPs/PIEZA-omnichannel-pixiweb.md y docs/F3-MOTOR-omnichannel.md.
-- Última evidencia: docs/evidencias/F3-TOMA-HUMANA-2026-10-15.json. Las pruebas y el historial están en esas fuentes, no se duplican aquí.
+- Última evidencia: docs/evidencias/F3-DEDUP-CUENTAS-2026-10-15.json. Las pruebas y el historial están en esas fuentes, no se duplican aquí.
 
 ## Próximo paso acordado
 
-F3 sigue abierta. La prueba sintética integrada de toma humana durante generación pendiente ya pasó en incremento28, con buffer/SQL reales y modelo diferido. No repetirla por desconocer el avance; conservar el test de regresión. Retomar multicuenta operativa/deduplicación wamid y revisar AC con la matriz vigente; preparar publicación/alta/renovación sin activar servicios externos por inferencia.
+F3 sigue abierta. Carrera de toma humana integrada ya acreditada en incremento28. Incremento29 resuelve deduplicación wamid por conexión, con scope derivado por trigger compatible con Realtime y lector legacy invoker ligado al routing, sin elegir la primera coincidencia. Migración93 aplicada y alineada; 1.924 unitarias/200 DB y fixture con rollback en PostgreSQL17 pasan. Datos anteriores conservados por comparación de hashes; no se activaron permisos ni se enviaron mensajes. No repetir estos bloques por desconocer el avance.
 
-Después quedan alta/cutover y operación permanente de cuentas con origen público estable, renovación de permisos (actualmente manual, máximo 24 h), multicuenta operativa/deduplicación wamid y aceptación formal de US006–008. Instagram, Facebook, widget y Brevo corresponden a fases posteriores. No confundir avances parciales con fases aceptadas.
+Siguiente: alta multicuenta operativa y credenciales/routing por conexión; el onboarding WA todavía permite una integración activa por workspace. Después, alta/cutover y operación permanente con origen público estable, renovación de permisos (manual, máximo24h) y aceptación formal de US006–008. Preparar sin activar servicios externos por inferencia. Instagram, Facebook, widget y Brevo corresponden a fases posteriores. No confundir fixtures de dos cuentas con dos números reales operativos.
+
+Snapshot Cloud de incremento29: dos workspaces, once mensajes globales, tres jobs/dos outbox; cero cron activos y un automation-history-purge heredado inactivo (no afirmar cero filas cron). Datos/contactos/conversaciones/conexiones originales sin cambios. No se revalidaron PIDs/túnel ni callbacks en este incremento. Ramas nuevas locales, sin push/merge/deploy.
 
 ## Autorizaciones y límites que deben sobrevivir
 
