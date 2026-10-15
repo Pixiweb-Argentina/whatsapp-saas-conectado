@@ -5,7 +5,7 @@ process.env.NEXT_PUBLIC_SUPABASE_URL = "https://fake.supabase.co";
 process.env.SUPABASE_SERVICE_ROLE_KEY = "fake-service-key";
 
 type Row = Record<string, unknown>;
-const upserts: Array<{ table: string; row: Row }> = [];
+const upserts: Array<{ table: string; row: Row; options: Row }> = [];
 const updates: Array<{ table: string; row: Row; filters: Array<[string, unknown]> }> = [];
 let updateError: string | null = null;
 /** The message insert hits the wamid dedupe: a redelivery. */
@@ -45,8 +45,8 @@ const fakeSvc = {
       };
       return q;
     },
-    upsert: (row: Row) => {
-      upserts.push({ table, row });
+    upsert: (row: Row, options: Row) => {
+      upserts.push({ table, row, options });
       return {
         select: () => ({
           single: async () =>
@@ -61,6 +61,16 @@ const fakeSvc = {
 mock.module("@supabase/supabase-js", { exports: { createClient: () => fakeSvc } });
 
 const { processInbound } = await import("./normalizer.ts");
+
+test("legacy insert deduplicates using the server-derived account scope", async () => {
+  upserts.length = 0;
+  await processInbound(workspaceId, { from: "+15555550101", type: "text", text: "Hola",
+    wamid: "wamid.scope", customerName: null }, routing);
+  const call = upserts.find((u) => u.table === "messages")!;
+  assert.equal(call.options.onConflict, "workspace_id,message_account_scope,wamid");
+  assert.equal(call.options.ignoreDuplicates, true);
+  assert.equal("message_account_scope" in call.row, false);
+});
 
 const inbound = (rawType: string) => ({
   from: "+5215512345678",

@@ -18,13 +18,17 @@ mock.module("@/features/automations/services/send-failure.ts", {
   },
 });
 
-const { applyMessageStatus } = await import("./message-status.ts");
+const { applyMessageStatus: applyRoutedMessageStatus } = await import("./message-status.ts");
+const routing = { integrationId: "integration-a", provider: "ycloud" as const, accountId: "+15555550100" };
+const applyMessageStatus = (db: SupabaseClient, workspace: string,
+  event: Parameters<typeof applyRoutedMessageStatus>[2]) => applyRoutedMessageStatus(db, workspace, event, routing);
 const { parseWhatsAppError } = await import("./whatsapp-errors.ts");
 
 let row: Record<string, unknown>;
 
 function client(): SupabaseClient {
   return {
+    rpc: async () => ({ data: [{ ...row }], error: null }),
     from: () => ({
       select: () => {
         const q: any = {

@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-permissions, desde 7879941. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-message-dedup, desde 3806f34. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; último registro Cloud de 92 migraciones. Auth/inbox, política/cola/receipts y conversaciones por cuenta probados en Supabase nuevo. Texto humano e IA YCloud reales entregados con una operación por prueba y comprobantes exactos. Verificación de cuenta/webhook y gestión persistente de permisos probadas; laboratorio sin grants reales al cerrar incremento27. Incremento28 demuestra localmente la carrera de toma humana durante generación diferida, incluida devolución a IA, con buffer y SQL reales; 1.922 unitarias/189 DB/typecheck/lint pasan. No hubo cambios Cloud/productivos ni nuevos mensajes/modelos reales. Faltan cierre formal de AC, publicación estable/alta, renovación operativa, multicuenta real y dedup global de wamid; canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; 93 migraciones alineadas local/Cloud. Auth/inbox, política/cola/receipts y conversaciones por cuenta probados en Supabase nuevo. Texto humano e IA YCloud reales entregados con una operación por prueba y comprobantes exactos. Incremento28 acredita la carrera sintética de toma humana durante generación; incremento29 separa dedup wamid por conexión y bloquea estados legacy ambiguos/ajenos, con fixtures local/PostgreSQL17 y hashes históricos conservados. 1.924 unitarias/200 DB/typecheck/lint pasan. No hay nuevos modelos/mensajes reales ni permisos activados. Faltan cierre formal de AC, publicación estable/alta, renovación operativa y multicuenta operativa; canales nuevos deshabilitados. **Historias:** US-006–008. **Estimación:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -339,3 +339,13 @@ UI y RPC para admin explícito, manager lector, prueba de entrega/fuente/origen 
 Control de generación diferida con promesa, sin red; intake/claim/buffer/decisión/applyTransition/checkpoint/enqueue/handoff y drain reales sobre PostgreSQL local. Sin cambios crea un job; toma y toma+resume conservan revisión/asignación/eventos manuales y no producen jobs/outbox/salidas. Checkpoint privado y uso simulado persisten; replay no regenera. ROLLBACK de cada escenario. Cinco checks internos,189DB/1.922unitarias/typecheck/lint pasan. Sin cambios productivos/migraciones/Cloud, modelos reales, mensajes o activación.
 
 [Evidencia](../../docs/evidencias/F3-TOMA-HUMANA-2026-10-15.json) y matriz actualizada en F3-MOTOR. Auto-Blindaje: runner hijo elimina NODE_TEST_CONTEXT y exige conteo de pases para no aceptar un test omitido por recursión. Rama codex/omnichannel-f3-human-control desde0220639; siguiente multicuenta/dedup wamid y AC restantes. Origen estable/alta/cutover/renovación operativa pendientes. F3 abierta,0/9 aceptadas. Snapshot Cloud/runtime de incremento27 no revalidado; autorizaciones reales únicas consumidas. Main intacto; sin push/merge/deploy en este incremento.
+
+### F3, incremento29 — IDs por cuenta y estados legacy seguros, 2026-10-15
+
+Dedup wamid por workspace/conexión, con trigger posterior al binding y CHECK que impide elegir scope desde el cliente; nulos e historial legacy preservados. Upserts y materialización SQL del echo adaptados. RPC de estados legacy INVOKER/servicio valida routing y rechaza ambigüedad/IDs contradictorios/otra cuenta; YCloud ignora from explícito ajeno. Contrato nuevo no habilita multicuenta operativa por sí mismo.
+
+Migración93 aplicada en Supabase nuevo;93 versiones alineadas.1.924 unitarias/200 DB/typecheck/lint,fixture PostgreSQL17 con rollback y comprobación PostgREST servicio/anon pasan. Hashes de mensajes previos,conversaciones,contactos y conexiones conservados. Dos workspaces,once mensajes globales,tres jobs/dos outbox;cron0activos/1heredado inactivo. Asesor sin novedades0ERROR/10WARN/19INFO. Sin nuevos modelos/mensajes/permisos/consentimiento/flags ni cambios al dashboard original.
+
+Auto-Blindaje: no usar columna GENERATED con replica identity FULL/publicación heredada; el ensayo local detectó incompatibilidad antes de Cloud. Se usa scope ordinario comprobado y trigger del servidor. Esquema/escritores requieren despliegue coordinado; no restaurar onConflict viejo ni imponer unicidad global tras admitir IDs entre cuentas.
+
+[Evidencia](../../docs/evidencias/F3-DEDUP-CUENTAS-2026-10-15.json). Próximo alta multicuenta operativa/credenciales y routing por conexión,origen estable/alta/cutover/renovación y AC restantes. F3 abierta,0/9aceptadas. Rama codex/omnichannel-f3-message-dedup desde3806f34;main intacto,sin push/merge/deploy.

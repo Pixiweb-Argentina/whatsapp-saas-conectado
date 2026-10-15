@@ -225,9 +225,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         provider: "ycloud", configuredAccountId: ws.config.phone_number, payload: body });
       const statusData = (
         body as {
-          whatsappMessage?: { id?: string; wamid?: string; status?: string };
+          whatsappMessage?: { id?: string; wamid?: string; status?: string; from?: unknown };
         }
       ).whatsappMessage;
+      if (statusData?.from != null && statusData.from !== ws.config.phone_number) {
+        return NextResponse.json({ received: true, ignored: "account_mismatch" });
+      }
       // YCloud assigns the wamid after the send, so its own message id is what
       // our outbound row holds at first (meta.ycloud_id).
       if (statusData?.status && (statusData.wamid || statusData.id)) {
@@ -237,7 +240,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           status: statusData.status,
           error:
             statusData.status === "failed" ? extractWebhookError(body) : null,
-        });
+        }, { integrationId: ws.id, provider: "ycloud",
+          accountId: typeof ws.config.phone_number === "string" ? ws.config.phone_number : null });
       }
       return NextResponse.json({ received: true });
     }

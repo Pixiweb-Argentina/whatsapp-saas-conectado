@@ -171,6 +171,14 @@ test("a failed YCloud status carries the reason, translated", async () => {
   assert.match(error.message, /no tenga WhatsApp/);
 });
 
+test("a signed status explicitly sent from another account never reaches the legacy writer", async () => {
+  statusCalls.length = 0;
+  const response = await updated({ id: "yc_other", wamid: "wamid.1", status: "delivered", from: "+15559999999" });
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).ignored, "account_mismatch");
+  assert.equal(statusCalls.length, 0);
+});
+
 test("a message for another number on this workspace's URL is ignored, not filed here", async () => {
   inboundCalls = 0;
   events.length = 0;

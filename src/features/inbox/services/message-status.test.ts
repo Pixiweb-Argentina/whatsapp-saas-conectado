@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { applyMessageStatus } from "./message-status.ts";
+import { applyMessageStatus as applyRoutedMessageStatus, type StatusEvent } from "./message-status.ts";
 import { parseWhatsAppError } from "./whatsapp-errors.ts";
+
+const routing = { integrationId: "integration-a", provider: "ycloud" as const, accountId: "+15555550100" };
+const applyMessageStatus = (db: SupabaseClient, workspace: string, event: StatusEvent) =>
+  applyRoutedMessageStatus(db, workspace, event, routing);
 
 type Row = {
   id: string;
@@ -69,6 +73,18 @@ function fakeDb(
   const updates: Array<{ id: unknown; patch: Record<string, unknown> }> = [];
   const errorRows: unknown[] = [];
   const client = {
+    rpc: async (name: string, args: Record<string, unknown>) => {
+      assert.equal(name, "read_legacy_whatsapp_message");
+      assert.deepEqual(args.p_routing, routing);
+      if (opts.lookupError) return { data: null, error: { code: "08006" } };
+      // SQL routing/ambiguity guards are exercised against migrations in DB tests.
+      const data = rows.filter((r) => r.workspace_id === args.p_workspace && !r.channel_operation_id &&
+        ((args.p_wamid && r.wamid === args.p_wamid) ||
+          (args.p_provider_message_id && r.meta?.ycloud_id === args.p_provider_message_id)));
+      const copied = structuredClone(data);
+      opts.afterSelect?.();
+      return { data: copied, error: null };
+    },
     from: (table: string) => ({
       select: () => {
         const filters: Array<(r: Row) => boolean> = [];

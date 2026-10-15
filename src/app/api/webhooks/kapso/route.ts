@@ -187,7 +187,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         provider: "kapso", configuredAccountId: ws.config.phone_number_id, payload: body, kapsoEventName: eventName });
       const statusData = parseStatusUpdate(body, eventName);
       if (statusData) {
-        await applyMessageStatus(supabase, ws.workspace_id, statusData);
+        await applyMessageStatus(supabase, ws.workspace_id, statusData,
+          { integrationId: ws.id, provider: "kapso",
+            accountId: typeof ws.config.phone_number_id === "string" ? ws.config.phone_number_id : null });
       }
       return NextResponse.json({ received: true });
     }

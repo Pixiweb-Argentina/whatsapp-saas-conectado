@@ -49,7 +49,7 @@ export interface ProcessInboundResult {
  * - Upserts the contact (by workspace_id + phone).
  * - Resolves the legacy conversation against verified account routing,
  *   refreshing unread_count and last_message_at.
- * - Inserts the message, deduplicating on workspace_id + wamid.
+ * - Inserts the message, deduplicating on workspace, bound account and wamid.
  *   Returns message: null when the wamid already exists.
  */
 export async function processInbound(
@@ -99,7 +99,7 @@ export async function processInbound(
         },
       },
       {
-        onConflict: "workspace_id,wamid",
+        onConflict: "workspace_id,message_account_scope,wamid",
         ignoreDuplicates: true,
       },
     )
@@ -207,7 +207,7 @@ export async function processOutboundEcho(
         // already-delivered message rather than a new send.
         meta: { origin: "business_app" },
       },
-      { onConflict: "workspace_id,wamid", ignoreDuplicates: true },
+      { onConflict: "workspace_id,message_account_scope,wamid", ignoreDuplicates: true },
     )
     .select()
     .single();

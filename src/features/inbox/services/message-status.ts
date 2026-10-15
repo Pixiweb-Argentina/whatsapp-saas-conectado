@@ -4,8 +4,8 @@
  *
  * Provider webhooks call it only after verifying the signature against the
  * secret of `workspaceId`, so every lookup and write is scoped to that
- * workspace: a wamid is unique per workspace only, and a tenant can sign
- * events with its own secret.
+ * workspace. Provider IDs can repeat across connections: this legacy reader
+ * rejects ambiguous matches; durable receipts use the verified account.
  *
  * Kapso returns the wamid when the message is sent. YCloud answers with its
  * own message id and assigns the wamid later, so our row holds only
@@ -15,13 +15,14 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
+import type { LegacyWhatsAppRouting } from "./legacy-whatsapp-context";
 import { recordMessageError, type WhatsAppError } from "./whatsapp-errors";
 import { recordAutomationSendFailure } from "@/features/automations/services/send-failure";
 
 // WH-02: monotonic status order — never go backwards
 const STATUS_ORDER = ["queued", "sent", "delivered", "read"] as const;
 type OrderedStatus = (typeof STATUS_ORDER)[number];
-type MessageStatus = OrderedStatus | "failed";
 
 export interface StatusEvent {
   /** WhatsApp message id, when the event carries it. */
@@ -33,12 +34,10 @@ export interface StatusEvent {
   error?: WhatsAppError | null;
 }
 
-interface MessageMatch {
-  id: string;
-  status: MessageStatus | null;
-  wamid: string | null;
-  meta?: Record<string, unknown> | null;
-}
+const messageMatchSchema = z.object({ id: z.string(), status: z.enum([
+  "queued", "sent", "delivered", "read", "failed",
+]).nullable(), wamid: z.string().nullable(), meta: z.record(z.string(), z.unknown()).nullable().optional() });
+type MessageMatch = z.infer<typeof messageMatchSchema>;
 
 /**
  * Throws on a database error: the webhook then answers 500 and the provider
@@ -49,43 +48,25 @@ async function findMessage(
   supabase: SupabaseClient,
   workspaceId: string,
   event: StatusEvent,
+  routing: LegacyWhatsAppRouting,
 ): Promise<MessageMatch | null> {
-  if (event.wamid) {
-    const { data, error } = await supabase
-      .from("messages")
-      .select("id, status, wamid, meta")
-      .eq("workspace_id", workspaceId)
-      .is("channel_operation_id", null)
-      .eq("wamid", event.wamid)
-      .limit(1);
-    if (error) throw new Error(`[message-status] lookup failed: ${error.message}`);
-    if (data?.[0]) return data[0] as MessageMatch;
-  }
-
-  if (event.providerMessageId) {
-    // A containment filter, so the GIN (jsonb_path_ops) index on
-    // messages.meta serves it; `meta->>ycloud_id` would scan the workspace.
-    const { data, error } = await supabase
-      .from("messages")
-      .select("id, status, wamid, meta")
-      .eq("workspace_id", workspaceId)
-      .eq("direction", "out")
-      .is("channel_operation_id", null)
-      .contains("meta", { ycloud_id: event.providerMessageId })
-      .limit(1);
-    if (error) throw new Error(`[message-status] lookup failed: ${error.message}`);
-    if (data?.[0]) return data[0] as MessageMatch;
-  }
-
-  return null;
+  const { data, error } = await supabase.rpc("read_legacy_whatsapp_message", {
+    p_workspace: workspaceId, p_wamid: event.wamid ?? null,
+    p_provider_message_id: event.providerMessageId ?? null, p_routing: routing,
+  });
+  if (error) throw new Error(`[message-status] lookup failed: ${error.code ?? "database_error"}`);
+  const parsed = z.array(messageMatchSchema).max(1).safeParse(data);
+  if (!parsed.success) throw new Error("LEGACY_MESSAGE_STATUS_INVALID_RESULT");
+  return parsed.data[0] ?? null;
 }
 
 export async function applyMessageStatus(
   supabase: SupabaseClient,
   workspaceId: string,
   event: StatusEvent,
+  routing: LegacyWhatsAppRouting,
 ): Promise<void> {
-  const msg = await findMessage(supabase, workspaceId, event);
+  const msg = await findMessage(supabase, workspaceId, event, routing);
 
   // Message not found — can happen for outbound we didn't track
   if (!msg) return;

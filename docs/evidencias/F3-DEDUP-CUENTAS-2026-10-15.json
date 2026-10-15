@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-15",
+  "phase": "F3",
+  "increment": 29,
+  "branch": "codex/omnichannel-f3-message-dedup",
+  "baseCommit": "3806f343b433dd52f951a64431a97565a467e012",
+  "scope": "Account-scoped WhatsApp message deduplication and fail-closed legacy status routing",
+  "implementation": {
+    "migration": "20261015212823_omnichannel_message_account_dedup.sql",
+    "messageKey": [
+      "workspace_id",
+      "message_account_scope",
+      "wamid"
+    ],
+    "scope": "Server trigger runs after connection binding; connection UUID or legacy; client value overwritten",
+    "nullableWamid": "Multiple null IDs remain valid",
+    "legacyWriters": "Inbound and outbound-echo upserts use new unique key",
+    "durableEcho": "Conflict and message lookup use exact connection",
+    "legacyStatus": "Service-only INVOKER RPC validates current integration/account, rejects ambiguous or contradictory IDs, wrong direction, queue-owned/new-source/foreign-account threads",
+    "ycloudStatus": "Explicitly mismatched signed from account is ignored"
+  },
+  "tests": {
+    "unitSuitePass": 1924,
+    "dbSuitePass": 200,
+    "newDbFilePass": 11,
+    "typecheck": "pass",
+    "modifiedFileLint": "pass",
+    "cloudProbe": "Passed on PostgreSQL17.11; same SQL checked locally; fixture rolled back",
+    "postgrest": {
+      "service": "P0002 for deliberately missing synthetic integration: RPC available, fail closed",
+      "anon": "401/42501 permission denied"
+    },
+    "visualChanges": false,
+    "build": "Not repeated; schema/server-only change, typecheck and targeted lint run"
+  },
+  "cloud": {
+    "project": "bzanbpyzujlogipxvkfn",
+    "migrations": 93,
+    "localAndCloudVersionsAligned": true,
+    "newMigrationApplied": true,
+    "fixtureRemoved": true,
+    "scopeMismatches": 0,
+    "rlsPreserved": true,
+    "replicaIdentity": "FULL",
+    "readerSecurity": "INVOKER, empty search_path, service-only EXECUTE",
+    "messages": 11,
+    "jobs": 3,
+    "outbox": 2,
+    "workspaces": 2,
+    "cron": {
+      "active": 0,
+      "inactive": 1,
+      "note": "Inherited automation-history-purge remains inactive; no schedule changed"
+    },
+    "advisors": {
+      "errors": 0,
+      "warnings": 10,
+      "info": 19,
+      "newFindings": 0,
+      "remediationIndex": "https://supabase.com/docs/guides/database/database-linter"
+    },
+    "preservation": {
+      "existingMessagesHash": "e3fa2dcb892635f3b3bc3a82de0bb10a",
+      "conversationsHash": "baa60481267a1f21a6cf9f84d38da0fb",
+      "contactsHash": "dce114d05218582cf1710b45728a7e90",
+      "connectionsHash": "d401ca1b8d69c4d4f630143df6087380",
+      "comparison": "All identical before migration and after rolled-back fixture; message hash excludes only newly added scope column"
+    }
+  },
+  "externalEffects": {
+    "realProviderSends": 0,
+    "realModelCalls": 0,
+    "consentOrGrantOrFlagChanges": 0,
+    "deployments": 0,
+    "purchases": 0,
+    "pushes": 0
+  },
+  "limits": [
+    "Onboarding still permits one active WhatsApp integration per workspace; fixture is not two operational real accounts",
+    "Provider credentials/routing per connection, permanent onboarding/cutover and stable public origin remain open",
+    "Temporary trials remain consumed; no authorization inferred for real messages/models",
+    "Legacy status deliberately rejects ambiguous provider IDs; durable receipts are the account-scoped path",
+    "New schema and application writer contract must ship together; old binaries using workspace_id,wamid conflict target cannot be blindly restored",
+    "Realtime configuration preserved, not a new browser realtime delivery test; no live webhook delivery repeated",
+    "F3 remains open and no phase acceptance inferred"
+  ],
+  "autoBlindaje": "Generated columns conflict with inherited messages REPLICA IDENTITY FULL/publication configuration; use ordinary checked scope plus a server trigger, then verify historical hashes and backfill"
+}
