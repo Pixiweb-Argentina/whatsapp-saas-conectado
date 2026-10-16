@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-16",
+  "phase": "F3",
+  "increment": 35,
+  "branch": "codex/omnichannel-f3-managed-send-guard",
+  "baseCommit": "172a6727b9f7a95ed3ee0367a2e224baec269a0b",
+  "scope": "Final SQL send guard for managed YCloud/Kapso accounts and immutable original credential/permission binding for newly created jobs",
+  "implementation": {
+    "problem": "Adapter already selected each managed account's own credentials but channel_permit_until still required legacy_integration_id, preventing managed sends",
+    "managedBoundary": "Managed accounts now validate current owned proof/permission and original job source. Legacy integrations retain prior checks. Consent/suppression, identity, account readiness, window, actor/revision, durable outbox/fencing/budget/unknown remain enforced",
+    "sourcePin": "AFTER INSERT locks connection/credentials and stores SHA256 source fingerprint plus original owned permission UUID in private.channel_job_sources. No historical backfill. Missing/NULL pins cannot adopt later grants. Renewal or rotation plus a fresh grant cannot revive an older queued job",
+    "preview": "Human enqueue transient row with NULL operation_id validates current permission before insert. Persisted jobs always require their immutable source pin",
+    "privileges": "Private RLS table has no browser grants/policies; service SELECT/INSERT only, no UPDATE/DELETE. Parent deletion cascades pins. INVOKER functions use empty search_path",
+    "noEnablement": "No production opt-in/grants/AI/flags/provider/webhook activation; initial bounded-trial product flow remains pending"
+  },
+  "migration": "20261016040458_omnichannel_managed_send_source.sql",
+  "tests": {
+    "unitPass": 1974,
+    "localDbPass": 276,
+    "newDbFilePass": 19,
+    "typecheck": "pass after regenerating corrupt Next-generated validator, with restored server running",
+    "lint": "pass all four new MJS files",
+    "cloudSql": "Both YCloud/Kapso PostgreSQL17 service-role pin/permit-once/unknown/replay/stale-grant probes passed, rolled back; same probes included local DB suite",
+    "http": {
+      "setupChecksSeparate": 4,
+      "queueWorkerReceiptChecks": 60,
+      "restoredIngressDisabled": 1,
+      "total": 61,
+      "interceptedProviderPosts": 3
+    },
+    "httpLimit": "Actual QA GoTrue -> Next human API -> Cloud queue -> production worker/store/policy/resolver/adapter -> intercepted provider -> finish -> signed synthetic managed receipt HTTP -> Cloud SQL. Synthetic consent/proof/accepted seed message/receipt are fabricated in disposable workspaces. No live provider delivery verified",
+    "unknown": "Third intercepted provider POST throws after authorization; exactly one unknown outbox, recovery/claim/replay cannot resend",
+    "concurrency": {
+      "status": "inconclusive, not counted",
+      "holderStarted": "2026-10-16T04:13:18.137446Z",
+      "holderFinished": "2026-10-16T04:13:43.151621Z",
+      "contenderStarted": "2026-10-16T04:13:55.144Z",
+      "contenderFinished": "2026-10-16T04:13:56.472Z",
+      "detail": "Tool dispatch did not overlap holder SQL and independent HTTP call. Permitted outside lock is expected; no claim that live credential-row NOWAIT contention was verified. Guarded synthetic operation64 reconciled/removed. Exploratory harness not retained as a passing test"
+    },
+    "browser": "No UI changes/browser actions. Prior localhost/settings policy denial not bypassed; interactive review remains pending",
+    "build": "Not repeated; full unit/DB suites plus typecheck/lint and actual HTTP/SQL used"
+  },
+  "cloud": {
+    "project": "bzanbpyzujlogipxvkfn",
+    "migrationCount": 100,
+    "allLocalCloudVersionNamesAligned": true,
+    "advisorBefore": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 21
+    },
+    "advisorAfter": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 22
+    },
+    "advisorNew": "One expected INFO: private.channel_job_sources RLS enabled without browser policies, no public grants. All WARN inherited",
+    "advisorRemediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+    "workspaces": 2,
+    "messages": 11,
+    "jobs": 3,
+    "outbox": 2,
+    "active_cron": 0,
+    "pins": 0,
+    "managed_proofs": 0,
+    "managed_permissions": 0,
+    "messages_hash": "bb30a38b11cb0c1b6e36476bea148ee4",
+    "contacts_hash": "dce114d05218582cf1710b45728a7e90",
+    "conversations_hash": "baa60481267a1f21a6cf9f84d38da0fb",
+    "connections_hash": "d401ca1b8d69c4d4f630143df6087380",
+    "integrations_hash": "4b92b9cae64bbac35b09402de8b7b5e2",
+    "originalHashesUnchanged": true,
+    "cleanup": "Both guarded fixtures3501/3601 and synthetic operation3564, proof/permission/receipt/outbox/messages/jobs/pins/events/threads/identities/contacts/connections/credentials/memberships/audit removed. Original users/data preserved"
+  },
+  "runtime": {
+    "port": 3100,
+    "mode": "dedicated original lab inbox",
+    "normalRolloutFlags": "off",
+    "managedAccountIngress": "off",
+    "managedAccountInbox": "off",
+    "publicOrigin": "empty",
+    "permissionsUiTest": false,
+    "managedTransportQa": false,
+    "supervisorPidAtVerification": 22256,
+    "sessionAtVerification": 59006,
+    "pidsAreEphemeral": true,
+    "qaSupervisorStopped": 12028,
+    "tunnelAndCallbacks": "not changed or revalidated"
+  },
+  "domain": {
+    "selectedByUser": "dashboard.pixiweb.com.ar",
+    "status": "prepared, not deployed",
+    "dns": "NXDOMAIN observed increment34 on2026-10-16; not queried again in35"
+  },
+  "autoBlindaje": "Final SQL must select managed vs legacy source, not merely TypeScript resolver. Original credential fingerprint plus original permission UUID fences old jobs across rotation/renewal; never repin on replay. Concurrency proof requires measured overlap, not merely launching tool promises. Backup generated .ts files as .ts.bak, since tsconfig includes all workspace **/*.ts even in ignored test-results",
+  "sources": [
+    "https://supabase.com/docs/guides/database/functions",
+    "https://www.postgresql.org/docs/17/explicit-locking.html"
+  ],
+  "boundaries": {
+    "realProviderCalls": 0,
+    "realModelCalls": 0,
+    "purchases": 0,
+    "originalConsentChanged": false,
+    "mainChanged": false,
+    "pushMergeDeploy": false
+  },
+  "next": "Build explicit initial bounded delivery trial from product, scoped to one authorized operation/destination/text/short expiry, without manual SQL or permanent consent/grant. Then hosting/DNS/HTTPS/cutover, managed media/business-app echoes, interactive review and remaining AC",
+  "formalPhaseAcceptance": "F3 remains open;0/9 phases formally accepted"
+}
