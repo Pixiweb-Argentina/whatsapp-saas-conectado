@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-15",
+  "phase": "F3",
+  "increment": 33,
+  "branch": "codex/omnichannel-f3-account-inbox",
+  "baseCommit": "5dde69a359b11d2cbb288ffed376422b37f76b08",
+  "scope": "Receive-only text inbox for managed YCloud/Kapso accounts; existing shadow intake and legacy paths preserved",
+  "implementation": {
+    "rollout": "Both CHANNEL_ACCOUNT_INGRESS_CONNECTIONS and CHANNEL_ACCOUNT_INBOX_CONNECTIONS require explicit connection UUIDs. Empty is off; no wildcard, no workspace or AI/outbound flag inheritance",
+    "atomicity": "Service-only INVOKER RPC with empty search_path captures normalized event, verifies source revision under existing source locks, resolves contact/account identity/thread, inserts text and updates unread/window in one transaction. Late failures roll back every artifact",
+    "isolation": "Existing verified account identity owns its contact even after contact.phone edits. New identities may share a contact by exact verified E164; identities, conversations and messages remain connection scoped. No adoption of legacy NULL-routed history",
+    "dedup": "Same-account retries return existing IDs and do not inflate unread or mutate operator state. Same message ID on different accounts produces distinct messages/threads. Changed envelope/body is rejected",
+    "policy": "New contacts opt_in=false; existing consent/profile/suppression untouched. New threads human_active, ai_enabled=false. Existing active-AI threads reject new intake; duplicate existing messages preserve state. Windows derive from occurredAt, not retries or receipts",
+    "limits": "Text/rawType=text only. Media remains shadow-captured with stable IDs, no download/transcription/model. Receipts retain separate ledger and exact account reconciliation, no inbox/unread mutation",
+    "ack": "Shadow ACK unchanged when inbox flag off or receipt/media; text materialization ACK received:true,shadowOnly:false,recorded:true,inboxOnly:true,materialized:true. No private IDs or credentials",
+    "historical": "Historical shadow events cannot become live identity evidence. Source rotation/expiry/revocation invalidates in-flight/replayed materialization"
+  },
+  "migration": "20261016023902_omnichannel_account_inbox.sql",
+  "tests": {
+    "unitPass": 1968,
+    "localDbPass": 247,
+    "newUnitPass": 5,
+    "newDbFilePass": 14,
+    "typecheck": "pass with restored server",
+    "lint": "pass all changed/new TS/MJS",
+    "cloudSql": "Same PostgreSQL17 atomic inbox/replay/three-account isolation/Kapso/edited-phone/rotation/ACL probe passes locally and Cloud under service_role; all SQL probe writes rolled back",
+    "http": {
+      "signedIntakeAndDatabaseChecks": 54,
+      "authenticatedProductionInboxAndComposerChecks": 21,
+      "disabledAfterRestore": 1,
+      "total": 76,
+      "fixtureSetupChecks": 4
+    },
+    "httpFlow": "Local Next3100 -> PostgREST -> Cloud SQL: two YCloud and one Kapso signed synthetic sources, same actor/message ID, exact account binding, replay/collision/wrong destination/future/signature/receipt/media/revoke. Real QA login/RLS reads and production readInboxPage/readComposerAvailability verify per-account filters and blocked composer",
+    "safetyLimit": "All payloads, numbers, keys and provider proof were synthetic. No provider/model network requests. Auth/DB requests are real. These tests do not prove provider delivery or new-account onboarding in production",
+    "browser": "No browser actions or workaround; prior URL policy denial remains. No new UI changes. Interactive/responsive review of account forms30/32 still pending; no new Realtime browser test",
+    "build": "No repeated production build; full suites/typecheck/lint/actual HTTP+DB verification"
+  },
+  "cloud": {
+    "project": "bzanbpyzujlogipxvkfn",
+    "migrationCount": 98,
+    "allLocalCloudVersionNamesAligned": true,
+    "advisorBefore": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 21
+    },
+    "advisorAfter": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 21
+    },
+    "advisorChange": "No new findings; grouped count/findings summed",
+    "workspaces": 2,
+    "messages": 11,
+    "jobs": 3,
+    "outbox": 2,
+    "activeCron": 0,
+    "managedVerificationRows": 0,
+    "managedPermissionRows": 0,
+    "originalHashesUnchanged": {
+      "messages": "bb30a38b11cb0c1b6e36476bea148ee4",
+      "contacts": "dce114d05218582cf1710b45728a7e90",
+      "conversations": "baa60481267a1f21a6cf9f84d38da0fb",
+      "connections": "d401ca1b8d69c4d4f630143df6087380",
+      "integrations": "4b92b9cae64bbac35b09402de8b7b5e2"
+    },
+    "cleanup": "Guarded cleanup checks exact fixture ID/slug/name/account allowlist, synthetic inbound bodies and no consent/jobs/outbox/integrations. Removes workspace00000000-0000-4000-9000-000000003301, four events, three messages/threads/identities, one contact, credentials/receipt/accounts/membership and workspace events. Original QA user preserved"
+  },
+  "runtime": {
+    "port": 3100,
+    "mode": "dedicated original pilot inbox",
+    "normalRolloutFlags": "off",
+    "managedAccountIngress": "off",
+    "managedAccountInbox": "off",
+    "publicOrigin": "empty",
+    "permissionsUiTest": false,
+    "supervisorPidAtVerification": 2040,
+    "sessionAtVerification": 19969,
+    "pidsAreEphemeral": true,
+    "webhooksChanged": false
+  },
+  "autoBlindaje": "Known account identity must resolve before editable contact phone to prevent rerouting. Anonymous table ACL rejects42501 (stronger boundary); tests must assert denial, not expect empty RLS rows or weaken privileges. Replay retains original occurredAt, including HTTP probes",
+  "sources": [
+    "https://supabase.com/docs/guides/database/functions",
+    "https://supabase.com/docs/guides/database/database-linter"
+  ],
+  "boundaries": {
+    "realProviderCalls": 0,
+    "realModelCalls": 0,
+    "purchases": 0,
+    "newRealSendPermissions": 0,
+    "originalConsentChanged": false,
+    "mainChanged": false,
+    "pushMergeDeploy": false
+  },
+  "next": "Operational permanent origin/onboarding/cutover and renewal readiness; Kapso verification/permission path; real deployment only with specific authority; close remaining F3 AC. Media materialization and interactive form review remain pending. Instagram/Facebook/widget/Brevo are later phases",
+  "formalPhaseAcceptance": "F3 remains open;0/9 phases formally accepted"
+}

@@ -13,7 +13,7 @@ const { readWhatsAppAccountSource } = await import("./whatsapp-account-source.ts
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const now = Date.parse("2026-10-10T12:01:00Z");
 const secret = "synthetic-account-secret";
-afterEach(() => { delete process.env.CHANNEL_ACCOUNT_INGRESS_CONNECTIONS; });
+afterEach(() => { delete process.env.CHANNEL_ACCOUNT_INGRESS_CONNECTIONS; delete process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS; });
 
 async function fixture(provider: "ycloud" | "kapso" = "ycloud", payload: unknown = provider === "ycloud" ? YCLOUD_TEXT : KAPSO_TEXT) {
   const owner = { workspaceId: id(1), connectionId: id(51), provider };
@@ -26,7 +26,8 @@ async function fixture(provider: "ycloud" | "kapso" = "ycloud", payload: unknown
   const connection = { id: owner.connectionId, workspace_id: owner.workspaceId, channel: "whatsapp", provider,
     external_account_id: source.externalAccountId, status: "ready", revoked_at: null, capabilities: {}, legacy_integration_id: null };
   const db = { rpc: async (name: string, args: Record<string, unknown>) => {
-    calls.push({ name, args }); return { data: name === "read_whatsapp_account_source" ? result : id(41), error };
+    calls.push({ name, args }); return { data: name === "read_whatsapp_account_source" ? result
+      : name === "materialize_whatsapp_account_inbound" ? { eventId: id(41), conversationId: id(42), messageId: id(43), inserted: true } : id(41), error };
   }, from: (name: string) => {
     tables.push(name);
     const q = { select: () => q, eq: () => q, maybeSingle: async () => ({ data: name === "channel_connections"
@@ -52,6 +53,36 @@ test("per-account opt-in defaults off; workspace pilot/ingress flags never opt a
   assert.deepEqual(await captureWhatsAppAccountDelivery(f.db, f.input, now), { status: "disabled" });
   assert.equal(f.calls.length, 0); assert.equal(accountIngressEnabled(id(52), id(51)), false);
   assert.throws(() => accountIngressEnabled(id(51), "*"), /CONFIG_INVALID/);
+});
+
+test("inbox requires both explicit account flags and writes only the atomic materializer", async () => {
+  for (const provider of ["ycloud", "kapso"] as const) {
+    const f = await fixture(provider); process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS = id(51);
+    delete process.env.CHANNEL_ACCOUNT_INGRESS_CONNECTIONS;
+    assert.deepEqual(await captureWhatsAppAccountDelivery(f.db, f.input, now), { status: "disabled" });
+    assert.equal(f.calls.length, 0);
+    process.env.CHANNEL_ACCOUNT_INGRESS_CONNECTIONS = id(51);
+    assert.deepEqual(await captureWhatsAppAccountDelivery(f.db, f.input, now), { status: "persisted", kind: "message", materialized: true });
+    assert.equal(f.calls[1].name, "materialize_whatsapp_account_inbound");
+    assert.equal(f.calls[1].args.p_source_revision, f.source.sourceRevision);
+    assert.equal(JSON.stringify(f.calls[1]).includes(secret), false);
+    assert.deepEqual(f.tables, ["business_info"]);
+  }
+});
+
+test("inbox flag does not materialize media or receipts and malformed configuration fails closed", async () => {
+  process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS = id(51);
+  const media = await fixture("ycloud", { ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage,
+    type: "image", image: { id: "synthetic-image", link: "https://example.invalid/private" } } });
+  assert.deepEqual(await captureWhatsAppAccountDelivery(media.db, media.input, now), { status: "persisted", kind: "message" });
+  assert.equal(media.calls[1].name, "persist_whatsapp_account_delivery");
+  const receipt = await fixture("ycloud", { id: "receipt.inbox", type: "whatsapp.message.updated", createTime: "2026-10-10T12:00:00Z",
+    whatsappMessage: { from: "+15555550100", to: "+15555550101", id: "provider.id", wamid: "wamid.receipt", status: "read" } });
+  assert.deepEqual(await captureWhatsAppAccountDelivery(receipt.db, receipt.input, now), { status: "persisted", kind: "receipt" });
+  assert.equal(receipt.calls[1].name, "persist_whatsapp_account_delivery");
+  process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS = "*";
+  await assert.rejects(captureWhatsAppAccountDelivery(receipt.db, receipt.input, now), /ACCOUNT_INBOX_CONFIG_INVALID/);
+  assert.equal(receipt.calls.length, 2);
 });
 
 test("YCloud and Kapso signed messages bind to the private source and cannot reach legacy tables", async () => {

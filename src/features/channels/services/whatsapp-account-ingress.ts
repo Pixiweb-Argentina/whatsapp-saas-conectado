@@ -6,6 +6,7 @@ import { workspaceCountryCode } from "@/features/inbox/services/country-code";
 import { normalizeWhatsAppEvent } from "./whatsapp-inbound-event";
 import { normalizeWhatsAppReceipt } from "./whatsapp-delivery-receipt";
 import { readWhatsAppAccountSource } from "./whatsapp-account-source";
+import { accountInboxEnabled, materializeAccountInbox } from "./whatsapp-account-inbox";
 
 /** Per-account opt-in, independent of all legacy/pilot workspace switches. Empty is off. */
 export function accountIngressEnabled(connectionId: string, raw = process.env.CHANNEL_ACCOUNT_INGRESS_CONNECTIONS): boolean {
@@ -22,13 +23,14 @@ interface Delivery {
   headers: Headers;
 }
 export type AccountIngressResult = { status: "disabled" | "unauthorized" | "invalid" | "ignored" }
-  | { status: "persisted"; kind: "message" | "receipt" };
+  | { status: "persisted"; kind: "message" | "receipt"; materialized?: true };
 
-/** Signed shadow intake only: no legacy normalizer, contact/conversation creation, buffer, model or send. */
+/** Signed capture with separately opted-in receive-only inbox. No legacy normalizer, buffer, model or send. */
 export async function captureWhatsAppAccountDelivery(db: SupabaseClient, input: Delivery,
   now = Date.now()): Promise<AccountIngressResult> {
   z.uuid().parse(input.workspaceId); z.uuid().parse(input.connectionId);
   if (!accountIngressEnabled(input.connectionId)) return { status: "disabled" };
+  const inbox = accountInboxEnabled(input.connectionId);
   const source = await readWhatsAppAccountSource(db, input.workspaceId, input.connectionId);
   if (!source) return { status: "unauthorized" };
   const verified = source.provider === "ycloud"
@@ -50,6 +52,10 @@ export async function captureWhatsAppAccountDelivery(db: SupabaseClient, input: 
   if (normalized.status === "rejected") return { status: "invalid" };
   if (normalized.status === "ignored" || normalized.event.content.rawType === "reaction") return { status: "ignored" };
   if (Date.parse(normalized.event.occurredAt) > now) throw new Error("ACCOUNT_EVENT_CLOCK_SKEW");
+  if (inbox && normalized.event.content.type === "text" && normalized.event.content.rawType === "text") {
+    await materializeAccountInbox(db, source, normalized.event, payload, kapsoEventName);
+    return { status: "persisted", kind: "message", materialized: true };
+  }
   return persist(db, source, "message", normalized.event);
 }
 

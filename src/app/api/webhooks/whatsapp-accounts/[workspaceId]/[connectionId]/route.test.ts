@@ -14,7 +14,8 @@ mock.module("@supabase/supabase-js", { exports: { createClient: () => {
   created++;
   return { rpc: async (name: string) => {
     if (name !== "read_whatsapp_account_source") writes++;
-    return { data: name === "read_whatsapp_account_source" ? source : connectionId,
+    return { data: name === "read_whatsapp_account_source" ? source : name === "materialize_whatsapp_account_inbound"
+      ? { eventId: connectionId, conversationId: workspaceId, messageId: connectionId, inserted: true } : connectionId,
       error: failed ? { message: "private-route-sentinel" } : null };
   }, from: () => {
     const q = { select: () => q, eq: () => q, maybeSingle: async () => ({ data: { structured: { default_country_code: "1" } }, error: null }) };
@@ -30,6 +31,7 @@ function request(raw = JSON.stringify(YCLOUD_TEXT), sign = true) {
 }
 beforeEach(async () => {
   created = 0; writes = 0; failed = false;
+  delete process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS;
   process.env.CHANNEL_ACCOUNT_INGRESS_CONNECTIONS = connectionId;
   source = { workspaceId, connectionId, provider: "ycloud", externalAccountId: "+15555550100", status: "needs_permissions",
     sourceRevision: "b".repeat(32), ...await sealAccountCredentials({ workspaceId, connectionId, provider: "ycloud" },
@@ -47,6 +49,13 @@ test("valid signed delivery returns only the shadow acknowledgement, no source o
   const response = await POST(request(), context);
   assert.equal(response.status, 200); assert.equal(response.headers.get("Cache-Control"), "no-store");
   assert.deepEqual(await response.json(), { received: true, shadowOnly: true, recorded: true }); assert.equal(writes, 1);
+});
+test("explicit receive-only inbox acknowledges materialization without exposing IDs or enabling sends", async () => {
+  process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS = connectionId;
+  const response = await POST(request(), context);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { received: true, shadowOnly: false, recorded: true, inboxOnly: true, materialized: true });
+  assert.equal(writes, 1);
 });
 test("invalid signature, signed bad JSON and unknown source are rejected without writes", async () => {
   assert.equal((await POST(request(undefined, false), context)).status, 401);

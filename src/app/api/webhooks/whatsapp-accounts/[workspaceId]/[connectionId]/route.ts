@@ -7,7 +7,7 @@ const scope = z.strictObject({ workspaceId: z.uuid(), connectionId: z.uuid() });
 const headers = { "Cache-Control": "no-store" };
 interface Context { params: Promise<{ workspaceId: string; connectionId: string }> }
 
-/** Prepared shadow endpoint. No provider webhook is configured or activated by registration. */
+/** Explicit per-account capture/inbox. Registration configures/activates no provider webhook. */
 export async function POST(request: NextRequest, context: Context): Promise<NextResponse> {
   try {
     const parsed = scope.safeParse(await context.params);
@@ -23,7 +23,9 @@ export async function POST(request: NextRequest, context: Context): Promise<Next
     if (result.status === "unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers });
     if (result.status === "invalid") return NextResponse.json({ error: "Invalid delivery" }, { status: 400, headers });
     if (result.status === "disabled") return NextResponse.json({ error: "Account intake unavailable" }, { status: 503, headers });
-    return NextResponse.json({ received: true, shadowOnly: true, recorded: result.status === "persisted" }, { headers });
+    const materialized = result.status === "persisted" && result.materialized === true;
+    return NextResponse.json({ received: true, shadowOnly: !materialized, recorded: result.status === "persisted",
+      ...(materialized ? { inboxOnly: true, materialized: true } : {}) }, { headers });
   } catch { return NextResponse.json({ error: "Account intake unavailable" }, { status: 503, headers }); }
 }
 
