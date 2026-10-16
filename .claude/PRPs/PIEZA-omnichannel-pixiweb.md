@@ -448,3 +448,7 @@ Auto-Blindaje36: PostgreSQL least ignora NULL; validar primero el deadline de ev
 ### F3 — cutover del laboratorio YCloud a dashboard.pixiweb.com.ar, 2026-10-16
 
 Webhook YCloud del número dedicado del laboratorio legacy (workspace ff50ed19) movido del túnel local al dominio nuevo con autorización de Yani. Producción en modo inbox: firma falsa 401, GET 200. Texto real de Yani recibido y guardado en la bandeja (6→7, `in` 17:09:48Z), sin salida automática ni IA. Vercel sin cambios. No prueba todavía la ruta managed por cuenta ni envíos. Detalle en [F3-MOTOR](../../docs/F3-MOTOR-omnichannel.md#cutover-del-laboratorio-ycloud-al-dominio-nuevo-2026-10-16). F3 abierta, 0/9 fases aceptadas.
+
+### F3 — primera cuenta managed real (Kapso 6572) por la ruta por cuenta, 2026-10-16
+
+A pedido de Yani, número Kapso terminado en 6572 retirado del original (sólo se pausó su webhook ahí; integración intacta). Alta managed en workspace 52aa2172, conexión f07797e6, webhook por número be0fbd88 verificado. Vercel: ingress e inbox = sólo f07797e6, trial/workspaces vacíos, redeploy cfe4ueabg. Texto real de Yani guardado en la bandeja (in 21:08:22Z, IA apagada, cero salidas, needs_permissions). Detalle en [F3-MOTOR](../../docs/F3-MOTOR-omnichannel.md#primera-cuenta-managed-real-por-la-ruta-por-cuenta--kapso-2026-10-16). F3 abierta, 0/9 fases aceptadas.
