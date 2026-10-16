@@ -1,6 +1,6 @@
 # Continuidad de Omnichannel Pixiweb
 
-Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36 el2026-10-16.
+Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36 y confirmar su respaldo GitHub el2026-10-16.
 
 ## Dónde continuar
 
@@ -40,7 +40,7 @@ SSR inicial React de paneltrial/checks para ambos proveedores pasa; no acredita 
 
 Fixtures3701/3801 y trialauthority/pins/jobs/outbox/mensajes/receipt/proof/permisos/hilos/identidades/contactos/cuentas/claves/membresías/auditoría retirados con guardas. Hashes originales completos idénticos de mensajes/contactos/conversaciones/conexiones/integraciones;2workspaces/11mensajes/3jobs/2outbox/0cron activos,un cron heredado inactivo.0trials/pins/proofs/permisos managed. Asesor0ERROR/10WARN heredados/23INFO,un INFO nuevo esperado por tabla privada RLS sin políticas/grants browser.
 
-Runtime restaurado Next3100: wrapper test-results/f3-permissions-next.mjs inbox,supervisor30612/sesión92989,normalRolloutFlags off,origen vacío,permissionsUiTestfalse,managedTransportQafalse,accountTrialQafalse,tres flags managed vacíos. QA29132 y su preload de red detenidos. PIDs/sesiones/túneles efímeros,revalidar antes de operar. Túnel/callbacks no revalidados ni modificados. Runner IA antiguo apagado. GitHub previo registrado df68657/preparación7ede6e4; incrementos31–36 locales,sin nuevo push/merge/deploy.
+Runtime restaurado Next3100: wrapper test-results/f3-permissions-next.mjs inbox,supervisor30612/sesión92989,normalRolloutFlags off,origen vacío,permissionsUiTestfalse,managedTransportQafalse,accountTrialQafalse,tres flags managed vacíos. QA29132 y su preload de red detenidos. PIDs/sesiones/túneles efímeros,revalidar antes de operar. Túnel/callbacks no revalidados ni modificados. Runner IA antiguo apagado. Respaldo GitHub confirmado el16/10/2026 por pedido explícito de Yani:23ramas codex/omnichannel verificadas contra git ls-remote, incluidos incrementos31–36 y preparación. Fuente de implementación d1023fc en codex/omnichannel-f3-account-trial y handoff0f32ca2 en codex/omnichannel-preparacion; este registro de continuidad se versiona y sube después. Main local/remota intacta en28a1530b0f90bdc130b3858a041d5b44a0639d8e. No merge ni despliegue solicitado; la autorización de push de este respaldo no implica mensajes, modelos, cambio de webhooks o activación de pruebas.
 
 Antecedente35: guard SQL managed y pin de origen/grant original completos (4840c49). La prueba adicional de concurrencia quedó NO concluyente: holder04:13:18–04:13:43UTC y contender04:13:55–04:13:56UTC no se superpusieron. No afirmar NOWAIT probado en Cloud. Evidencia/fixtures retirados en35; pruebas secuenciales de deriva/renovación sí pasan.
 
