@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-account-ingress, desde df68657. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-account-permissions, desde 1f943e7. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -370,3 +370,15 @@ Nueva entrada /api/webhooks/whatsapp-accounts/[workspaceId]/[connectionId], apag
 Auto-Blindaje31: message_jobs tiene PK operation_id, no id; usar workspace_id para verificar tablas de efectos vacías. Tras fallo del smoke, conciliar evento y reutilizar occurredAt; cambiar timestamp bajo mismo ID es colisión, no retry. El ACK shadow sólo acredita captura, no recepción en bandeja, permisos ni conexión operativa. No hubo navegador ni cambios visuales; revisión interactiva del formulario30 sigue pendiente por política URL. No proveedores/modelos reales,mensajes nuevos,compras,push/merge/deploy;main intacto.
 
 [Evidencia](../../docs/evidencias/F3-INGRESO-CUENTAS-2026-10-15.json). Siguiente: verificar proveedor/callback y persistir permisos ligados a sourceRevision para adicionales; materializar sus mensajes en bandeja. Verificación/permisos/materialización legacy aún usan integración principal/callback anterior. Luego origen estable/alta/cutover/renovación y AC. F3 abierta,0/9aceptadas; rama codex/omnichannel-f3-account-ingress desde df68657.
+
+### F3, incremento32 — verificación y permiso por cuenta, 2026-10-15
+
+Adicionales YCloud tienen verificación GET de número/webhook con sus claves propias y callback exacto derivado del origen estable del servidor. La prueba queda en tabla privada RLS con SHA256 de identidad/credenciales/expiración, separado del sourceRevision que incluye estado. Admin verifica/muta; manager consulta; SQL revalida membresía bajo lock y rechaza fuente/respuesta antigua. Guardar proof no cambia estado ni concede permiso. Kapso muestra unsupported_provider y conserva su bloqueo.
+
+Permiso local de texto con confirmación admin, proof completo vigente24h, callback estable y job/outbox/message/receipt delivered/read de esa cuenta. TTL limitado por prueba+24h/expiración de clave; UUID/revisión/replay no reactivan después de revocar. Cambiar/expirar clave o fallar/borrar proof invalida el grant propio. Frontera final channel_text_grant_until también comprueba procedencia/evidencia/vencimiento; ruta legacy preservada. No cambia opt-in,IA,campañas ni flags. Ajustes incluye consulta por cuenta,callback,verificador,bloqueos,checkbox y autorizar/revocar; incertidumbre conserva UUID/reintento explícito, lecturas paralelas ignoran respuestas viejas.
+
+97 migraciones locales/Cloud alineadas;1.963 unitarias/233DB/typecheck/lint pasan.13checks DB nuevos bajo service_role y mismo probe local/PostgreSQL17 con rollback.33controles GoTrue→Next3100→PostgREST→SQL cubren origen ausente,admin,grant/revoke/replay,manager,inactivo y restauración. La prueba HTTP positiva usa proof y job/outbox/message/receipt deliberadamente ficticios; los GETs de proveedor se mockean en unitarias. No hubo comprobación/envío/modelo real. Render inicial React aprobado; no acredita interacción/responsive: bloqueo de política previo de Browser Use sigue vigente y no se intentaron rodeos.
+
+Fixture y todo su historial/privados/auditoría retirados;0proofs/permisos managed. Hashes originales idénticos,2workspaces/11mensajes/3jobs/2outbox/0cron activos preservados. Asesor0ERROR/10WARN heredados/21INFO:dosINFO nuevos esperados por tablas privadas RLS sin políticas browser,sin grants públicos. Next3100 restaurado inbox/flags apagados/origen vacío; main intacto,sin compras/push/merge/deploy. No se repiten pruebas reales anteriores.
+
+Auto-Blindaje32: la identidad/ruta del canal es inmutable. Fixture que intentaba quitar legacy_integration_id fue rechazado; se reconstruyó managed desde su alta, sin relajar guard. Separar fingerprint de proof y revisión de estado impide que grant→ready invalide su propia prueba. [Evidencia](../../docs/evidencias/F3-PERMISOS-CUENTAS-2026-10-15.json). Siguiente: materializar adicionales en bandeja por conexión sin IA/envíos; luego origen permanente/alta/cutover/renovación y AC. F3 abierta,0/9aceptadas; rama codex/omnichannel-f3-account-permissions desde1f943e7.

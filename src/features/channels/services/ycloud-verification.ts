@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { validYCloudCallback, ycloudVerificationInputSchema, type YCloudVerificationInput,
   type YCloudVerificationReport } from "../types/ycloud-verification";
+import { validAccountCallback } from "../types/whatsapp-account-checks";
 
 const phoneSchema = z.string().regex(/^\+[1-9]\d{7,14}$/);
 const pageSchema = z.object({ items: z.array(z.object({ phoneNumber: phoneSchema, status: z.string() })).max(100),
@@ -10,6 +11,7 @@ const endpointSchema = z.object({ id: z.string(), url: z.string(), status: z.str
   enabledEvents: z.array(z.string()).max(200), secret: z.string().max(4096) });
 interface Options {
   workspaceId: string;
+  connectionId?: string;
   phoneNumber: string;
   apiKey: string;
   signingSecret: string;
@@ -40,8 +42,10 @@ export async function verifyYCloudAccount(options: Options, fetcher: typeof fetc
   now = Date.now()): Promise<YCloudVerificationReport> {
   const { workspaceId, phoneNumber, apiKey, signingSecret } = options;
   const input = ycloudVerificationInputSchema.parse(options.input);
+  const validCallback = options.connectionId === undefined ? validYCloudCallback(input.callbackUrl, workspaceId)
+    : validAccountCallback(input.callbackUrl, workspaceId, options.connectionId);
   if (!z.uuid().safeParse(workspaceId).success || !phoneSchema.safeParse(phoneNumber).success
-    || !apiKey || !signingSecret || !validYCloudCallback(input.callbackUrl, workspaceId)) {
+    || !apiKey || !signingSecret || !validCallback) {
     throw new Error("YCLOUD_VERIFICATION_CONFIG_INVALID");
   }
   const report: YCloudVerificationReport = { version: 1, checkedAt: new Date(now).toISOString(),

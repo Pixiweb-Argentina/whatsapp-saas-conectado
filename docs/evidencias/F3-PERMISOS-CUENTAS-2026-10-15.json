@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-15",
+  "phase": "F3",
+  "increment": 32,
+  "branch": "codex/omnichannel-f3-account-permissions",
+  "baseCommit": "1f943e783914bfc5f237c34f7232cc875a9922ab",
+  "scope": "Managed YCloud account verification and persistent local text permissions; APIs and Settings controls; legacy contracts preserved",
+  "implementation": {
+    "verification": "Provider GET checks reuse the bounded YCloud verifier with exact managed connection callback. Source read and save recheck active admin; private ciphertext is decrypted only on server. Client supplies endpoint ID only; callback derives from CHANNEL_PUBLIC_ORIGIN",
+    "identity": "SHA256 source fingerprint binds workspace/connection/provider/account/ciphertext/key-version/credential-expiry, independent of status/capabilities. Existing ingress sourceRevision still fences lifecycle changes. Late/equal-time proof cannot replace newer proof",
+    "storage": "Two private RLS tables, no browser grants; service-only INVOKER RPCs, empty search_path. Saving proof grants no capability and changes no status",
+    "permission": "Explicit admin confirmation; exact stable callback, complete current provider proof and same-account accepted outbox/job/message plus delivered/read receipt required. Maximum verification+24h, capped by credential expiry. No opt-in, rollout, AI or campaign activation",
+    "replay": "Operation UUID pinned to actor/workspace/connection/action; same operation returns current state without reapplying after revoke; revision/verification changes rejected with23514",
+    "invalidation": "Credential rotation/expiry or failed/deleted proof removes owned capability. Final channel_text_grant_until SQL boundary also checks managed source/proof/receipt freshness. Legacy/unowned capability behavior preserved",
+    "providers": "YCloud verification/text permission supported for managed accounts; Kapso review includes unsupported_provider and cannot grant through these APIs",
+    "ui": "Per-account review, exact server callback, provider check, blockers, explicit text checkbox, grant/revoke and uncertainty/retry retaining the same operation UUID. Read requests parallel, stale reads ignored. Does not auto-check providers on render",
+    "apis": ["/api/workspace/[id]/whatsapp-accounts/[connectionId]/verification", "/api/workspace/[id]/whatsapp-accounts/[connectionId]/permissions"]
+  },
+  "migration": "20261016021245_omnichannel_account_verification_permissions.sql",
+  "tests": {
+    "unitPass": 1963,
+    "localDbPass": 233,
+    "newUnitPass": 11,
+    "newDbFilePass": 13,
+    "typecheck": "pass after restored live server",
+    "lint": "pass for changed TS/TSX and new MJS probes",
+    "reactReview": "React Best Practices; parallel reads, lazy explicit provider checks, useId labels, native checkbox, no secret props; stale read revision and same-operation retry guards",
+    "staticRender": "Actual component rendered with React DOM server and local TypeScript JSX loader; initial review control present, no credentials. Not an interactive/responsive test",
+    "cloud": "Same PostgreSQL17.11 proof/grant/revoke/replay probe passes locally and Cloud under service_role with rollback",
+    "http": { "blockedOriginChecks": 7, "adminGrantRevokeReplayChecks": 11, "managerChecks": 4, "inactiveChecks": 4, "restoredOriginChecks": 7, "total": 33 },
+    "httpProofLimit": "Positive permission HTTP test used explicitly synthetic SQL proof/accepted job/outbox/message/receipt in a disposable workspace. No live provider verification/delivery occurred; provider GET response checking is mocked in unit tests",
+    "build": "Not repeated; full suites, typecheck/lint, SQL and real authenticated HTTP used",
+    "browser": "No browser actions or policy workaround. Previous localhost/settings inspection denial remains; interactive/responsive review pending"
+  },
+  "cloud": {
+    "project": "bzanbpyzujlogipxvkfn",
+    "migrationCount": 97,
+    "allLocalCloudVersionNamesAligned": true,
+    "advisorBefore": { "ERROR": 0, "WARN": 10, "INFO": 19 },
+    "advisorAfter": { "ERROR": 0, "WARN": 10, "INFO": 21 },
+    "advisorChange": "Two expected INFO findings: private service-only RLS tables without browser policies; inherited WARN unchanged. Counts sum grouped finding counts",
+    "workspaces": 2, "messages": 11, "jobs": 3, "outbox": 2, "activeCron": 0,
+    "managedVerificationRowsAfterCleanup": 0, "managedPermissionRowsAfterCleanup": 0,
+    "originalHashesUnchanged": {
+      "messages": "bb30a38b11cb0c1b6e36476bea148ee4", "contacts": "dce114d05218582cf1710b45728a7e90",
+      "conversations": "baa60481267a1f21a6cf9f84d38da0fb", "connections": "d401ca1b8d69c4d4f630143df6087380",
+      "integrations": "4b92b9cae64bbac35b09402de8b7b5e2"
+    },
+    "cleanup": "Scoped guarded cleanup removed disposable workspace00000000-0000-4000-9000-000000003201 and every proof, permission, private credential, receipt, message, accepted fixture job/outbox, conversation, identity/contact and audit. Original QA user/memberships preserved"
+  },
+  "runtime": { "port": 3100, "mode": "dedicated original pilot inbox", "normalRolloutFlags": "off", "managedAccountIngress": "off", "publicOrigin": "empty", "permissionsUiTest": false, "supervisorPidAtVerification": 26200, "sessionAtVerification": 5862, "pidsAreEphemeral": true, "webhooksChanged": false },
+  "autoBlindaje": "Managed sources must be created managed at birth: channel routing identity/legacy link is immutable. The first local fixture attempted to detach legacy and was correctly rejected; fixture was rebuilt, guard preserved. Keep identity fingerprint separate from status revision so grant->ready does not invalidate its proof",
+  "sources": ["https://supabase.com/docs/guides/database/functions", "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy"],
+  "boundaries": { "realProviderSends": 0, "realProviderVerificationCalls": 0, "realModelCalls": 0, "purchases": 0, "newRealPermissions": 0, "consentChanged": false, "mainChanged": false, "pushMergeDeploy": false },
+  "next": "Materialize signed additional-account intake into inbox/contact identity/conversation per connection without AI or send activation; then permanent origin/onboarding/cutover/renewal and remaining F3 AC. Kapso verifier and interactive form review remain pending",
+  "formalPhaseAcceptance": "F3 open;0/9 phases formally accepted"
+}

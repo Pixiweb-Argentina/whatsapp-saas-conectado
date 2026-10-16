@@ -12,9 +12,11 @@ const sourceSchema = z.strictObject({
 export type WhatsAppAccountSource = Awaited<ReturnType<typeof readWhatsAppAccountSource>>;
 
 /** Internal service-client boundary. Ciphertext/plaintext must never be returned to the browser or logged. */
-export async function readWhatsAppAccountSource(db: SupabaseClient, workspaceId: string, connectionId: string) {
+export async function readWhatsAppAccountSource(db: SupabaseClient, workspaceId: string, connectionId: string, actorId?: string) {
   z.uuid().parse(workspaceId); z.uuid().parse(connectionId);
-  const { data, error } = await db.rpc("read_whatsapp_account_source", { p_workspace: workspaceId, p_connection: connectionId });
+  if (actorId !== undefined) z.uuid().parse(actorId);
+  const { data, error } = await db.rpc(actorId === undefined ? "read_whatsapp_account_source" : "read_whatsapp_account_check_source",
+    { p_workspace: workspaceId, p_connection: connectionId, ...(actorId === undefined ? {} : { p_actor: actorId }) });
   if (error) throw new Error("ACCOUNT_SOURCE_UNAVAILABLE");
   if (data === null) return null;
   const parsed = sourceSchema.safeParse(data);

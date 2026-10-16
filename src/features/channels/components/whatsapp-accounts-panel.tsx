@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { registerWhatsAppAccountSchema, type RegisterWhatsAppAccount, type WhatsAppAccount } from "../types/whatsapp-account";
 import { useWhatsAppAccounts } from "../hooks/use-whatsapp-accounts";
+import { WhatsAppAccountChecks } from "./whatsapp-account-checks";
 
 interface Props { workspaceId: string; canEdit: boolean }
 interface FormProps { disabled: boolean; onSubmit: (input: RegisterWhatsAppAccount) => Promise<void> }
@@ -42,11 +43,12 @@ function AccountForm({ disabled, onSubmit }: FormProps) {
   </form>;
 }
 
-function AccountRow({ account, canEdit, disabled, onRevoke }: {
-  account: WhatsAppAccount; canEdit: boolean; disabled: boolean; onRevoke: () => Promise<void>;
+function AccountRow({ workspaceId, account, canEdit, disabled, onRevoke }: {
+  workspaceId: string; account: WhatsAppAccount; canEdit: boolean; disabled: boolean; onRevoke: () => Promise<void>;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const label = account.status === "revoked" ? "Revocada" : account.managed ? "Pendiente de verificación" : "Conexión existente";
+  const label = account.status === "revoked" ? "Revocada" : !account.managed ? "Conexión existente"
+    : account.status === "ready" ? "Cuenta preparada" : "Pendiente de verificación";
   return <li className="space-y-3 rounded-2xl border border-border p-4">
     <div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0">
       <p className="break-words font-semibold">{account.displayName || account.externalAccountId}</p>
@@ -54,6 +56,7 @@ function AccountRow({ account, canEdit, disabled, onRevoke }: {
       <p className="text-sm">{label}</p>
     </div>{canEdit && account.managed && account.credentialsStored && account.status !== "revoked" &&
       <Button type="button" variant="outline" disabled={disabled} onClick={() => setConfirming(true)}>Revocar cuenta</Button>}</div>
+    {account.managed && account.provider === "ycloud" && <WhatsAppAccountChecks workspaceId={workspaceId} account={account} canEdit={canEdit} />}
     {confirming && <div className="space-y-3" role="group" aria-label="Confirmar revocación">
       <p className="text-sm">La cuenta dejará de estar disponible. Conservamos su historial; volver a conectarla requerirá una revisión.</p>
       <div className="flex flex-wrap gap-2"><Button type="button" variant="destructive" disabled={disabled} onClick={async () => { await onRevoke(); setConfirming(false); }}>Confirmar revocación</Button>
@@ -75,7 +78,7 @@ export function WhatsAppAccountsPanel({ workspaceId, canEdit }: Props) {
     {state.busy && <p role="status" className="text-sm">Guardando cambio…</p>}
     {!state.ready && !state.error && <p role="status" className="text-sm text-muted-foreground">Cargando cuentas…</p>}
     {state.ready && state.accounts.length === 0 && <p className="text-sm text-muted-foreground">Todavía no hay cuentas registradas.</p>}
-    <ul className="space-y-3">{state.accounts.map((account) => <AccountRow key={account.id} account={account} canEdit={canEdit} disabled={disabled} onRevoke={() => state.revoke(account)} />)}</ul>
+    <ul className="space-y-3">{state.accounts.map((account) => <AccountRow key={account.id} workspaceId={workspaceId} account={account} canEdit={canEdit} disabled={disabled} onRevoke={() => state.revoke(account)} />)}</ul>
     {showForm && <AccountForm disabled={disabled} onSubmit={state.register} />}
   </section>;
 }
