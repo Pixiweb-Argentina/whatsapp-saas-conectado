@@ -11,9 +11,9 @@ const origin = "https://permissions.example.org", callbackUrl = configuredAccoun
 const checkedAt = "2026-10-15T12:00:00Z";
 const grant = { connectionId: id(51), operationId: id(701), action: "grant", acknowledgeTextPermission: true,
   connectionUpdatedAt: checkedAt, verificationCheckedAt: checkedAt };
-async function fixture() {
-  const source = { workspaceId: id(1), connectionId: id(51), provider: "ycloud", externalAccountId: "+15555550100",
-    status: "needs_permissions", sourceRevision: "a".repeat(32), ...await sealAccountCredentials({ workspaceId: id(1), connectionId: id(51), provider: "ycloud" },
+async function fixture(provider: "ycloud" | "kapso" = "ycloud") {
+  const source = { workspaceId: id(1), connectionId: id(51), provider, externalAccountId: provider === "ycloud" ? "+15555550100" : "155555507000001",
+    status: "needs_permissions", sourceRevision: "a".repeat(32), ...await sealAccountCredentials({ workspaceId: id(1), connectionId: id(51), provider },
       { apiKey: "synthetic-check-api-key", signingSecret: "synthetic-check-secret" }) };
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [], reads: string[] = [];
   const review = { connectionId: id(51), connectionUpdatedAt: checkedAt, storedStatus: "needs_permissions", managed: false,
@@ -27,9 +27,13 @@ async function fixture() {
       : name === "read_whatsapp_account_permission_review" ? review : true, error: null };
   } } as unknown as SupabaseClient;
   const fetcher: typeof fetch = async (url, init) => {
-    const target = String(url); reads.push(target); assert.equal(new URL(target).origin, "https://api.ycloud.com");
+    const target = String(url); reads.push(target); assert.equal(new URL(target).origin, provider === "ycloud" ? "https://api.ycloud.com" : "https://api.kapso.ai");
     assert.equal(init?.method, "GET"); assert.equal(init?.redirect, "error");
     assert.equal(new Headers(init?.headers).get("X-API-Key"), "synthetic-check-api-key");
+    if (provider === "kapso") return Response.json(target.includes("/webhooks/") ? { data: { id: id(901), phone_number_id: source.externalAccountId,
+      url: callbackUrl, kind: "kapso", active: true, secret_key: "synthetic-check-secret", buffer_enabled: false, payload_version: "v2",
+      events: ["whatsapp.message.received", "whatsapp.message.sent", "whatsapp.message.delivered", "whatsapp.message.read", "whatsapp.message.failed"] } }
+      : { data: { id: source.externalAccountId, phone_number_id: source.externalAccountId, status: "CONNECTED", inbound_processing_enabled: true } });
     return Response.json(target.includes("webhookEndpoints") ? { id: "endpoint-1", url: callbackUrl, status: "active",
       secret: "synthetic-check-secret", enabledEvents: ["whatsapp.inbound_message.received", "whatsapp.message.updated"] }
       : { items: [{ phoneNumber: source.externalAccountId, status: "CONNECTED" }], total: 1 });
@@ -53,6 +57,19 @@ test("managed provider checks use only the account's key, current source revisio
   assert.deepEqual(f.calls[1].args.p_input, { endpointId: "endpoint-1", callbackUrl });
   assert.equal(JSON.stringify(r).includes("synthetic-check-secret"), false);
   assert.equal(JSON.stringify(f.calls[1]).includes("synthetic-check-api-key"), false);
+});
+test("managed Kapso uses its own authenticated source and exact per-number v2 provider endpoints", async () => {
+  const f = await fixture("kapso");
+  const result = await verifyManagedAccount(f.db, id(1), id(101), id(51), { endpointId: id(901) }, origin, f.fetcher);
+  assert.ok(result?.current); assert.ok(Object.values(result.report.checks).every(Boolean));
+  assert.equal(result.report.sendAuthorization, false); assert.equal(f.reads.length, 2);
+  assert.equal(f.calls[1].args.p_source_revision, f.source.sourceRevision);
+  assert.equal(f.reads.every((url) => url.startsWith(`https://api.kapso.ai/platform/v1/whatsapp/phone_numbers/${f.source.externalAccountId}`)), true);
+  assert.deepEqual(f.calls[1].args.p_input, { endpointId: id(901), callbackUrl });
+  assert.equal(JSON.stringify(result).includes("synthetic-check-secret"), false);
+  const invalid = await fixture("kapso");
+  await assert.rejects(verifyManagedAccount(invalid.db, id(1), id(101), id(51), { endpointId: "endpoint-1" }, origin, invalid.fetcher), /CONFIG_INVALID/);
+  assert.equal(invalid.reads.length, 0); assert.equal(invalid.calls.length, 1);
 });
 test("missing stable origin and client-controlled callback reject before private source or provider access", async () => {
   const f = await fixture();

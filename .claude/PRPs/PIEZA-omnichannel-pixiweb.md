@@ -5,7 +5,7 @@
 > **Blueprint origen:** [BLUEPRINT-omnichannel-pixiweb.md](../../BLUEPRINT-omnichannel-pixiweb.md)
 > **Build Mode:** SaaS Completo — ampliación de fork existente.
 > **Rama de preparación:** codex/omnichannel-preparacion, base 28a1530.
-> **Rama activa F3:** codex/omnichannel-f3-account-inbox, desde 5dde69a. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
+> **Rama activa F3:** codex/omnichannel-f3-kapso-verification, desde dd2d58a. Se reutiliza el worktree C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado; el nombre del directorio no indica la fase activa.
 
 ## Objetivo
 
@@ -395,3 +395,18 @@ Migración98:20261016023902_omnichannel_account_inbox.sql;98 nombres/versiones l
 Fixture3301 y todos sus datos/privados/auditoría retirados con guardas. Hashes originales idénticos;2workspaces/11mensajes/3jobs/2outbox/0cron activos/0proofs-permisos managed preservados. Asesor sin novedades0ERROR/10WARN heredados/21INFO; [remediaciones](https://supabase.com/docs/guides/database/database-linter). Next3100 restaurado inbox/ambos flags por cuenta apagados/origen vacío,supervisor2040/sesión19969 efímeros. Sin compras/push/merge/deploy;main intacto.
 
 Auto-Blindaje33: resolver identidad conocida antes del teléfono editable evita redirigir recepción. Anon recibe42501 por ACL de messages; no esperar [] ni relajar permisos. Reintentos HTTP reutilizan occurredAt persistido. [Evidencia](../../docs/evidencias/F3-BANDEJA-CUENTAS-2026-10-15.json). Rama codex/omnichannel-f3-account-inbox desde5dde69a. Próximo: alta/origen permanente/cutover/renovación,verificador-permisos Kapso y AC restantes; media en bandeja/revisión interactiva de formularios pendientes. No eludir bloqueo previo del navegador ni repetir pilotos reales. F3 sigue abierta,0/9fases aceptadas.
+
+
+### F3, incremento34 — verificación Kapso y renovación, 2026-10-16
+
+Managed Kapso incorpora GETs acotados de número y webhook exactos con clave propia, sourceRevision y rol admin revalidados por SQL. Exige Meta Phone Number ID numérico/UUID de webhook por número; CONNECTED/inbound activo; kind kapso/v2 explícito/sin agrupación; evento recibido y estados sent/delivered/read/failed, callback exacto y secreto con comparación segura. Meta/v1/batch/null/propietario desconocido bloquean prueba. El callback nunca se consulta y no hay mutaciones al proveedor. Reporte existente compartido sin secretos; manager sólo lee.
+
+Permiso local Kapso usa contrato managed vigente24h/replay/revocación/deriva ya existente. Resolver privado exige recibo y mensaje Kapso/cuenta/destinatario/wamid exactos, job/outbox texto aceptado/fence coincidente. YCloud delega a su resolver anterior; legacy preservado. Re-verificar no extiende grant previo: sólo renovación admin explícita con nueva operación; máximo proof+24h/expiración de clave. Ajustes valida UUID Kapso, explica v2/eventos/sin agrupación y muestra Renovar permiso de texto para permisos gestionados.
+
+99 versiones/nombres local/Cloud alineados;1.974unitarias/257DB/typecheck/lint pasan.10checks DB nuevos incluyen mismo probe PostgreSQL17 local/Cloud con rollback.59controles HTTP/BD:58GoTrue→Next→PostgREST→SQL(8origen bloqueado,16grant,18renew/revoke/replay,4manager,4inactivo,8restaurado),1ingreso apagado. Evidencia positiva de proof/job/outbox/mensaje/receipt deliberadamente ficticia; GETs Kapso interceptados en unitarias,0proveedor/modelo/envío real. SSR inicial real de ambos proveedores pasa; interacción/responsive siguen pendientes por política URL previa,sin eludirla.
+
+Fixture3401/proofs/permisos/receipt/job/outbox/mensaje/hilo/identidad/contacto/cuenta/claves/membresía/auditoría retirados con guardas. Hashes originales idénticos;2workspaces/11mensajes/3jobs/2outbox/0cron activos/0proofs-permisos managed preservados. Asesor sin novedades0ERROR/10WARN heredados/21INFO; [remediaciones](https://supabase.com/docs/guides/database/database-linter). Next3100 restaurado inbox/flags apagados/origen vacío,supervisor30020/sesión49592 efímeros. Sin compras/push/merge/deploy;main intacto.
+
+Yani elige dashboard.pixiweb.com.ar. Preparación de origen/URLs y operación en [F3-MOTOR](../../docs/F3-MOTOR-omnichannel.md); no configurado en runtime. Google/Cloudflare DoH devuelven NXDOMAIN el16/10,HTTPS no disponible. No crear un CNAME inventando destino ni sustituir dashboard original; hosting/publicación requieren revisión y autoridad específica.
+
+Auto-Blindaje34: distinguir Meta Phone Number ID de internal_id y webhook por número del webhook de proyecto. Simular envejecimiento de proof guardado dentro de fixtures: save rechaza correctamente reportes de red mayores a2min. Jobs unknown sintéticos deben retirar resultados accepted; no relajar constraints. [Evidencia](../../docs/evidencias/F3-KAPSO-VERIFICACION-2026-10-16.json). Rama codex/omnichannel-f3-kapso-verification desde dd2d58a. Próximo: prueba inicial acotada de alta managed sin SQL manual,hosting/DNS/HTTPS/cutover y AC; media/ecos managed/revisión interactiva pendientes. F3 abierta,0/9fases aceptadas.

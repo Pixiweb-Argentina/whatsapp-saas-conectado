@@ -4,7 +4,7 @@ import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { accountPermissionReviewSchema, accountVerificationInputSchema, type AccountPermissionReview } from "../types/whatsapp-account-checks";
+import { accountPermissionReviewSchema, accountVerificationInputSchema, kapsoAccountVerificationInputSchema, type AccountPermissionReview } from "../types/whatsapp-account-checks";
 import { ycloudVerificationRecordSchema, type YCloudVerificationRecord } from "../types/ycloud-verification";
 import type { WhatsAppAccount } from "../types/whatsapp-account";
 
@@ -54,11 +54,13 @@ function useAccountChecks(base: string) {
   return { result, busy: busy || reading, error, uncertain, refresh, mutate,
     retry: () => pending.current ? mutate(pending.current) : Promise.resolve() };
 }
-function AccountProofForm({ id, disabled, onVerify }: { id: string; disabled: boolean; onVerify: (value: unknown) => Promise<void> }) {
+function AccountProofForm({ id, disabled, provider, onVerify }: { id: string; disabled: boolean; provider: WhatsAppAccount["provider"]; onVerify: (value: unknown) => Promise<void> }) {
   const [endpointId, setEndpointId] = useState("");
-  return <form className="space-y-2" onSubmit={(event) => { event.preventDefault(); const value = accountVerificationInputSchema.safeParse({ endpointId }); if (value.success) void onVerify(value.data); }}>
+  const inputSchema = provider === "kapso" ? kapsoAccountVerificationInputSchema : accountVerificationInputSchema;
+  return <form className="space-y-2" onSubmit={(event) => { event.preventDefault(); const value = inputSchema.safeParse({ endpointId }); if (value.success) void onVerify(value.data); }}>
     <Label htmlFor={id}>ID del webhook de esta cuenta</Label><Input id={id} value={endpointId} onChange={(event) => setEndpointId(event.target.value)} maxLength={128} disabled={disabled} required />
-    <Button type="submit" variant="outline" disabled={disabled || !accountVerificationInputSchema.safeParse({ endpointId }).success}>Verificar cuenta y webhook</Button>
+    <Button type="submit" variant="outline" disabled={disabled || !inputSchema.safeParse({ endpointId }).success}>Verificar cuenta y webhook</Button>
+    {provider === "kapso" && <p className="text-xs text-muted-foreground">Ingresá el UUID del webhook de ese número. Debe ser Kapso v2, sin agrupación, con mensajes recibidos y estados enviado, entregado, leído y fallido.</p>}
     <p className="text-xs text-muted-foreground">La comprobación sólo consulta el proveedor. No envía mensajes ni modifica el webhook.</p>
   </form>;
 }
@@ -86,11 +88,11 @@ export function WhatsAppAccountChecks({ workspaceId, account, canEdit }: Props) 
     {state.result && <p className="text-sm text-muted-foreground">{proof?.current && proof.report.providerRead === "complete" && Object.values(proof.report.checks).every(Boolean)
       ? "Cuenta y webhook verificados. Esta comprobación no concede permiso de envío." : "La cuenta todavía necesita una comprobación completa y vigente."}</p>}
     {canEdit && review && <>
-      <AccountProofForm id={`${id}-endpoint`} disabled={disabled || !review.callbackUrl} onVerify={(body) => state.mutate({ target: "verification", body })} />
+      <AccountProofForm id={`${id}-endpoint`} disabled={disabled || !review.callbackUrl} provider={account.provider} onVerify={(body) => state.mutate({ target: "verification", body })} />
       <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={acknowledged} onChange={(event) => setAcknowledged(event.target.checked)} disabled={disabled || !review.canGrant} />Confirmo el permiso local de texto para esta cuenta.</label>
-      <div className="flex flex-wrap gap-2"><Button type="button" disabled={disabled || !review.canGrant || !acknowledged} onClick={() => void permission("grant")}>Autorizar texto</Button>
+      <div className="flex flex-wrap gap-2"><Button type="button" disabled={disabled || !review.canGrant || !acknowledged} onClick={() => void permission("grant")}>{review.managed ? "Renovar permiso de texto" : "Autorizar texto"}</Button>
         <Button type="button" variant="outline" disabled={disabled || !review.canRevoke} onClick={() => void permission("revoke")}>Revocar permiso de texto</Button></div>
-      <p className="text-xs text-muted-foreground">No activa IA ni campañas. Los envíos siguen sujetos a las restricciones de la cuenta y al consentimiento del contacto.</p>
+      <p className="text-xs text-muted-foreground">Para extender la vigencia, volvé a verificar la cuenta y después renová el permiso. No activa IA ni campañas. Los envíos siguen sujetos a las restricciones de la cuenta y al consentimiento del contacto.</p>
     </>}
     {state.uncertain && <div role="alert" className="space-y-2 text-sm"><p>El resultado no está confirmado. Consultá el estado; no repetimos cambios automáticamente.</p>
       <Button type="button" variant="outline" disabled={state.busy} onClick={() => void state.retry()}>Reintentar la misma operación</Button></div>}

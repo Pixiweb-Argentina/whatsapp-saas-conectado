@@ -3,6 +3,7 @@ import { configuredYCloudCallback, permissionBlockerSchema, ycloudPermissionRevi
 import { validYCloudCallback } from "./ycloud-verification";
 
 export const accountVerificationInputSchema = z.strictObject({ endpointId: z.string().trim().regex(/^[a-zA-Z0-9_-]{1,128}$/) });
+export const kapsoAccountVerificationInputSchema = accountVerificationInputSchema.extend({ endpointId: z.string().trim().pipe(z.uuid()) });
 export const accountPermissionReviewSchema = z.strictObject({ ...ycloudPermissionReviewSchema.shape,
   blockers: z.array(z.enum([...permissionBlockerSchema.options, "unsupported_provider"])).max(8),
   callbackUrl: z.url().nullable() });

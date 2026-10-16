@@ -5,6 +5,7 @@ import { ycloudVerificationRecordSchema } from "../types/ycloud-verification";
 import { ycloudPermissionMutationSchema } from "../types/ycloud-permissions";
 import { readWhatsAppAccountSource } from "./whatsapp-account-source";
 import { verifyYCloudAccount } from "./ycloud-verification";
+import { verifyKapsoAccount } from "./kapso-verification";
 
 function scope(workspaceId: string, actorId: string, connectionId: string) {
   z.uuid().parse(workspaceId); z.uuid().parse(actorId); z.uuid().parse(connectionId);
@@ -23,9 +24,12 @@ export async function verifyManagedAccount(db: SupabaseClient, workspaceId: stri
   const callbackUrl = configuredAccountCallback(workspaceId, connectionId, origin);
   if (!callbackUrl) throw new Error("ACCOUNT_PUBLIC_ORIGIN_REQUIRED");
   const source = await readWhatsAppAccountSource(db, workspaceId, connectionId, actorId);
-  if (!source || source.provider !== "ycloud") throw new Error("ACCOUNT_VERIFIER_UNAVAILABLE");
-  const report = await verifyYCloudAccount({ workspaceId, connectionId, phoneNumber: source.externalAccountId,
-    apiKey: source.credentials.apiKey, signingSecret: source.credentials.signingSecret, input: { ...input, callbackUrl } }, fetcher);
+  if (!source) throw new Error("ACCOUNT_VERIFIER_UNAVAILABLE");
+  const options = { workspaceId, connectionId, apiKey: source.credentials.apiKey,
+    signingSecret: source.credentials.signingSecret, input: { ...input, callbackUrl } };
+  const report = source.provider === "ycloud"
+    ? await verifyYCloudAccount({ ...options, phoneNumber: source.externalAccountId }, fetcher)
+    : await verifyKapsoAccount({ ...options, phoneNumberId: source.externalAccountId }, fetcher);
   const { error } = await db.rpc("save_whatsapp_account_verification", { ...args, p_source_revision: source.sourceRevision,
     p_input: { ...input, callbackUrl }, p_report: report });
   if (error) throw new Error("ACCOUNT_VERIFICATION_STALE");

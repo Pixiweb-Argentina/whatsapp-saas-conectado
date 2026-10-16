@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-16",
+  "phase": "F3",
+  "increment": 34,
+  "branch": "codex/omnichannel-f3-kapso-verification",
+  "baseCommit": "dd2d58ac127f529da89d198c18c121a788952efa",
+  "scope": "Managed Kapso verification/text permission parity, explicit renewal guidance, permanent-origin preparation",
+  "implementation": {
+    "provider": "Only bounded20s GETs to api.kapso.ai/platform/v1/whatsapp/phone_numbers/{numericId} and its exact /webhooks/{uuid}, with that account's decrypted API key; no redirects,1MiB response cap, no arbitrary callback fetch or provider mutation",
+    "checks": "Exact number id/phone_number_id, CONNECTED and inbound_processing_enabled. Exact webhook id/phone_number_id, active,url, timing-safe shared secret,kind kapso,explicit payload_version v2,buffer_enabled false and inbound/sent/delivered/read/failed events. Nullable/unknown format,raw Meta,v1,batching or missing fields fail closed",
+    "reports": "Reuse existing strict generic six-check report schema despite historical ycloud type name. Secret/key/account metadata do not enter report. Source revision and active admin membership rechecked on SQL save; manager read-only",
+    "permission": "Existing managed proof/grant/renew/revoke/fingerprint/expiry/replay contract now includes Kapso. New private receipt resolver requires exact Kapso provider/account/recipient/wamid/message/outbox fence and accepted text evidence. YCloud delegates to its prior receipt helper; legacy path unchanged",
+    "renewal": "A fresh proof does not extend the old grant. Only a new explicit admin grant operation renews it; validUntil capped by proof+24h/credential expiry. Replaying either old grant after revoke never reactivates it",
+    "ui": "Kapso UUID-only endpoint form validation and v2/no batching/events guidance; managed grants label Renovar permiso de texto, explicit fresh-verification-before-renewal copy. No automatic provider calls/renewal or external notifications",
+    "noEnablement": "No opt-in,AI,normal rollout,real managed grants or public webhook changes"
+  },
+  "migration": "20261016033946_omnichannel_kapso_verification.sql",
+  "tests": {
+    "unitPass": 1974,
+    "localDbPass": 257,
+    "newUnitPass": 6,
+    "newDbFilePass": 10,
+    "typecheck": "pass with restored live dev server",
+    "lint": "pass all changed/new TS,TSX,MJS",
+    "cloudSql": "Same PostgreSQL17 proof/grant/recheck/explicit renewal/revoke/replay probe passes locally and Cloud, rolled back",
+    "http": {
+      "blockedOrigin": 8,
+      "grant": 16,
+      "renewRevokeReplay": 18,
+      "manager": 4,
+      "inactive": 4,
+      "restoredOrigin": 8,
+      "authenticatedTotal": 58,
+      "restoredIngressDisabled": 1,
+      "total": 59
+    },
+    "httpLimit": "Actual QA GoTrue -> Next3100 -> PostgREST -> Cloud SQL. Positive proof/accepted job/outbox/outbound message/delivered receipt explicitly fabricated in disposable workspace. No live Kapso GET or delivery; provider contract checked with intercepted fetch unit tests",
+    "render": "React DOM server renders actual initial panel for YCloud and Kapso, no provider calls. Does not prove loaded controls, interaction or responsive behavior. Prior browser URL policy denial preserved, no workaround",
+    "build": "Not repeated; full suites/typecheck/lint plus real HTTP/SQL checks"
+  },
+  "domain": {
+    "selectedByUser": "dashboard.pixiweb.com.ar",
+    "origin": "https://dashboard.pixiweb.com.ar",
+    "status": "prepared, not deployed",
+    "dnsObserved": "2026-10-16: OS resolver failed; Google DNS-over-HTTPS and Cloudflare DNS-over-HTTPS both returned Status3 NXDOMAIN and no answers",
+    "prepared": "Safe empty-default origin/rollout sample in .env.local.example; exact URLs, controlled activation/renewal/rollback procedure in existing F3-MOTOR documentation",
+    "pending": "Choose/verify hosting deployment target, DNS record and HTTPS, release review/authorized deployment, preserve original dashboard and receiver; bootstrap first bounded managed delivery must be solved without permanent grants or manual SQL"
+  },
+  "cloud": {
+    "project": "bzanbpyzujlogipxvkfn",
+    "migrationCount": 99,
+    "allLocalCloudVersionNamesAligned": true,
+    "advisorBefore": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 21
+    },
+    "advisorAfter": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 21
+    },
+    "workspaces": 2,
+    "messages": 11,
+    "jobs": 3,
+    "outbox": 2,
+    "activeCron": 0,
+    "managedProofsAfterCleanup": 0,
+    "managedPermissionsAfterCleanup": 0,
+    "originalHashesUnchanged": {
+      "messages": "bb30a38b11cb0c1b6e36476bea148ee4",
+      "contacts": "dce114d05218582cf1710b45728a7e90",
+      "conversations": "baa60481267a1f21a6cf9f84d38da0fb",
+      "connections": "d401ca1b8d69c4d4f630143df6087380",
+      "integrations": "4b92b9cae64bbac35b09402de8b7b5e2"
+    },
+    "cleanup": "Guarded cleanup removed workspace3401 and fake proof/permission ledger/receipt/accepted job/outbox/outbound message/thread/identity/contact/credentials/membership/audit; original QA user and memberships preserved"
+  },
+  "runtime": {
+    "port": 3100,
+    "mode": "dedicated original pilot inbox",
+    "normalRolloutFlags": "off",
+    "managedAccountIngress": "off",
+    "managedAccountInbox": "off",
+    "publicOrigin": "empty",
+    "permissionsUiTest": false,
+    "supervisorPidAtVerification": 30020,
+    "sessionAtVerification": 49592,
+    "pidsAreEphemeral": true,
+    "qaSupervisorStopped": 31236,
+    "previousSupervisorStopped": 2040,
+    "tunnelAndCallbacks": "not changed or revalidated"
+  },
+  "autoBlindaje": "Use numeric Meta phone ID and per-number webhook UUID, never project-wide webhook/internal ID. Simulate elapsed stored proof age inside isolated fixtures: save RPC correctly rejects a network report older than2min. Synthetic unknown jobs must clear accepted result fields; preserve DB constraints rather than weaken them",
+  "sources": [
+    "https://docs.kapso.ai/api/platform/v1/phone-numbers/get-phone-number",
+    "https://docs.kapso.ai/api/platform/v1/webhooks/get-webhook",
+    "https://docs.kapso.ai/docs/platform/webhooks/overview",
+    "https://supabase.com/docs/guides/database/functions",
+    "https://supabase.com/docs/guides/database/database-linter"
+  ],
+  "boundaries": {
+    "providerReads": 0,
+    "providerSends": 0,
+    "modelCalls": 0,
+    "purchases": 0,
+    "originalConsentChanged": false,
+    "mainChanged": false,
+    "pushMergeDeploy": false
+  },
+  "next": "Operational bounded first-delivery bootstrap for new managed accounts, hosting/DNS/HTTPS/release/cutover readiness and remaining F3 acceptance. Media/business-app echoes for managed accounts and interactive form review remain pending; no repeat of consumed real trials",
+  "formalPhaseAcceptance": "F3 remains open;0/9 phases formally accepted"
+}
