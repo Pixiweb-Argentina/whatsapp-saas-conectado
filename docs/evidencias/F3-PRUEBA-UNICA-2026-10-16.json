@@ -1,0 +1,119 @@
+{
+  "date": "2026-10-16",
+  "phase": "F3",
+  "increment": 36,
+  "branch": "codex/omnichannel-f3-account-trial",
+  "baseCommit": "4840c4918127e89de7309d81837c2d087003952d",
+  "scope": "Product flow for an explicit single-message initial managed-account trial without prior permanent grants or global opt-in",
+  "implementation": {
+    "authorization": "Admin explicitly acknowledges one fixed preview text to one existing verified identity/conversation with materialized recent inbound text. Server derives body, event, actor, revision, source fingerprint, callback, expiry. Transaction stores private operation-scoped trial authority and exact durable job; no provider call on prepare",
+    "expiry": "Maximum10 minutes, capped by inbound24h window, verification24h freshness and credential expiry. Final boundary rechecks actor/admin membership, source/proof revision, callback, identity/suppression, human_active/AIoff conversation and exact operation/request",
+    "consent": "One-operation trial consent only. contacts.opt_in remains false, channel status remains needs_permissions with empty capabilities; no account-wide grants/AI/campaign activation",
+    "isolation": "General claim_channel_job excludes trial operations. Explicit send route claims only the named trial and original admin, matching current sourceRevision and server callback; never drains workspace",
+    "transport": "Dedicated trial service uses existing sender/adapter and durable begin/outbox/budget/fencing/finish/receipt reconciliation. It does not invent a ready account or persist fake broad policy grants. Trial authority is checked by final SQL boundary",
+    "oneAttempt": "No second outbox for trial even after lease recovery. Unknown cannot be resent or replaced by fresh UUID. Provider rejection is terminal even if retryable; only explicit new authorization after definite rejection/cancelled-before-send may create another trial",
+    "revoke": "Can retire trial with rollout off. Unsent pending/leased job cancelled; already-permitted in-flight send cannot be retracted. Revocation/replay never reactivates old operation",
+    "ui": "Per-account review, destination picker, fixed preview, acknowledgement, prepare, separate explicit send, result/expiry/receipt, revoke and same-operation uncertainty reconciliation. Managers read only. Existing Kapso verification panel was implemented but hidden by YCloud-only parent condition; now rendered for both managed providers",
+    "rollout": "Separate server-only CHANNEL_ACCOUNT_TRIAL_CONNECTIONS per-account UUID allowlist, empty default. Stable origin required. Runtime restored with all three managed flags off; no production enablement"
+  },
+  "migration": "20261016101806_omnichannel_account_trial.sql",
+  "tests": {
+    "unitPass": 1985,
+    "newUnitPass": 11,
+    "localDbPass": 297,
+    "newDbFilePass": 21,
+    "typecheck": "pass with restored live development server",
+    "lint": "pass all changed/new TS,TSX,MJS",
+    "cloudSql": "Same service-role PostgreSQL17 probes run locally and Cloud for YCloud/Kapso: no delivery seed or permanent permission, ordinary queue isolation, one permit, unknown/replay/consent preserved; rolled back",
+    "http": {
+      "core": 58,
+      "manager": 6,
+      "inactive": 6,
+      "restoredDisabledTrial": 6,
+      "restoredDisabledIngress": 1,
+      "total": 77,
+      "setupChecksSeparate": 4
+    },
+    "httpLimit": "Actual QA GoTrue -> Next trial GET/POST authorize/send/revoke -> Cloud SQL exact job/lease -> actual server sender POST intercepted by test-only NODE_OPTIONS preload -> finish -> signed fictitious Kapso receipt HTTP -> Cloud SQL. Proof is fabricated, all delivery seeds and permanent grants removed BEFORE testing bootstrap",
+    "transportInterceptions": {
+      "ycloudUnknown": 1,
+      "kapsoAcceptedDelivered": 1,
+      "total": 2,
+      "realProviderCalls": 0
+    },
+    "render": "Actual React DOM SSR initial trial/check panels for both providers pass. No loaded-form interaction, responsive or Realtime claim; prior browser localhost/settings URL policy not bypassed",
+    "reactReview": "React skill applied: event-owned mutations, per-instance state, race-aware reads/ref lock, labelled controls, error/status regions, no impure Date.now during render. Added explicit explanation of not_claimed/not_permitted/deferred send outcomes",
+    "build": "Not repeated; appropriate full suites/typecheck/lint plus actual HTTP/SQL checks used",
+    "limitations": "No new live provider delivery, HTTPS/cutover or interactive browser verification. Prior concurrency overlap gap from35 remains unclaimed"
+  },
+  "cloud": {
+    "project": "bzanbpyzujlogipxvkfn",
+    "migrationCount": 101,
+    "allLocalCloudVersionNamesAligned": true,
+    "advisorBefore": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 22
+    },
+    "advisorAfter": {
+      "ERROR": 0,
+      "WARN": 10,
+      "INFO": 23
+    },
+    "advisorNew": "Expected INFO for private.whatsapp_account_trials RLS enabled without browser policies/grants",
+    "advisorRemediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+    "workspaces": 2,
+    "messages": 11,
+    "jobs": 3,
+    "outbox": 2,
+    "active_cron": 0,
+    "trials": 0,
+    "pins": 0,
+    "managed_proofs": 0,
+    "managed_permissions": 0,
+    "messages_hash": "bb30a38b11cb0c1b6e36476bea148ee4",
+    "contacts_hash": "dce114d05218582cf1710b45728a7e90",
+    "conversations_hash": "baa60481267a1f21a6cf9f84d38da0fb",
+    "connections_hash": "d401ca1b8d69c4d4f630143df6087380",
+    "integrations_hash": "4b92b9cae64bbac35b09402de8b7b5e2",
+    "originalHashesUnchanged": true,
+    "cleanup": "Guarded fixtures3701/3801, trial authorities/pins/jobs/outbox/messages/receipts/proof/permission history/events/threads/identities/contacts/connections/credentials/membership/audit removed. Roles changed only inside synthetic workspaces and restored before cleanup"
+  },
+  "runtime": {
+    "port": 3100,
+    "mode": "original dedicated lab inbox",
+    "normalRolloutFlags": "off",
+    "managedIngress": "off",
+    "managedInbox": "off",
+    "managedTrial": "off",
+    "publicOrigin": "empty",
+    "accountTrialQa": false,
+    "managedTransportQa": false,
+    "permissionsUiTest": false,
+    "supervisorPidAtVerification": 30612,
+    "sessionAtVerification": 92989,
+    "qaSupervisorStopped": 29132,
+    "pidsAreEphemeral": true,
+    "tunnelAndCallbacks": "not changed or revalidated"
+  },
+  "autoBlindaje": "Initial trial is not a permanent grant. Ordinary queue excludes trials; finish normalizes retryable rejection to false; final SQL forbids any second outbox. PostgreSQL least ignores NULL, so validate inbound deadline before least. Kapso verification must also be mounted by parent UI, not just implemented internally. Render-time Date.now rejected by React purity rule; expiry remains server-authoritative. Test-only preload must intercept in server process to test full HTTP send route without provider network",
+  "sources": [
+    "https://supabase.com/docs/guides/database/functions",
+    "https://supabase.com/changelog.md"
+  ],
+  "boundaries": {
+    "realProviderCalls": 0,
+    "realModelCalls": 0,
+    "purchases": 0,
+    "originalConsentChanged": false,
+    "mainChanged": false,
+    "pushMergeDeploy": false
+  },
+  "domain": {
+    "selectedByUser": "dashboard.pixiweb.com.ar",
+    "status": "prepared, not deployed",
+    "dns": "NXDOMAIN last observed34 on2026-10-16; not rechecked36"
+  },
+  "next": "Hosting/DNS/HTTPS and authorized cutover preparation, managed media/business-app echoes, interactive review and remaining F3 AC. Initial trial product flow is implemented; a real bounded trial still needs configured stable callback/ingress plus explicit destination-specific authorization. Do not repeat consumed legacy trials",
+  "formalPhaseAcceptance": "F3 remains open;0/9 phases formally accepted"
+}
