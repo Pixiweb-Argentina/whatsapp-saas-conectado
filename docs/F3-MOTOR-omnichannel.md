@@ -614,7 +614,7 @@ Auto-Blindaje34: distinguir Meta Phone Number ID de internal_id y webhook por n�
 
 ## Alta permanente preparada — dashboard.pixiweb.com.ar
 
-Dominio elegido expresamente por Yani el16/10/2026. Estado: preparado, no publicado. Ambas consultas DNS públicas(Google y Cloudflare DoH) devuelven NXDOMAIN; no se pudo comprobar HTTPS. Esta elección no configura registros, hosting ni webhooks.
+Dominio elegido expresamente por Yani el16/10/2026. Estado inicial: preparado, no publicado (publicado después; ver «Alta ejecutada» debajo). Ambas consultas DNS públicas(Google y Cloudflare DoH) devuelven NXDOMAIN; no se pudo comprobar HTTPS. Esta elección no configura registros, hosting ni webhooks.
 
 1. **Preparar el destino.** Confirmar proyecto/host del fork y candidato revisable con las101 migraciones vigentes. Obtener del hosting el destino exacto para el registro dashboard; no inventar IP/CNAME ni cambiar el dominio raíz. Mantener separado el dashboard original. Revisar DNS, certificado HTTPS y rutas con/sin sesión antes de mover recepción.
 2. **Configurar el entorno del despliegue autorizado.** NEXT_PUBLIC_APP_URL=https://dashboard.pixiweb.com.ar y CHANNEL_PUBLIC_ORIGIN=https://dashboard.pixiweb.com.ar, sin ruta/query/credenciales. Mantener vacíos CHANNEL_ACCOUNT_INGRESS_CONNECTIONS,CHANNEL_ACCOUNT_INBOX_CONNECTIONS,CHANNEL_ACCOUNT_TRIAL_CONNECTIONS y los cuatro CHANNEL_*_WORKSPACES de ingress/worker/human/ai. Conservar explícitamente el modo inbox del laboratorio legacy mediante su allowlist verificado; vaciar esa variable podría devolverlo al flujo legacy. El ejemplo versionado conserva valores vacíos y no modifica .env.local ni el servidor actual.
@@ -624,6 +624,18 @@ Dominio elegido expresamente por Yani el16/10/2026. Estado: preparado, no public
 6. **Renovar y retirar.** Antes de vencer, admin vuelve a verificar y después renueva con confirmación explícita. Una comprobación nueva no extiende sola el grant; caduca como máximo24h desde la prueba y antes si vence la clave. No hay cron ni renovación automática. Ante incidente, apagar flags de procesamiento/recepción nueva según alcance y revocar permiso, conservando mensajes/IDs/privados/historial. No reenviar unknown ni prometer retirar un POST ya autorizado/en curso. Mantener registro de cutover y revisión de AC antes de declarar F3 terminada.
 
 Fuentes de contrato: [número Kapso](https://docs.kapso.ai/api/platform/v1/phone-numbers/get-phone-number), [webhook Kapso](https://docs.kapso.ai/api/platform/v1/webhooks/get-webhook). Los pasos de publicación no se ejecutaron en este bloque.
+
+### Alta ejecutada — hosting, DNS, HTTPS y Auth, 2026-10-16
+
+Con autorización expresa de Yani para crear proyecto, publicar, sumar dominio y crear el CNAME. Pasos 1 y 2 hechos; 3 a 6 siguen pendientes.
+
+- **Hosting.** Proyecto Vercel nuevo omnichannel-pixiweb (scope melisacabrera552-labs-projects), framework Next.js, despliegue de producción Ready. Separado del proyecto whatsapp-saas del dashboard original, que no se tocó. Sin vercel.json: no hay crons de Vercel; el único cron de Supabase sigue heredado e inactivo.
+- **DNS.** Cloudflare, zona pixiweb.com.ar: CNAME dashboard → destino exacto informado por Vercel (vercel-dns-017.com), modo Solo DNS (sin proxy), TTL automático. Raíz y demás registros intactos. Dominio verificado en Vercel, sin configuración errónea.
+- **HTTPS.** El certificado no se emitió solo (handshake colgado, código000); se emitió con vercel certs issue para el dominio. Verificado: /login, /forgot-password y /reset-password 200; / y /dashboard 307 a /login; /api/webhooks/ycloud sin parámetros 404 esperado; http redirige 308 a https.
+- **Entorno de producción.** Cargados por nombre (valores sólo en Vercel): NEXT_PUBLIC_APP_URL, CHANNEL_PUBLIC_ORIGIN, Supabase URL/anon/service, ENCRYPTION_KEY(+versión), CRON_SECRET, BUFFER_PROCESS_SECRET y el allowlist inbox del laboratorio legacy. No definidos a propósito: los tres CHANNEL_ACCOUNT_* y los cuatro CHANNEL_*_WORKSPACES, así que recepción managed, prueba única, worker e IA quedan apagados. OPENROUTER_API_KEY y RESEND_API_KEY no cargadas: sin IA ni mails transaccionales propios en este despliegue.
+- **Supabase Auth (proyecto nuevo).** Site URL https://dashboard.pixiweb.com.ar (antes localhost:3000). Redirect URLs permitidas: https://dashboard.pixiweb.com.ar/** y http://localhost:3000/** para desarrollo. Recuperar contraseña arma la vuelta con el origen de la petición, que en producción es el dominio nuevo y coincide con el allowlist. No se envió ningún mail de prueba.
+
+Pendiente antes del cutover: revisar webhooks por cuenta (paso3) sin mover el receptor original, decidir OPENROUTER/RESEND, revisión interactiva con sesión y prueba única con autorización concreta. Ningún webhook, mensaje, modelo ni flag fue activado.
 
 ### F3, incremento35 — permiso final y origen de cada envío managed, 2026-10-16
 

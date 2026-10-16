@@ -1,6 +1,6 @@
 # Continuidad de Omnichannel Pixiweb
 
-Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36 y confirmar su respaldo GitHub el2026-10-16.
+Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36, confirmar su respaldo GitHub y publicar dashboard.pixiweb.com.ar el2026-10-16.
 
 ## Dónde continuar
 
@@ -12,7 +12,7 @@ Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36 y c
 
 ## Próximo paso acordado
 
-F3 sigue abierta,0/9fases con aceptación integral. Incremento36 implementó el flujo de primera prueba managed en producto. NO volver a tratarlo como código faltante. Falta hosting/DNS/HTTPS y cutover autorizado, revisión interactiva y entrega real de una cuenta nueva con autorización concreta. Media/ecos Business App managed y AC US006–008 pendientes. Meta/OAuth F4/F5,widget F6,Brevo F7.
+F3 sigue abierta,0/9fases con aceptación integral. Incremento36 implementó el flujo de primera prueba managed en producto. NO volver a tratarlo como código faltante. Hosting/DNS/HTTPS/Auth YA hechos (ver abajo y runbook «Alta ejecutada»). Falta cutover autorizado de webhooks, revisión interactiva y entrega real de una cuenta nueva con autorización concreta. Media/ecos Business App managed y AC US006–008 pendientes. Meta/OAuth F4/F5,widget F6,Brevo F7.
 
 Cada cuenta adicional muestra Primera prueba de entrega en Ajustes. Admin revisa destinos de conversaciones humanas con texto entrante materializado en24h, elige número propio autorizado y confirma un mensaje fijo. Preparar sólo persiste autoridad/job por operación; enviar es otro botón explícito. TTL máximo10min, limitado por evento/prueba/clave. No cambia contacts.opt_in ni account needs_permissions/capabilities. Sólo delivered/read conciliado habilita luego revisar un grant permanente separado.
 
@@ -28,7 +28,7 @@ Incrementos31–34: credenciales AES por workspace/cuenta/proveedor,fuente RPC s
 
 Managed YCloud/Kapso tienen verificación GET acotada por número/webhook exactos,callback derivado de CHANNEL_PUBLIC_ORIGIN y secretos propios. Kapso Meta Phone Number ID numérico,webhook UUID por número,kind kapso/payload_version v2/buffer_enabled false y cinco eventos. Guardar proof no concede permiso. Grant sólo admin,sourceRevision y rol revalidados,prueba vigente+receipt/job/outbox/message exactos; TTL máximo proof+24h/expiración. Manager lee. Re-verificar no renueva: nueva acción admin explícita; replay tras revocar no reactiva. Kapso verifier/renovación ya implementados, no repetir.
 
-Dominio elegido por Yani dashboard.pixiweb.com.ar el16/10; no preguntar de nuevo. Origen preparado https://dashboard.pixiweb.com.ar. DNS del sistema/Google/Cloudflare NXDOMAIN observado en34 el16/10; no reconsultado en36. No publicación ni DNS/HTTPS configurados. .env.local.example defaults vacíos; runtime origen vacío. Runbook existente F3-MOTOR: hosting/destino real,DNS/HTTPS,URLs exactas,recepción gradual,prueba inicial/permiso,renovación/rollback. No inventar IP/CNAME ni tocar sitio raíz/dashboard original.
+Dominio elegido por Yani dashboard.pixiweb.com.ar el16/10; no preguntar de nuevo. PUBLICADO el16/10 con autorización expresa: proyecto Vercel omnichannel-pixiweb (scope melisacabrera552-labs-projects, separado de whatsapp-saas), CNAME dashboard en Cloudflare Solo DNS al destino que dio Vercel, certificado emitido con vercel certs issue, HTTPS verificado (/login200, /→307 /login, http→308). Supabase Auth del proyecto nuevo: Site URL https://dashboard.pixiweb.com.ar; redirects https://dashboard.pixiweb.com.ar/** y http://localhost:3000/**. Env producción con NEXT_PUBLIC_APP_URL/CHANNEL_PUBLIC_ORIGIN; CHANNEL_ACCOUNT_* y CHANNEL_*_WORKSPACES sin definir a propósito; OPENROUTER/RESEND no cargadas (decidir). Sin vercel.json: 0 crons Vercel. Webhooks NO movidos. Red: curl al dominio necesita Bash sin sandbox. Trabajo web de Cloudflare/Supabase en Chrome de Yani (el navegador integrado falla la verificación de Cloudflare). .env.local.example defaults vacíos; runtime origen vacío. Runbook existente F3-MOTOR: hosting/destino real,DNS/HTTPS,URLs exactas,recepción gradual,prueba inicial/permiso,renovación/rollback. No inventar IP/CNAME ni tocar sitio raíz/dashboard original.
 
 ## Evidencia36 y límites
 
