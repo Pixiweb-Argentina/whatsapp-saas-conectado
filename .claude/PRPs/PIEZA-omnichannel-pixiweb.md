@@ -86,7 +86,7 @@ Las 72 tareas aprobadas permanecen en el blueprint. Esta Pieza define fases; el 
 **Validación:** flujos reales, estados, contraste, teclado y desktop/móvil; sin alterar permisos por estética.
 
 ### F3 — Motor de canales e inbox unificado
-**Estado:** EN_PROGRESO; incremento36,101 migraciones alineadas y1.985unitarias/297DB/77controles HTTP/BD pasan. Prueba única managed implementada bajo flag separado,con consentimiento por operación,sin grant permanente ni reenvío. Texto humano/IA YCloud real anterior es evidencia aparte; no se repitió. Pendientes hosting/origen estable/cutover autorizado,media/ecos managed,QA interactiva y aceptación integral. **Historias:** US-006–008. **Estimación original:** 5–8 días-persona.
+**Estado:** EN_PROGRESO; incremento37 (media entrante managed, migración102 sólo local) y1.989unitarias/298DB pasan; Supabase nuevo sigue en101. Prueba única managed implementada bajo flag separado,con consentimiento por operación,sin grant permanente ni reenvío. Texto humano/IA YCloud real anterior es evidencia aparte; no se repitió. Dominio y primera cuenta Kapso managed conectados. Pendientes aplicar102/desplegar con autorización,ecos managed,QA interactiva y aceptación integral. **Historias:** US-006–008. **Estimación original:** 5–8 días-persona.
 **Objetivo:** adaptadores, políticas de envío, jobs durables, identidad por cuenta y handoff compartido.
 **Validación:** regresión WA, eventos duplicados, carreras humano/IA, reintentos y timeout unknown sin reenvío automático.
 
@@ -452,3 +452,7 @@ Webhook YCloud del número dedicado del laboratorio legacy (workspace ff50ed19) 
 ### F3 — primera cuenta managed real (Kapso 6572) por la ruta por cuenta, 2026-10-16
 
 A pedido de Yani, número Kapso terminado en 6572 retirado del original (sólo se pausó su webhook ahí; integración intacta). Alta managed en workspace 52aa2172, conexión f07797e6, webhook por número be0fbd88 verificado. Vercel: ingress e inbox = sólo f07797e6, trial/workspaces vacíos, redeploy cfe4ueabg. Texto real de Yani guardado en la bandeja (in 21:08:22Z, IA apagada, cero salidas, needs_permissions). Detalle en [F3-MOTOR](../../docs/F3-MOTOR-omnichannel.md#primera-cuenta-managed-real-por-la-ruta-por-cuenta--kapso-2026-10-16). Cierre: Yani borró la API key vieja del original en Kapso y creó su usuario del panel; quedó super admin y admin de 52aa2172 y ff50ed19. F3 abierta, 0/9 fases aceptadas.
+
+### F3, incremento 37 — multimedia entrante en cuentas managed, 2026-10-17
+
+Fotos, audios, videos, documentos, stickers, ubicaciones y respuestas de botón que llegan a una cuenta managed con ingreso y bandeja habilitados se guardan en la bandeja (cuerpo = pie o «[Multimedia]», raw_type en meta). La copia del archivo a Storage corre después de responder al proveedor, sólo para filas nuevas y sin reintento; si falla, el mensaje igual queda. Plantillas/sistema siguen sólo capturados. Sin IA, jobs ni outbox. Migración102 20261017120000_omnichannel_account_inbox_media.sql probada en PGlite; **no aplicada** al Supabase nuevo ni desplegada (requiere autorización de Yani). 1.989 unitarias, 298 DB, typecheck y lint pasan. Rama codex/omnichannel-f3-managed-media. Detalle en [F3-MOTOR](../../docs/F3-MOTOR-omnichannel.md). Pendiente: aplicar/desplegar, prueba real con una foto, ecos managed, revisión interactiva y AC. F3 abierta, 0/9 fases aceptadas.

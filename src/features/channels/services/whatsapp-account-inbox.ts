@@ -13,13 +13,21 @@ export function accountInboxEnabled(connectionId: string, raw = process.env.CHAN
   return result.data.includes(connectionId.toLowerCase());
 }
 
+const INBOX_TYPES = new Set(["text", "audio", "image", "document", "video", "sticker", "location"]);
+/** Template/system and empty text stay capture-only; everything else a contact can send is materialized. */
+export function accountInboxMaterializable(event: InboundEvent): boolean {
+  if (!INBOX_TYPES.has(event.content.type) || event.mediaRefs.length > 1) return false;
+  return event.content.type !== "text" || (event.content.text?.length ?? 0) > 0;
+}
+
+export interface AccountInboxMedia { link: string; mimeType?: string; filename?: string; mediaId?: string; caption?: string }
 const resultSchema = z.strictObject({ eventId: z.uuid(), conversationId: z.uuid(), messageId: z.uuid(), inserted: z.boolean() });
-/** Only after raw signature and destination validation. No legacy writer, buffer, download, model or send. */
+/** Only after raw signature and destination validation. No legacy writer, buffer, model or send; download is the caller's. */
 export async function materializeAccountInbox(db: SupabaseClient, source: NonNullable<WhatsAppAccountSource>,
   event: InboundEvent, payload: unknown, eventName: string | null) {
   const checked = inboundEventSchema.parse(event);
   if (checked.workspaceId !== source.workspaceId || checked.connectionId !== source.connectionId || checked.provider !== source.provider
-    || checked.channel !== "whatsapp" || checked.kind !== "message" || checked.content.type !== "text" || checked.content.rawType !== "text") {
+    || checked.channel !== "whatsapp" || checked.kind !== "message" || !accountInboxMaterializable(checked)) {
     throw new Error("ACCOUNT_INBOX_SCOPE_INVALID");
   }
   const parsed = source.provider === "ycloud" ? parseYCloud(payload) : parseKapso(payload, eventName);
@@ -28,5 +36,9 @@ export async function materializeAccountInbox(db: SupabaseClient, source: NonNul
     p_connection: source.connectionId, p_source_revision: source.sourceRevision, p_event: checked, p_customer_name: name });
   const result = resultSchema.safeParse(data);
   if (error || !result.success) throw new Error("ACCOUNT_INBOX_STORAGE_FAILED");
-  return result.data;
+  const media: AccountInboxMedia | null = checked.content.type !== "text" && parsed?.mediaLink ? {
+    link: parsed.mediaLink, mimeType: parsed.mediaMime ?? undefined, filename: parsed.mediaFilename ?? undefined,
+    mediaId: parsed.mediaId ?? undefined,
+    caption: parsed.text && parsed.text !== "[Multimedia]" ? parsed.text : undefined } : null;
+  return { ...result.data, media };
 }

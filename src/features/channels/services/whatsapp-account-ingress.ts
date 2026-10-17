@@ -6,7 +6,9 @@ import { workspaceCountryCode } from "@/features/inbox/services/country-code";
 import { normalizeWhatsAppEvent } from "./whatsapp-inbound-event";
 import { normalizeWhatsAppReceipt } from "./whatsapp-delivery-receipt";
 import { readWhatsAppAccountSource } from "./whatsapp-account-source";
-import { accountInboxEnabled, materializeAccountInbox } from "./whatsapp-account-inbox";
+import { accountInboxEnabled, accountInboxMaterializable, materializeAccountInbox,
+  type AccountInboxMedia } from "./whatsapp-account-inbox";
+import { downloadAndStoreMedia, patchMessageMedia } from "@/features/inbox/services/media-handler";
 
 /** Per-account opt-in, independent of all legacy/pilot workspace switches. Empty is off. */
 export function accountIngressEnabled(connectionId: string, raw = process.env.CHANNEL_ACCOUNT_INGRESS_CONNECTIONS): boolean {
@@ -23,11 +25,14 @@ interface Delivery {
   headers: Headers;
 }
 export type AccountIngressResult = { status: "disabled" | "unauthorized" | "invalid" | "ignored" }
-  | { status: "persisted"; kind: "message" | "receipt"; materialized?: true };
+  | { status: "persisted"; kind: "message" | "receipt"; materialized?: true; media?: () => Promise<void> };
+type Source = NonNullable<Awaited<ReturnType<typeof readWhatsAppAccountSource>>>;
+export interface MediaStore { download: typeof downloadAndStoreMedia; patch: typeof patchMessageMedia }
+const defaultStore: MediaStore = { download: downloadAndStoreMedia, patch: patchMessageMedia };
 
 /** Signed capture with separately opted-in receive-only inbox. No legacy normalizer, buffer, model or send. */
 export async function captureWhatsAppAccountDelivery(db: SupabaseClient, input: Delivery,
-  now = Date.now()): Promise<AccountIngressResult> {
+  now = Date.now(), store: MediaStore = defaultStore): Promise<AccountIngressResult> {
   z.uuid().parse(input.workspaceId); z.uuid().parse(input.connectionId);
   if (!accountIngressEnabled(input.connectionId)) return { status: "disabled" };
   const inbox = accountInboxEnabled(input.connectionId);
@@ -52,14 +57,27 @@ export async function captureWhatsAppAccountDelivery(db: SupabaseClient, input: 
   if (normalized.status === "rejected") return { status: "invalid" };
   if (normalized.status === "ignored" || normalized.event.content.rawType === "reaction") return { status: "ignored" };
   if (Date.parse(normalized.event.occurredAt) > now) throw new Error("ACCOUNT_EVENT_CLOCK_SKEW");
-  if (inbox && normalized.event.content.type === "text" && normalized.event.content.rawType === "text") {
-    await materializeAccountInbox(db, source, normalized.event, payload, kapsoEventName);
-    return { status: "persisted", kind: "message", materialized: true };
+  if (inbox && accountInboxMaterializable(normalized.event)) {
+    const stored = await materializeAccountInbox(db, source, normalized.event, payload, kapsoEventName);
+    const media = stored.inserted && stored.media ? stored.media : null;
+    return { status: "persisted", kind: "message", materialized: true,
+      ...(media ? { media: () => storeMedia(store, source, stored.conversationId, stored.messageId, media) } : {}) };
   }
   return persist(db, source, "message", normalized.event);
 }
 
-async function persist(db: SupabaseClient, source: NonNullable<Awaited<ReturnType<typeof readWhatsAppAccountSource>>>,
+/** Post-response copy into private storage. Best effort: the message is already in the inbox; no model or send. */
+async function storeMedia(store: MediaStore, source: Source, conversationId: string, messageId: string,
+  media: AccountInboxMedia): Promise<void> {
+  try {
+    const meta = await store.download({ provider: source.provider, link: media.link, workspaceId: source.workspaceId,
+      conversationId, mimeType: media.mimeType, filename: media.filename, caption: media.caption, mediaId: media.mediaId,
+      ...(source.provider === "ycloud" ? { apiKey: source.credentials.apiKey } : {}) });
+    if (meta) await store.patch(source.workspaceId, messageId, meta);
+  } catch { console.error("[account-ingress] media copy failed"); }
+}
+
+async function persist(db: SupabaseClient, source: Source,
   kind: "message" | "receipt", delivery: unknown): Promise<AccountIngressResult> {
   const { data, error } = await db.rpc("persist_whatsapp_account_delivery", { p_workspace: source.workspaceId,
     p_connection: source.connectionId, p_source_revision: source.sourceRevision, p_kind: kind, p_delivery: delivery });

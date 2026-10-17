@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { after, type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { accountIngressEnabled, captureWhatsAppAccountDelivery } from "@/features/channels/services/whatsapp-account-ingress";
@@ -24,6 +24,8 @@ export async function POST(request: NextRequest, context: Context): Promise<Next
     if (result.status === "invalid") return NextResponse.json({ error: "Invalid delivery" }, { status: 400, headers });
     if (result.status === "disabled") return NextResponse.json({ error: "Account intake unavailable" }, { status: 503, headers });
     const materialized = result.status === "persisted" && result.materialized === true;
+    // Media copy runs after the provider gets its 200; the inbox row already exists.
+    if (result.status === "persisted" && result.media) after(result.media);
     return NextResponse.json({ received: true, shadowOnly: !materialized, recorded: result.status === "persisted",
       ...(materialized ? { inboxOnly: true, materialized: true } : {}) }, { headers });
   } catch { return NextResponse.json({ error: "Account intake unavailable" }, { status: 503, headers }); }

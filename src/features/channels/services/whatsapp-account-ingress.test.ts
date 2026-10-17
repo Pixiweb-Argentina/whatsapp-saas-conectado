@@ -20,14 +20,14 @@ async function fixture(provider: "ycloud" | "kapso" = "ycloud", payload: unknown
   const sealed = await sealAccountCredentials(owner, { apiKey: "placeholder", signingSecret: secret });
   const source = { ...owner, ...sealed, status: "needs_permissions",
     externalAccountId: provider === "ycloud" ? "+15555550100" : "synthetic-phone-id", sourceRevision: "a".repeat(32) };
-  let result: unknown = source, error: unknown = null;
+  let result: unknown = source, error: unknown = null, inserted = true;
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const tables: string[] = [];
   const connection = { id: owner.connectionId, workspace_id: owner.workspaceId, channel: "whatsapp", provider,
     external_account_id: source.externalAccountId, status: "ready", revoked_at: null, capabilities: {}, legacy_integration_id: null };
   const db = { rpc: async (name: string, args: Record<string, unknown>) => {
     calls.push({ name, args }); return { data: name === "read_whatsapp_account_source" ? result
-      : name === "materialize_whatsapp_account_inbound" ? { eventId: id(41), conversationId: id(42), messageId: id(43), inserted: true } : id(41), error };
+      : name === "materialize_whatsapp_account_inbound" ? { eventId: id(41), conversationId: id(42), messageId: id(43), inserted } : id(41), error };
   }, from: (name: string) => {
     tables.push(name);
     const q = { select: () => q, eq: () => q, maybeSingle: async () => ({ data: name === "channel_connections"
@@ -43,7 +43,7 @@ async function fixture(provider: "ycloud" | "kapso" = "ycloud", payload: unknown
   }
   process.env.CHANNEL_ACCOUNT_INGRESS_CONNECTIONS = owner.connectionId;
   const input = { workspaceId: owner.workspaceId, connectionId: owner.connectionId, rawBody, headers };
-  return { source, connection, db, calls, tables, input, setResult: (v: unknown) => { result = v; },
+  return { source, connection, db, calls, tables, input, setResult: (v: unknown) => { result = v; }, replay: () => { inserted = false; },
     fail: () => { error = { message: "private-provider-sentinel" }; } };
 }
 
@@ -70,12 +70,66 @@ test("inbox requires both explicit account flags and writes only the atomic mate
   }
 });
 
-test("inbox flag does not materialize media or receipts and malformed configuration fails closed", async () => {
+function mediaStore(failDownload = false) {
+  const downloads: Array<Record<string, unknown>> = [], patches: unknown[][] = [];
+  const store = { download: async (opts: Record<string, unknown>) => {
+    downloads.push(opts); if (failDownload) throw new Error("private-download-sentinel");
+    return { storage_path: "synthetic/path.jpg", mime_type: "image/jpeg" };
+  }, patch: async (...args: unknown[]) => { patches.push(args); } };
+  return { store: store as unknown as Parameters<typeof captureWhatsAppAccountDelivery>[3] & object, downloads, patches };
+}
+const YCLOUD_IMAGE = { ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage, type: "image",
+  image: { id: "synthetic-image", link: "https://api.ycloud.com/v2/media/synthetic", mime_type: "image/jpeg" } } };
+
+test("inbox materializes YCloud media and copies the file only after the response, with the account key", async () => {
   process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS = id(51);
-  const media = await fixture("ycloud", { ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage,
-    type: "image", image: { id: "synthetic-image", link: "https://example.invalid/private" } } });
-  assert.deepEqual(await captureWhatsAppAccountDelivery(media.db, media.input, now), { status: "persisted", kind: "message" });
-  assert.equal(media.calls[1].name, "persist_whatsapp_account_delivery");
+  const f = await fixture("ycloud", YCLOUD_IMAGE), m = mediaStore();
+  const result = await captureWhatsAppAccountDelivery(f.db, f.input, now, m.store);
+  assert.equal(result.status, "persisted");
+  assert.ok(result.status === "persisted" && result.materialized === true && typeof result.media === "function");
+  assert.equal(f.calls[1].name, "materialize_whatsapp_account_inbound");
+  const event = f.calls[1].args.p_event as { content: Record<string, unknown>; mediaRefs: unknown[] };
+  assert.equal(event.content.type, "image"); assert.equal(event.mediaRefs.length, 1);
+  assert.equal(m.downloads.length, 0);
+  await result.media();
+  assert.deepEqual(m.downloads, [{ provider: "ycloud", link: "https://api.ycloud.com/v2/media/synthetic", workspaceId: id(1),
+    conversationId: id(42), mimeType: "image/jpeg", filename: undefined, caption: undefined, mediaId: "synthetic-image",
+    apiKey: "placeholder" }]);
+  assert.deepEqual(m.patches, [[id(1), id(43), { storage_path: "synthetic/path.jpg", mime_type: "image/jpeg" }]]);
+});
+
+test("Kapso media uses its signed link without a key; replays and failed copies stay quiet", async () => {
+  process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS = id(51);
+  const kapsoImage = { ...KAPSO_TEXT, message: { ...KAPSO_TEXT.message, type: "image", text: undefined,
+    image: { id: "synthetic-k-image", mime_type: "image/png", caption: "foto" },
+    kapso: { direction: "inbound", media_url: "https://api.kapso.ai/media/synthetic?token=t" } } };
+  const f = await fixture("kapso", kapsoImage), m = mediaStore();
+  const result = await captureWhatsAppAccountDelivery(f.db, f.input, now, m.store);
+  assert.ok(result.status === "persisted" && result.media);
+  await result.media();
+  assert.equal(m.downloads[0].provider, "kapso"); assert.equal("apiKey" in m.downloads[0], false);
+  assert.equal(m.downloads[0].caption, "foto"); assert.equal(m.downloads[0].mediaId, "synthetic-k-image");
+  const replay = await fixture("ycloud", YCLOUD_IMAGE); replay.replay();
+  assert.deepEqual(await captureWhatsAppAccountDelivery(replay.db, replay.input, now, mediaStore().store),
+    { status: "persisted", kind: "message", materialized: true });
+  const broken = await fixture("ycloud", YCLOUD_IMAGE), b = mediaStore(true);
+  const failed = await captureWhatsAppAccountDelivery(broken.db, broken.input, now, b.store);
+  assert.ok(failed.status === "persisted" && failed.media);
+  await failed.media(); assert.equal(b.downloads.length, 1); assert.equal(b.patches.length, 0);
+});
+
+test("inbox materializes button replies as text but keeps templates and receipts capture-only; bad config fails closed", async () => {
+  process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS = id(51);
+  const button = await fixture("ycloud", { ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage,
+    type: "button", button: { text: "Sí", payload: "synthetic-payload" } } });
+  assert.deepEqual(await captureWhatsAppAccountDelivery(button.db, button.input, now, mediaStore().store),
+    { status: "persisted", kind: "message", materialized: true });
+  const buttonEvent = button.calls[1].args.p_event as { content: Record<string, unknown> };
+  assert.equal(buttonEvent.content.type, "text"); assert.equal(buttonEvent.content.rawType, "button");
+  const template = await fixture("ycloud", { ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage,
+    type: "template", template: { name: "synthetic" } } });
+  assert.deepEqual(await captureWhatsAppAccountDelivery(template.db, template.input, now), { status: "persisted", kind: "message" });
+  assert.equal(template.calls[1].name, "persist_whatsapp_account_delivery");
   const receipt = await fixture("ycloud", { id: "receipt.inbox", type: "whatsapp.message.updated", createTime: "2026-10-10T12:00:00Z",
     whatsappMessage: { from: "+15555550100", to: "+15555550101", id: "provider.id", wamid: "wamid.receipt", status: "read" } });
   assert.deepEqual(await captureWhatsAppAccountDelivery(receipt.db, receipt.input, now), { status: "persisted", kind: "receipt" });

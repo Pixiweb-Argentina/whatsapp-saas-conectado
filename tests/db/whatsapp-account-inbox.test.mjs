@@ -100,12 +100,38 @@ test("managed receive-only inbox binds identities and history to the account ato
     for (const patch of [{ workspaceId: id(2) }, { connectionId: id(52) }, { provider: "kapso" }, { schemaVersion: 2 },
       { channel: "instagram" }, { kind: "receipt" }, { externalActorId: "bad" }, { externalMessageId: "different" },
       { occurredAt: "2099-01-01T00:00:00Z" }, { receivedAt: "2099-01-01T00:00:00Z" },
-      { content: { type: "text", rawType: "image", text: "placeholder" } },
+      { content: { type: "template", rawType: "template", text: "placeholder" } },
+      { content: { type: "system", rawType: "unsupported", text: "placeholder" } },
+      { content: { type: "text", rawType: "interactive", text: null } },
+      { content: { type: "image", rawType: "", text: null } },
+      { content: { type: "image", rawType: "image", text: "x".repeat(16001) } },
+      { mediaRefs: [{ mediaId: "a" }, { mediaId: "b" }] },
       { content: { type: "text", rawType: "text", text: "" } }, { content: { type: "text", rawType: "text", text: "x".repeat(16001) } }]) {
       await reject(() => save(event(patch), undefined, id(1), id(51)));
     }
     await reject(() => save(event(), undefined, id(2), id(51)));
     assert.equal(await count("inbound_events"), 0);
+  });
+  await isolated("media, location and button replies materialize with placeholder body and raw type", async () => {
+    await db.exec("SET LOCAL ROLE service_role");
+    const cases = [["img", { type: "image", rawType: "image", text: null }, "image", "[Multimedia]"],
+      ["aud", { type: "audio", rawType: "voice", text: "" }, "audio", "[Multimedia]"],
+      ["doc", { type: "document", rawType: "document", text: "factura" }, "document", "factura"],
+      ["loc", { type: "location", rawType: "location", text: null }, "location", "[Multimedia]"],
+      ["btn", { type: "text", rawType: "button", text: "Sí" }, "text", "Sí"]];
+    for (const [key, content, type, body] of cases) {
+      const value = event({ providerEventId: `wamid.${key}`, externalMessageId: `wamid.${key}`, content,
+        mediaRefs: type === "location" || type === "text" ? [] : [{ mediaId: `synthetic-${key}` }] });
+      const first = await save(value); assert.equal(first.inserted, true);
+      const row = (await db.query("select type,body,meta from public.messages where id=$1", [first.messageId])).rows[0];
+      assert.equal(row.type, type); assert.equal(row.body, body); assert.equal(row.meta.raw_type, content.rawType);
+      assert.equal(row.meta.storage_path, undefined);
+      assert.deepEqual(await save(value), { ...first, inserted: false });
+      await reject(() => save({ ...value, content: { ...content, text: "otro texto" } }));
+    }
+    const thread = (await db.query("select unread_count from public.conversations")).rows.at(-1);
+    assert.equal(thread.unread_count, cases.length);
+    assert.equal(await count("message_jobs"), 0); assert.equal(await count("message_outbox"), 0);
   });
   await isolated("rotation, expiry and revocation invalidate even previously captured messages", async () => {
     const revision = (await source()).sourceRevision;

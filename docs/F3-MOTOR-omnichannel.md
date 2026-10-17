@@ -465,7 +465,7 @@ Esta matriz separa implementación y evidencia de la aceptación integral. Los n
 | Criterio | Evidencia vigente | Límite para el cierre integral |
 |---|---|---|
 | US-006 AC1: filtros y cuenta visible | Incrementos24–25; dos hilos por contacto/cuenta y filtros por seis estados/canal/cuenta/asignación, RPC/RLS/paginación, hilo y fila, navegación real375/1440px | Incremento25 cubre esquema/lecturas de dos cuentas con fixtures; alta real de cuentas y canales nuevos pendiente |
-| US-006 AC2: timeline, notas y origen | Notas y texto real humano/IA en incrementos18/20/23; tipos media legacy conservados; fixtures de diseño multicanal de F2 | Piloto nuevo recibe texto; media/origen de nuevas fuentes necesitan adapters/materialización y recorrido de sus fases |
+| US-006 AC2: timeline, notas y origen | Notas y texto real humano/IA en incrementos18/20/23; tipos media legacy conservados; fixtures de diseño multicanal de F2 | Cuentas managed materializan texto y, desde incremento37, media/ubicación/botones con copia diferida a Storage (local; migración102 sin aplicar). Falta prueba real, ecos managed y origen de canales nuevos en sus fases |
 | US-006 AC3: tenant/rol y delivered/read | Tests `inbox-read.test.mjs`, comprobaciones GoTrue previas y receipts YCloud reales; delivered IA automático en incremento23 | Extender recorrido de permisos/lecturas por cada cuenta/canal cuando se habiliten; accepted por sí solo no prueba entrega |
 | US-007 AC1: toma humana y revisión | Incremento28 integra intake/claim/buffer/decisión/toma humana/checkpoint/enqueue/worker con SQL local real y generación diferida; casos sin cambio, toma y toma+resume | Carrera integrada sintética acreditada; no se provocó una carrera con modelo/proveedor reales. La restauración posterior de la prueba real anterior sigue siendo evidencia distinta |
 | US-007 AC2: composer y bloqueos | Política/contexto y composer de incrementos5/6/8/16; rechazo422 con capabilities inventadas; bloqueo visible actual needs_permissions | Alta permanente de cuenta/grants y ampliación de cada capacidad externa; permisos temporales ya retirados |
@@ -474,7 +474,7 @@ Esta matriz separa implementación y evidencia de la aceptación integral. Los n
 | US-008 AC2: lease, unknown y recuperación | DB/worker con fencing y carreras Cloud, receipts y límites; reanudación/replay real de23 sin envío nuevo | No se indujo timeout real ni se mató un proceso tras POST; pruebas de esas condiciones siguen sintéticas |
 | US-008 AC3: firma/activo/orden/ACK | Ingress/receipts/pipeline con tests inválidos/ajenos/desorden; rechazos HTTP y recepción firmada real en17–23 | Mantener pruebas por nuevo adaptador y no afirmar que el ACK de verificación equivale a persistencia |
 
-**Próximo bloque concreto (actualizado en incremento36):** preparar hosting/DNS/HTTPS y cutover autorizado de dashboard.pixiweb.com.ar; primera prueba managed ya implementada y apagada,no repetir como pendiente de código. Falta entrega real de cuenta nueva con autorización concreta y revisión interactiva. Media/ecos managed y AC restantes pendientes. Meta/OAuth F4/F5,widget F6,Brevo F7. F3 abierta.
+**Próximo bloque concreto (actualizado en incremento37):** dominio y primera cuenta Kapso managed ya conectados; primera prueba managed implementada y apagada. Media entrante managed implementada en incremento37, falta aplicar la migración102 y desplegar con autorización. Falta entrega real con autorización concreta, revisión interactiva, ecos managed y AC restantes. Meta/OAuth F4/F5,widget F6,Brevo F7. F3 abierta.
 
 Auto-Blindaje24: filtrar antes de paginar y resolver “mí” por sesión. RPC con nombre único evita sobrecarga ambigua de PostgREST. Mantener min-h-0 en la cadena flex para que el scroll de mensajes no oculte la cuenta/controles. Un fixture WA también requiere teléfono; corregir fixture, nunca relajar esa invariante.
 
@@ -671,6 +671,24 @@ Auto-Blindaje36: PostgreSQL least ignora NULL; validar primero el deadline de ev
 
 [Evidencia](evidencias/F3-PRUEBA-UNICA-2026-10-16.json). Rama codex/omnichannel-f3-account-trial desde4840c49. El flujo inicial está implementado y deshabilitado; no repetirlo como pendiente de código. Falta hosting/DNS/HTTPS/cutover autorizado, revisión interactiva y entrega real de una cuenta nueva con autorización concreta;media/ecos managed y AC restantes. dashboard.pixiweb.com.ar elegido,NXDOMAIN observado34,no reconsultado36. F3 abierta,0/9fases aceptadas.
 
+### F3, incremento 37 — multimedia entrante en cuentas administradas, 2026-10-17
+
+Las cuentas managed YCloud/Kapso ya no descartan lo que no es texto. Fotos, audios y notas de voz, videos, documentos, stickers, ubicaciones y respuestas de botón o interactivas que llegan a una cuenta con las dos allowlists por cuenta (ingreso y bandeja) se guardan en la bandeja, en el mismo hilo humano del contacto, con un no leído más y la ventana de 24 horas actualizada. Plantillas y mensajes de sistema siguen sólo capturados; un texto vacío o una respuesta interactiva sin texto también. No hay IA, respuesta automática, job ni outbox: el contador de message_jobs y message_outbox queda en cero.
+
+- **Cuerpo visible.** El tipo del mensaje es el tipo real (image/audio/video/document/sticker/location/text). Si el contacto mandó un pie de foto, ese es el cuerpo; si no, «[Multimedia]», igual que la bandeja original. meta guarda raw_type (por ejemplo voice, button, interactive) junto a inbound_event_id/receive_only/managed_account.
+- **Archivo.** La copia a Storage privado corre con after() de Next, después de responder 200 al proveedor, y sólo si la fila se insertó recién: un reintento del webhook no vuelve a descargar. Usa el descargador existente; la clave de API sólo viaja para YCloud, Kapso descarga sin ella. Si falla, el mensaje ya está en la bandeja con su texto, se registra sólo «[account-ingress] media copy failed» (sin URL ni clave) y no se reintenta. La respuesta JSON al proveedor no cambió.
+- **SQL.** Migración 102: 20261017120000_omnichannel_account_inbox_media.sql reemplaza private.whatsapp_account_inbox_event y public.materialize_whatsapp_account_inbound. Acepta los siete tipos, exige rawType de 1 a 64 caracteres, texto obligatorio sólo para text, como mucho un adjunto, y conserva el control de colisión (mismo ID con otro tipo o cuerpo → error). Sigue sólo servicio, INVOKER y search_path vacío; sin backfill ni activación.
+
+Validación: 1.989 unitarias, 298 DB (PGlite), typecheck y lint pasan. Nuevos: tres unitarias de ingreso (copia YCloud con clave después de la respuesta; Kapso sin clave, sin copia en replay y fallo silencioso; botón como texto, plantillas/receipts sólo captura y config «*» inválida), dos de bandeja y un test DB con imagen sin pie, nota de voz, documento con pie, ubicación y botón «Sí», reintento idempotente, colisión, unread 5 y cero jobs/outbox.
+
+**No aplicada a producción.** La migración 102 sólo corrió en PGlite local; el Supabase nuevo sigue en 101. Aplicarla y desplegar este código requiere autorización explícita de Yani. Hasta entonces, la cuenta Kapso real (f07797e6) sigue guardando sólo texto: el resto queda capturado como antes. No se activó ninguna cuenta, no se tocaron variables de Vercel ni webhooks, no hubo llamadas a proveedor/modelo, compras, push, merge ni deploy; main intacto.
+
+Detalle a vigilar: una respuesta de botón guardada como texto puede ser candidata a la primera prueba única; la preparación de esa prueba falla de forma segura si no cumple sus otras condiciones.
+
+Auto-Blindaje37: el resultado de materializeAccountInbox suma media; las pruebas que comparan el objeto completo deben incluirlo. No hacer spread de un valor unknown: armar el objeto esperado en una constante. No consultar columnas que no existen (no hay storage_path en messages; el archivo vive en meta).
+
+Rama codex/omnichannel-f3-managed-media. Pendiente: aplicar 102 y desplegar con autorización, prueba real enviando una foto al número Kapso, ecos managed, revisión interactiva, decidir OPENROUTER/RESEND y AC US-006–008. F3 abierta, 0/9 fases aceptadas.
+
 ### Cutover del laboratorio YCloud al dominio nuevo, 2026-10-16
 
 Con el «go» de Yani al bloque «conectar la primera cuenta al dominio». Alcance: sólo el webhook del proveedor y la recepción de ese número. No autorizó envíos, IA, prueba única ni grants.
@@ -694,4 +712,4 @@ Yani cambió la decisión anterior («el Kapso del dashboard original no se reut
 
 - **Cierre (mismo día, con «si a las 3» de Yani).** Yani borró en Kapso la API key vieja «whatsapp-pixiweb» que usaba el original; en el proyecto Kapso queda sólo la clave de esta cuenta, y el check posterior siguió CONNECTED con todos los checks true. Yani creó ella misma su usuario en Supabase Auth (id 2ec4d7cb…, confirmado; el agente no crea cuentas ni contraseñas). Se le cargó perfil en `users` (super admin, activo) y membresía admin activa en 52aa2172 y ff50ed19. Yani entró a dashboard.pixiweb.com.ar con su usuario y confirmó que ve el mensaje en la bandeja.
 
-Pendiente: decidir OPENROUTER/RESEND; revisión interactiva; prueba única de envío con autorización concreta; media/ecos managed y AC US-006–008. Rollback: quitar f07797e6 de las dos variables y redeployar, o desactivar el webhook be0fbd88 en Kapso; reactivar el webhook del original sólo si Yani lo pide.
+Pendiente: decidir OPENROUTER/RESEND; revisión interactiva; prueba única de envío con autorización concreta; ecos managed y AC US-006–008 (media managed: incremento37, sin aplicar a producción). Rollback: quitar f07797e6 de las dos variables y redeployar, o desactivar el webhook be0fbd88 en Kapso; reactivar el webhook del original sólo si Yani lo pide.
