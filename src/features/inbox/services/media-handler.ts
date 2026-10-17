@@ -8,11 +8,13 @@ function svc() {
   );
 }
 
-/** SEC-08: the only host each provider may make us download media from. */
-const ALLOWED_MEDIA_HOST: Record<WhatsAppProvider, string> = {
-  ycloud: "api.ycloud.com",
-  kapso: "api.kapso.ai",
+/** SEC-08: the only hosts each provider may make us download media from. */
+const ALLOWED_MEDIA_HOSTS: Record<WhatsAppProvider, readonly string[]> = {
+  ycloud: ["api.ycloud.com"],
+  kapso: ["api.kapso.ai", "app.kapso.ai"],
 };
+/** Kapso's app.kapso.ai links answer with one redirect to a presigned Cloudflare R2 object. */
+const KAPSO_REDIRECT_HOST = /^[a-z0-9-]+\.[a-f0-9]+\.r2\.cloudflarestorage\.com$/;
 const BUCKET = "whatsapp-media";
 
 /** MIME type → file extension map */
@@ -86,18 +88,41 @@ export interface DownloadAndStoreOptions {
 }
 
 /**
- * SEC-08: Validates that the URL host is exactly the provider's media host.
- * Returns false on any parse error.
+ * SEC-08: Validates that the URL is https on exactly one of the provider's
+ * media hosts. Returns false on any parse error.
  */
 export function validateMediaUrl(
   provider: WhatsAppProvider,
   url: string,
 ): boolean {
   try {
-    return new URL(url).hostname === ALLOWED_MEDIA_HOST[provider];
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && ALLOWED_MEDIA_HOSTS[provider].includes(parsed.hostname);
   } catch {
     return false;
   }
+}
+
+/** Host only: provider links carry signed tokens and must not reach the logs. */
+function hostOf(url: string): string {
+  try { return new URL(url).hostname; } catch { return "invalid-url"; }
+}
+
+/**
+ * YCloud wants the API key. Kapso's URL carries its own signed token; from
+ * app.kapso.ai it redirects once to R2, and only that https hop is followed.
+ */
+async function fetchMedia(opts: DownloadAndStoreOptions): Promise<Response> {
+  if (opts.provider === "ycloud") {
+    return fetch(opts.link, { headers: { "X-API-Key": opts.apiKey ?? "" } });
+  }
+  const first = await fetch(opts.link, { redirect: "manual" });
+  if (first.status < 300 || first.status >= 400) return first;
+  const next = new URL(first.headers.get("location") ?? "", opts.link);
+  if (next.protocol !== "https:" || !KAPSO_REDIRECT_HOST.test(next.hostname)) {
+    throw new Error(`SEC-08 redirect to ${next.hostname} refused`);
+  }
+  return fetch(next.toString(), { redirect: "error" });
 }
 
 /**
@@ -117,30 +142,24 @@ export async function downloadAndStoreMedia(
   // SEC-08: block requests to any host but the provider's
   if (!validateMediaUrl(opts.provider, opts.link)) {
     console.error(
-      `[media-handler] SEC-08 violation — URL host is not ${ALLOWED_MEDIA_HOST[opts.provider]}:`,
-      opts.link,
+      `[media-handler] SEC-08 violation — ${opts.provider} media host not allowed:`,
+      hostOf(opts.link),
     );
     return null;
   }
 
-  // Download. YCloud wants the API key; Kapso's URL carries its own signed
-  // token (a 401/403 there usually means the URL sat around and expired).
+  // A Kapso 401/403 usually means the signed URL sat around and expired.
   let response: Response;
   try {
-    response = await fetch(
-      opts.link,
-      opts.provider === "ycloud"
-        ? { headers: { "X-API-Key": opts.apiKey ?? "" } }
-        : undefined,
-    );
+    response = await fetchMedia(opts);
   } catch (err) {
-    console.error("[media-handler] fetch failed:", err);
+    console.error("[media-handler] fetch failed:", err instanceof Error ? err.message : "unknown");
     return null;
   }
 
   if (!response.ok) {
     console.error(
-      `[media-handler] ${opts.provider} download returned ${response.status} for ${opts.link}`,
+      `[media-handler] ${opts.provider} download returned ${response.status} for ${hostOf(opts.link)}`,
     );
     return null;
   }
