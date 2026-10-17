@@ -4,17 +4,17 @@ Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36, co
 
 ## Estado rápido al 17/10/2026 (leer primero)
 
-- Producción https://dashboard.pixiweb.com.ar (Vercel omnichannel-pixiweb, redeploy kvr78n7un) con OpenRouter, Resend y HANDOFF_NOTIFY_FROM cargados.
+- Producción https://dashboard.pixiweb.com.ar (Vercel omnichannel-pixiweb, deploy 4pap5nruy del 17/10 con incremento37; rollback: redeployar kvr78n7un) con OpenRouter, Resend y HANDOFF_NOTIFY_FROM cargados.
 - Laboratorio F3 · prueba (ws52aa2172): Kapso conectado con el número terminado en6572 (Phone Number ID 1385105188019911, WABA 2948093768877046), clave nueva válida, aviso por correo al equipo ENCENDIDO, respuestas IA APAGADAS (encenderlas manda mensajes reales: pedir sí explícito). Cuenta figura «Pendiente de verificación».
 - Laboratorio legacy YCloud (wsff50ed19, número terminado en8120) recibe en producción.
-- Incremento37 (17/10): fotos/audios/videos/documentos/stickers/ubicaciones/botones que llegan a cuentas managed se guardan en la bandeja (pie o «[Multimedia]»), archivo copiado a Storage después de responder. Migración102 20261017120000_omnichannel_account_inbox_media.sql SÓLO probada en local: Supabase nuevo sigue en101 y producción sin este código. Aplicar102 y desplegar requiere sí explícito de Yani; después, prueba real mandando una foto al número Kapso6572.
-- Pendiente de Yani: validar/comentar la recorrida del panel; autorizar aplicar102+deploy. Siguiente trabajo: ecos Business App managed; entrega real de una cuenta nueva con autorización concreta; AC US006–008; luego F4–F7.
+- Incremento37 (17/10): fotos/audios/videos/documentos/stickers/ubicaciones/botones que llegan a cuentas managed se guardan en la bandeja (pie o «[Multimedia]»), archivo copiado a Storage después de responder. Migración102 APLICADA en el Supabase nuevo como 20261017234022_omnichannel_account_inbox_media.sql (archivo renombrado) y DESPLEGADA a producción (4pap5nruy) con autorización de Yani. Chequeos: /login 200, Kapso sin firma 401, YCloud managed 503. Falta la prueba real: Yani manda una foto al número Kapso6572; revisar logs y que el mensaje quede type image con meta.raw_type y datos de Storage en meta, sin envíos ni IA.
+- Pendiente de Yani: validar/comentar la recorrida del panel; mandar la foto de prueba al número Kapso6572. Siguiente trabajo: ecos Business App managed; entrega real de una cuenta nueva con autorización concreta; AC US006–008; luego F4–F7.
 - Trucos operativos: registros de producción con `vercel logs --environment production --no-branch -q "<texto>" -n N -x` desde el worktree vinculado. En Kapso las claves están en Integrate → API keys (ruta /api_keys, no /api-keys). La prueba de conexión del panel usa la clave guardada si el campo muestra «••••••». Trabajo web en el Chrome de Yani; las claves las pega ella.
 
 ## Dónde continuar
 
 - Implementación: C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado.
-- Rama: codex/omnichannel-f3-managed-media, incremento37 desde32411d3 (sin push). Incremento36 en codex/omnichannel-f3-account-trial. Confirmar Git; omnichannel-f1 es nombre histórico del worktree, no fase.
+- Rama: codex/omnichannel-f3-managed-media, incremento37 desde32411d3, último commit 537a2b3 (sin push). Incremento36 en codex/omnichannel-f3-account-trial. Confirmar Git; omnichannel-f1 es nombre histórico del worktree, no fase.
 - Original C:/Users/Yani Acevedo/Documents/GitHub/apps/app-whatsapp-saas-conectado: preparación/documentación, NO implementar ahí.
 - Leer AGENTS.md, docs/PLAN-STATUS-omnichannel-pixiweb.md, .claude/PRPs/PIEZA-omnichannel-pixiweb.md y docs/F3-MOTOR-omnichannel.md DEL WORKTREE ACTIVO.
 - Evidencia vigente: docs/evidencias/F3-PRUEBA-UNICA-2026-10-16.json. Historial35 y anteriores en los mismos documentos.
