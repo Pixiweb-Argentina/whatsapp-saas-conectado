@@ -1,6 +1,14 @@
 # Continuidad de Omnichannel Pixiweb
 
-Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36, confirmar su respaldo GitHub y publicar dashboard.pixiweb.com.ar, subir su documentación (cab615b) mover el webhook del laboratorio YCloud al dominio y conectar la primera cuenta managed real (Kapso 6572) el2026-10-16; cargar OpenRouter/Resend en producción y recorrer el panel el2026-10-17.
+Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36, confirmar su respaldo GitHub y publicar dashboard.pixiweb.com.ar, subir su documentación (cab615b) mover el webhook del laboratorio YCloud al dominio y conectar la primera cuenta managed real (Kapso 6572) el2026-10-16; cargar OpenRouter/Resend en producción, recorrer el panel, encender el aviso por correo y corregir Kapso (Phone Number ID + API Key) en ws52aa2172 el2026-10-17 (último commit de memoria subido: 7f16afa).
+
+## Estado rápido al 17/10/2026 (leer primero)
+
+- Producción https://dashboard.pixiweb.com.ar (Vercel omnichannel-pixiweb, redeploy kvr78n7un) con OpenRouter, Resend y HANDOFF_NOTIFY_FROM cargados.
+- Laboratorio F3 · prueba (ws52aa2172): Kapso conectado con el número terminado en6572 (Phone Number ID 1385105188019911, WABA 2948093768877046), clave nueva válida, aviso por correo al equipo ENCENDIDO, respuestas IA APAGADAS (encenderlas manda mensajes reales: pedir sí explícito). Cuenta figura «Pendiente de verificación».
+- Laboratorio legacy YCloud (wsff50ed19, número terminado en8120) recibe en producción.
+- Pendiente de Yani: validar/comentar la recorrida del panel. Siguiente trabajo: entrega real de una cuenta nueva con autorización concreta; media/ecos Business App managed; AC US006–008; luego F4–F7.
+- Trucos operativos: registros de producción con `vercel logs --environment production --no-branch -q "<texto>" -n N -x` desde el worktree vinculado. En Kapso las claves están en Integrate → API keys (ruta /api_keys, no /api-keys). La prueba de conexión del panel usa la clave guardada si el campo muestra «••••••». Trabajo web en el Chrome de Yani; las claves las pega ella.
 
 ## Dónde continuar
 
