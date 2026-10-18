@@ -4,8 +4,9 @@ Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36, co
 
 ## Dónde continuar
 
+- Actualizado 2026-10-18: F3 ACEPTADA por Yani. F4 Instagram EN EJECUCIÓN (Build Manual) en rama codex/omnichannel-f4-instagram desde 7557a71; incremento 1 con commits locales sin push 97868d5 (config Meta + verificación webhook), 48b9692 (normalizador Instagram), cae0492 (matcher comentario→regla). Bloqueo: falta app Meta y las 5 variables META_ (las carga Yani). Siguiente: T1.1/T1.2 OAuth y credenciales (provider meta) y T3.1 prioridad en rule-schema; parar en Lista Roja antes de rutas/migraciones. Lo que sigue debajo sobre F3 es historial.
 - Implementación: C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado.
-- Rama: codex/omnichannel-f3-account-trial, incremento36 desde4840c49. Confirmar Git; omnichannel-f1 es nombre histórico del worktree, no fase.
+- Rama activa: codex/omnichannel-f4-instagram (antes codex/omnichannel-f3-account-trial, incremento36 desde4840c49). Confirmar Git; omnichannel-f1 es nombre histórico del worktree, no fase.
 - Original C:/Users/Yani Acevedo/Documents/GitHub/apps/app-whatsapp-saas-conectado: preparación/documentación, NO implementar ahí.
 - Leer AGENTS.md, docs/PLAN-STATUS-omnichannel-pixiweb.md, .claude/PRPs/PIEZA-omnichannel-pixiweb.md y docs/F3-MOTOR-omnichannel.md DEL WORKTREE ACTIVO.
 - Evidencia vigente: docs/evidencias/F3-PRUEBA-UNICA-2026-10-16.json. Historial35 y anteriores en los mismos documentos.
