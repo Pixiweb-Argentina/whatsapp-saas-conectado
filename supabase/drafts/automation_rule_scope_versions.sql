@@ -309,10 +309,11 @@ $$;
 
 -- NULL for v1 runs. A comment run records the exact version it executed, so
 -- publishing a new version never changes what an earlier run did.
--- automation_runs.rule_id has no FK on purpose: run history outlives a deleted
--- rule. Deleting a rule cascades to its versions, so this FK only clears
--- rule_version_id (SET NULL on that one column, Postgres 15+ like the engine
--- migration) and keeps the run; NO ACTION here would block every rule delete.
+-- Deleting a rule already deletes its runs (existing
+-- fk_automation_runs_rule_id_same_workspace, ON DELETE CASCADE) and, from this
+-- file, its versions. SET NULL on rule_version_id only (Postgres 15+, like the
+-- engine migration) keeps that double cascade from depending on its order and
+-- never blocks a rule delete. Tested on a disposable copy, 2026-10-18.
 ALTER TABLE public.automation_runs
   ADD COLUMN IF NOT EXISTS rule_version_id UUID;
 
