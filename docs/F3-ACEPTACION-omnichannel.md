@@ -6,6 +6,10 @@ Este documento junta, criterio por criterio, qué está probado, si la prueba fu
 
 Para armarlo no se envió nada, no se cambió ninguna variable y no se desplegó nada.
 
+## Decisión
+
+**APROBADO por Yani el 2026-10-18:** «Apruebo los 9 criterios de F3 con los veredictos sugeridos, incluidos los límites anotados.» F3 queda aceptada; los límites de cada criterio y la lista «Qué queda pendiente» siguen vigentes. Esta aprobación no autoriza envíos, push, merge ni deploy.
+
 ## Estado real verificado hoy (solo lectura)
 
 | Qué | Valor |

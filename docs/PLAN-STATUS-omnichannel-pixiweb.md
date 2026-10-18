@@ -4,7 +4,7 @@
 
 **Respaldo GitHub verificado — 2026-10-15:** Yani autorizó subir los commits. En origin quedaron codex/omnichannel-f3-human-control (3806f34), codex/omnichannel-f3-message-dedup (51d8230), codex/omnichannel-f3-account-onboarding (e25e8af) y codex/omnichannel-preparacion (c836f86); hashes completos contrastados con git ls-remote. Este registro se versiona después de esos commits. Main permanece en 28a1530, sin merge ni deploy. Los antecedentes que indican sin push describen el estado previo al respaldo.
 
-Actualizado: 2026-10-16. Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb.md](../BLUEPRINT-omnichannel-pixiweb.md).
+Actualizado: 2026-10-18 (F3 aceptada por Yani; ver registro al final). Fuente de construcción: [BLUEPRINT-omnichannel-pixiweb.md](../BLUEPRINT-omnichannel-pixiweb.md).
 
 ## Resultado
 
@@ -563,3 +563,5 @@ Una respuesta escrita desde la app WhatsApp Business del celular en un número K
 **Permiso local de texto concedido, 2026-10-18 04:56 UTC.** Con el sí de Yani («sí hacelo») se concedió el permiso de texto de la conexión Kapso f07797e6 (misma operación que «Autorizar texto», como Yani): antes, revisión sin bloqueos y ningún job pendiente. Ahora la conexión está en ready con una sola capacidad de texto, vigente hasta 2026-10-19 04:40 UTC (24 h desde la verificación; para extenderlo: volver a verificar y «Renovar permiso de texto»). No salió nada: sigue 1 job (el de la prueba), 4 salientes, 3 contactos. Esto no envía por sí solo: CHANNEL_HUMAN_WORKSPACES, CHANNEL_WORKER_WORKSPACES y CHANNEL_AI_WORKSPACES siguen vacías en producción, así que responder desde el panel, el worker y la IA siguen apagados; habilitarlos requiere otro sí. Rollback: «Revocar permiso de texto» en Ajustes.
 
 **Paquete de aceptación armado, 2026-10-18.** A pedido de Yani («todavía no prendas envíos; armá la evidencia») se escribió `docs/F3-ACEPTACION-omnichannel.md`: los 9 criterios de US-006, US-007 y US-008 con lo probado real y sintético, lo que falta y un veredicto sugerido (3 aceptar: US-006 AC3, US-007 AC3, US-008 AC3; 6 aceptar con límites). Typecheck pasa y 1.995 de 1.995 unitarios pasan. Para armarlo no se envió nada, no se cambió ninguna variable y no se desplegó. F3 sigue abierta hasta que Yani apruebe los criterios.
+
+**F3 ACEPTADA por Yani, 2026-10-18.** «Apruebo los 9 criterios de F3 con los veredictos sugeridos, incluidos los límites anotados.» Quedan aceptados los 9 criterios de US-006, US-007 y US-008 (3 sin límites y 6 con los límites de `docs/F3-ACEPTACION-omnichannel.md`). Los límites no se pierden: pasan a F4 en adelante o al momento de encender envíos (panel, worker e IA, cada uno con su propio sí), junto con el alta YCloud con dos cuentas reales, los ecos reales de YCloud, los JSON de evidencia pendientes y la renovación del permiso de texto Kapso (vence 2026-10-19 04:40 UTC). Aprobar los criterios no autoriza envíos, push, merge ni deploy.
