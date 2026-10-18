@@ -2,8 +2,9 @@
 
 Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36, confirmar su respaldo GitHub y publicar dashboard.pixiweb.com.ar, subir su documentación (cab615b) mover el webhook del laboratorio YCloud al dominio y conectar la primera cuenta managed real (Kapso 6572) el2026-10-16; cargar OpenRouter/Resend en producción, recorrer el panel, encender el aviso por correo y corregir Kapso (Phone Number ID + API Key) en ws52aa2172 el2026-10-17 (último commit de memoria subido: 7f16afa); incremento37 (media entrante managed) aplicado, desplegado y probado con foto real el2026-10-17; incremento38 (ecos Business App managed) implementado y commiteado en local el2026-10-17, migración103 aplicada, desplegado (4tphp5igk) y probado con respuesta real desde el celular el18/10.
 
-## Estado rápido al 17/10/2026 (leer primero)
+## Estado rápido al 18/10/2026 (leer primero)
 
+- PAUSA 18/10 (Yani: «dejemos por hoy»): F3 aceptada y cerrada. Ramas subidas a GitHub con su autorización: codex/omnichannel-f3-managed-echoes (worktree, código + aceptación F3) y codex/omnichannel-preparacion (original, memoria). Sin merge a main, sin deploy nuevo, sin envíos. Al volver: preguntar si arranca F4 Instagram en Build Manual (go propio). El permiso de texto Kapso vence 19/10 04:40 UTC (01:40 hora Argentina): es normal que la cuenta figure sin permiso; renovarlo sólo cuando Yani decida encender envíos (lo toca ella en Ajustes).
 - Producción https://dashboard.pixiweb.com.ar (Vercel omnichannel-pixiweb, deploy q6e14chvs del 18/10 = incremento38 sin CHANNEL_ACCOUNT_TRIAL_CONNECTIONS (prueba de entrega ya hecha y apagada); rollback: redeployar qlciyzc2j (con trial f07797e6), 4tphp5igk o msosahiyq (incremento37 + arreglo media), 4pap5nruy o kvr78n7un antes de la 102) con OpenRouter, Resend y HANDOFF_NOTIFY_FROM cargados.
 - Laboratorio F3 · prueba (ws52aa2172): Kapso conectado con el número terminado en6572 (Phone Number ID 1385105188019911, WABA 2948093768877046), clave nueva válida, aviso por correo al equipo ENCENDIDO, respuestas IA APAGADAS (encenderlas manda mensajes reales: pedir sí explícito). Cuenta figura «Pendiente de verificación».
 - Laboratorio legacy YCloud (wsff50ed19, número terminado en8120) recibe en producción.
@@ -17,10 +18,10 @@ Guardado por pedido de Yani para /avivar. Actualizado al cerrar incremento36, co
 ## Dónde continuar
 
 - Implementación: C:/Users/Yani Acevedo/.codex/worktrees/omnichannel-f1/app-whatsapp-saas-conectado.
-- Rama: codex/omnichannel-f3-managed-echoes (incremento38, desde la punta de codex/omnichannel-f3-managed-media; sin push). Incremento37 en codex/omnichannel-f3-managed-media desde32411d3, código 6efa86e. Incremento36 en codex/omnichannel-f3-account-trial. Confirmar Git; omnichannel-f1 es nombre histórico del worktree, no fase.
+- Rama: codex/omnichannel-f3-managed-echoes (incremento38 + aceptación F3, desde la punta de codex/omnichannel-f3-managed-media; subida a GitHub el 18/10). Incremento37 en codex/omnichannel-f3-managed-media desde32411d3, código 6efa86e. Incremento36 en codex/omnichannel-f3-account-trial. Confirmar Git; omnichannel-f1 es nombre histórico del worktree, no fase.
 - Original C:/Users/Yani Acevedo/Documents/GitHub/apps/app-whatsapp-saas-conectado: preparación/documentación, NO implementar ahí.
 - Leer AGENTS.md, docs/PLAN-STATUS-omnichannel-pixiweb.md, .claude/PRPs/PIEZA-omnichannel-pixiweb.md y docs/F3-MOTOR-omnichannel.md DEL WORKTREE ACTIVO.
-- Evidencia vigente: docs/evidencias/F3-PRUEBA-UNICA-2026-10-16.json. Historial35 y anteriores en los mismos documentos.
+- Evidencia vigente: docs/F3-ACEPTACION-omnichannel.md (aprobada 18/10) y docs/evidencias/F3-PRUEBA-UNICA-2026-10-16.json. Historial35 y anteriores en los mismos documentos.
 
 ## Próximo paso acordado
 
