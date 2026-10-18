@@ -55,3 +55,10 @@ test("atomic echo RPC failure is redacted and propagates for provider retry, wit
   process.env.CHANNEL_INGRESS_WORKSPACES=id(1);const probe=database(true);
   await assert.rejects(()=>captureBusinessAppEcho(probe.db,input,now),{message:"CHANNEL_ECHO_STORAGE_FAILED"});assert.equal(probe.calls(),1);
 });
+test("managed accounts normalize from the connection context alone, without a legacy workspace or integration",()=>{
+  const managed={provider:"kapso" as const,configuredAccountId:"fixture-account",payload,kapsoEventName:"whatsapp.message.sent"};
+  const value=normalizeBusinessAppEcho(managed,id(51),now);
+  assert.equal(value?.connectionId,id(51));assert.equal(value?.externalAccountId,"fixture-account");assert.equal(value?.recipient,"+15555550101");
+  assert.equal(normalizeBusinessAppEcho({...managed,provider:"ycloud"},id(51),now),null);
+  assert.equal(normalizeBusinessAppEcho({...managed,kapsoEventName:"whatsapp.message.received"},id(51),now),null);
+});

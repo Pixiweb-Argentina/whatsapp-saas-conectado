@@ -9,6 +9,7 @@ import { readWhatsAppAccountSource } from "./whatsapp-account-source";
 import { accountInboxEnabled, accountInboxMaterializable, materializeAccountInbox,
   type AccountInboxMedia } from "./whatsapp-account-inbox";
 import { downloadAndStoreMedia, patchMessageMedia } from "@/features/inbox/services/media-handler";
+import { echoResultSchema, normalizeBusinessAppEcho } from "./business-app-echo";
 
 /** Per-account opt-in, independent of all legacy/pilot workspace switches. Empty is off. */
 export function accountIngressEnabled(connectionId: string, raw = process.env.CHANNEL_ACCOUNT_INGRESS_CONNECTIONS): boolean {
@@ -25,7 +26,7 @@ interface Delivery {
   headers: Headers;
 }
 export type AccountIngressResult = { status: "disabled" | "unauthorized" | "invalid" | "ignored" }
-  | { status: "persisted"; kind: "message" | "receipt"; materialized?: true; media?: () => Promise<void> };
+  | { status: "persisted"; kind: "message" | "receipt" | "echo"; materialized?: true; media?: () => Promise<void> };
 type Source = NonNullable<Awaited<ReturnType<typeof readWhatsAppAccountSource>>>;
 export interface MediaStore { download: typeof downloadAndStoreMedia; patch: typeof patchMessageMedia }
 const defaultStore: MediaStore = { download: downloadAndStoreMedia, patch: patchMessageMedia };
@@ -50,6 +51,8 @@ export async function captureWhatsAppAccountDelivery(db: SupabaseClient, input: 
   const receipt = normalizeWhatsAppReceipt(context, source.connectionId, now);
   if (receipt) return persist(db, source, "receipt", receipt);
   if (normalizeWhatsAppReceipt(context, source.connectionId, now + 5000)) throw new Error("ACCOUNT_RECEIPT_CLOCK_SKEW");
+  const echo = inbox && source.provider === "kapso" ? normalizeBusinessAppEcho(context, source.connectionId, now) : null;
+  if (echo) return persistEcho(db, source, echo);
   const normalized = normalizeWhatsAppEvent({ connection: { workspaceId: source.workspaceId, connectionId: source.connectionId,
     channel: "whatsapp", provider: source.provider, externalAccountId: source.externalAccountId, status: source.status },
     payload, kapsoEventName, receivedAt: new Date(now).toISOString(),
@@ -83,4 +86,12 @@ async function persist(db: SupabaseClient, source: Source,
     p_connection: source.connectionId, p_source_revision: source.sourceRevision, p_kind: kind, p_delivery: delivery });
   if (error || !z.uuid().safeParse(data).success) throw new Error("ACCOUNT_DELIVERY_STORAGE_FAILED");
   return { status: "persisted", kind };
+}
+
+/** Phone-app reply: stored as a human outgoing message that pauses the AI. Never sends, never creates contacts. */
+async function persistEcho(db: SupabaseClient, source: Source, echo: unknown): Promise<AccountIngressResult> {
+  const { data, error } = await db.rpc("persist_whatsapp_account_echo", { p_workspace: source.workspaceId,
+    p_connection: source.connectionId, p_source_revision: source.sourceRevision, p_echo: echo });
+  if (error || !echoResultSchema.safeParse(data).success) throw new Error("ACCOUNT_ECHO_STORAGE_FAILED");
+  return { status: "persisted", kind: "echo" };
 }

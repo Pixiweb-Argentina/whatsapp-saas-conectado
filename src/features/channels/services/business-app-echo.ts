@@ -8,14 +8,15 @@ const echoSchema=z.strictObject({connectionId:z.uuid(),externalAccountId:z.strin
   recipient:z.string().regex(/^\+[1-9]\d{7,14}$/),occurredAt:z.iso.datetime({offset:true}),
   type:z.enum(["text","audio","image","document","video","sticker","location","template","system"]),
   body:z.string().max(4096).nullable()});
-const resultSchema=z.strictObject({conversationId:z.uuid().nullable(),inserted:z.boolean(),aiDisabled:z.boolean()});
+export const echoResultSchema=z.strictObject({conversationId:z.uuid().nullable(),inserted:z.boolean(),aiDisabled:z.boolean()});
 type BusinessAppEcho=z.infer<typeof echoSchema>;
 type EchoCaptureResult={status:"not_echo"|"disabled"|"ignored"}
-  | ({status:"persisted"} & z.infer<typeof resultSchema>);
+  | ({status:"persisted"} & z.infer<typeof echoResultSchema>);
 function record(value:unknown):Record<string,unknown> {
   return value!==null && typeof value==="object" && !Array.isArray(value) ? value as Record<string,unknown> : {};
 }
-export function normalizeBusinessAppEcho(input:AuthenticatedWhatsAppDelivery,connectionId:string,now=Date.now()):BusinessAppEcho|null {
+export type EchoSource=Pick<AuthenticatedWhatsAppDelivery,"provider"|"configuredAccountId"|"payload"|"kapsoEventName">;
+export function normalizeBusinessAppEcho(input:EchoSource,connectionId:string,now=Date.now()):BusinessAppEcho|null {
   const payload=record(input.payload); const message=record(payload.message); const rawTimestamp=message.timestamp;
   if(input.provider!=="kapso" || input.kapsoEventName!=="whatsapp.message.sent"
     || record(message.kapso).origin!=="business_app" || payload.phone_number_id!==input.configuredAccountId) return null;
@@ -43,7 +44,7 @@ export async function captureBusinessAppEcho(db:SupabaseClient,input:Authenticat
   if(!echo) return {status:"ignored" as const};
   const {data,error}=await db.rpc("persist_business_app_echo",{p_workspace_id:input.workspaceId,
     p_integration_id:input.integrationId,p_echo:echo});
-  const result=resultSchema.safeParse(data);
+  const result=echoResultSchema.safeParse(data);
   if(error || !result.success) throw new Error("CHANNEL_ECHO_STORAGE_FAILED");
   return {status:"persisted" as const,...result.data};
 }

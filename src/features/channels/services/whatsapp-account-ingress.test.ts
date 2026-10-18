@@ -21,13 +21,15 @@ async function fixture(provider: "ycloud" | "kapso" = "ycloud", payload: unknown
   const source = { ...owner, ...sealed, status: "needs_permissions",
     externalAccountId: provider === "ycloud" ? "+15555550100" : "synthetic-phone-id", sourceRevision: "a".repeat(32) };
   let result: unknown = source, error: unknown = null, inserted = true;
+  let echoResult: unknown = { conversationId: id(42), inserted: true, aiDisabled: true };
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const tables: string[] = [];
   const connection = { id: owner.connectionId, workspace_id: owner.workspaceId, channel: "whatsapp", provider,
     external_account_id: source.externalAccountId, status: "ready", revoked_at: null, capabilities: {}, legacy_integration_id: null };
   const db = { rpc: async (name: string, args: Record<string, unknown>) => {
     calls.push({ name, args }); return { data: name === "read_whatsapp_account_source" ? result
-      : name === "materialize_whatsapp_account_inbound" ? { eventId: id(41), conversationId: id(42), messageId: id(43), inserted } : id(41), error };
+      : name === "materialize_whatsapp_account_inbound" ? { eventId: id(41), conversationId: id(42), messageId: id(43), inserted }
+      : name === "persist_whatsapp_account_echo" ? echoResult : id(41), error };
   }, from: (name: string) => {
     tables.push(name);
     const q = { select: () => q, eq: () => q, maybeSingle: async () => ({ data: name === "channel_connections"
@@ -44,6 +46,7 @@ async function fixture(provider: "ycloud" | "kapso" = "ycloud", payload: unknown
   process.env.CHANNEL_ACCOUNT_INGRESS_CONNECTIONS = owner.connectionId;
   const input = { workspaceId: owner.workspaceId, connectionId: owner.connectionId, rawBody, headers };
   return { source, connection, db, calls, tables, input, setResult: (v: unknown) => { result = v; }, replay: () => { inserted = false; },
+    setEcho: (v: unknown) => { echoResult = v; },
     fail: () => { error = { message: "private-provider-sentinel" }; } };
 }
 
@@ -203,6 +206,35 @@ test("future timestamps retry instead of acknowledging; echoes and reactions nev
   assert.deepEqual(await captureWhatsAppAccountDelivery(echo.db, echo.input, now), { status: "ignored" });
   const reaction = await fixture("ycloud", { ...YCLOUD_TEXT, whatsappInboundMessage: { ...YCLOUD_TEXT.whatsappInboundMessage, type: "reaction" } });
   assert.deepEqual(await captureWhatsAppAccountDelivery(reaction.db, reaction.input, now), { status: "ignored" });
+});
+
+const MANAGED_ECHO = { phone_number_id: "synthetic-phone-id", message: { id: "wamid.synthetic-phone-reply", to: "15555550101",
+  timestamp: String(now / 1000 - 60), type: "text", text: { body: "Te respondo yo" }, kapso: { origin: "business_app" } } };
+
+test("with the inbox on, a Kapso phone-app reply is stored as a human echo that pauses the AI, nothing else", async () => {
+  const f = await fixture("kapso", MANAGED_ECHO); process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS = id(51);
+  f.input.headers.set("X-Webhook-Event", "whatsapp.message.sent");
+  assert.deepEqual(await captureWhatsAppAccountDelivery(f.db, f.input, now), { status: "persisted", kind: "echo" });
+  assert.deepEqual(f.calls.map((c) => c.name), ["read_whatsapp_account_source", "persist_whatsapp_account_echo"]);
+  const args = f.calls[1].args, echo = args.p_echo as Record<string, unknown>;
+  assert.equal(args.p_workspace, id(1)); assert.equal(args.p_connection, id(51)); assert.equal(args.p_source_revision, f.source.sourceRevision);
+  assert.equal(echo.connectionId, id(51)); assert.equal(echo.externalAccountId, "synthetic-phone-id");
+  assert.equal(echo.recipient, "+15555550101"); assert.equal(echo.body, "Te respondo yo");
+  assert.equal(JSON.stringify(f.calls).includes(secret), false); assert.deepEqual(f.tables, []);
+});
+
+test("phone-app replies stay capture-free with the inbox off and fail closed on bad storage answers", async () => {
+  const off = await fixture("kapso", MANAGED_ECHO); off.input.headers.set("X-Webhook-Event", "whatsapp.message.sent");
+  assert.deepEqual(await captureWhatsAppAccountDelivery(off.db, off.input, now), { status: "ignored" });
+  assert.equal(off.calls.some((c) => c.name === "persist_whatsapp_account_echo"), false);
+  const bad = await fixture("kapso", MANAGED_ECHO); process.env.CHANNEL_ACCOUNT_INBOX_CONNECTIONS = id(51);
+  bad.input.headers.set("X-Webhook-Event", "whatsapp.message.sent"); bad.setEcho({ conversationId: "not-an-id" });
+  await assert.rejects(captureWhatsAppAccountDelivery(bad.db, bad.input, now), /ACCOUNT_ECHO_STORAGE_FAILED/);
+  const future = await fixture("kapso", { ...MANAGED_ECHO, message: { ...MANAGED_ECHO.message, timestamp: String(now / 1000 + 60) } });
+  future.input.headers.set("X-Webhook-Event", "whatsapp.message.sent");
+  assert.equal(future.calls.some((c) => c.name === "persist_whatsapp_account_echo"), false);
+  await captureWhatsAppAccountDelivery(future.db, future.input, now).catch(() => null);
+  assert.equal(future.calls.some((c) => c.name === "persist_whatsapp_account_echo"), false);
 });
 
 test("source errors are redacted and never become acknowledged deliveries", async () => {
